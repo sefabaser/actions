@@ -1,0 +1,39 @@
+{
+  "name": "actions-lib",
+  "version": "1.0.0",
+  "description": "Typescript Helpers Library",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sefabaser/actions.git"
+  },
+  "author": "sefabaser",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sefabaser/actions/issues"
+  },
+  "prettier": {
+    "trailingComma": "none",
+    "tabWidth": 2,
+    "printWidth": 170,
+    "singleQuote": true
+  },
+  "homepage": "https://github.com/sefabaser/actions#readme",
+  "scripts": {
+    "build": "tsc",
+    "pretest": "clear",
+    "test": "node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=jasmine.json",
+    "deploy": "npm test && npm run build && npm publish"
+  },
+  "dependencies": {
+    "helpers-lib": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^11.11.3",
+    "@types/jasmine": "^3.3.9",
+    "typescript": "^3.3.3333",
+    "tslint": "^5.13.1",
+    "ts-node": "^8.0.3",
+    "jasmine": "^3.3.1"
+  }
+}
