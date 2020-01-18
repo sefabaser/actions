@@ -7,12 +7,13 @@ export type NotifierListenerCallbackFunction<T> = (data?: T) => void;
 export interface NotifierOptions {
   notifyOnlyOnChange?: boolean;
   persistent?: boolean;
+  doNotClone?: boolean;
 }
 
 export class Notifier<T> {
   // TODO: unit tests, place this also to other actions
   get currentValue() {
-    return JsonHelper.deepCopy(this.previousData);
+    return this.options.doNotClone ? this.previousData : JsonHelper.deepCopy(this.previousData);
   }
 
   private notificationHandler = new NotificationHandler<T>();
@@ -26,7 +27,7 @@ export class Notifier<T> {
   }
 
   trigger(data: T): void {
-    if (Comparator.isObject(data)) {
+    if (Comparator.isObject(data) && !this.options.doNotClone) {
       data = JsonHelper.deepCopy(data);
     }
 
