@@ -2,7 +2,7 @@ import { JsonHelper, Comparator } from 'helpers-lib';
 
 import { ActionSubscription, NotificationHandler } from '../helpers/notification-handler';
 
-export type NotifierListenerCallbackFunction<T> = (data?: T) => void;
+export type NotifierListenerCallbackFunction<T> = (data: T) => void;
 
 export interface NotifierOptions {
   notifyOnlyOnChange?: boolean;
