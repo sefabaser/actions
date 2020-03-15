@@ -150,4 +150,25 @@ describe(`Notifier`, () => {
       expect(triggerCount).toEqual(5);
     });
   });
+
+  describe(`Current Value`, () => {
+    it('default', () => {
+      let notifier = new Notifier<number>();
+      expect(notifier.currentValue).not.toBeDefined();
+    });
+
+    it('get current value', () => {
+      let notifier = new Notifier<number>();
+      notifier.trigger(2);
+      expect(notifier.currentValue).toEqual(2);
+    });
+
+    it('should be set before notification', () => {
+      let notifier = new Notifier<number>();
+      notifier.subscribe(() => {
+        expect(notifier.currentValue).toEqual(2);
+      });
+      notifier.trigger(2);
+    });
+  });
 });

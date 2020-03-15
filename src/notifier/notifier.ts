@@ -11,9 +11,8 @@ export interface NotifierOptions {
 }
 
 export class Notifier<T> {
-  // TODO: unit tests, place this also to other actions
   get currentValue() {
-    return this.options.doNotClone ? this.previousData : JsonHelper.deepCopy(this.previousData);
+    return this.previousData;
   }
 
   private notificationHandler = new NotificationHandler<T>();
@@ -31,7 +30,9 @@ export class Notifier<T> {
       data = JsonHelper.deepCopy(data);
     }
 
-    if (!this.options.notifyOnlyOnChange || !Comparator.isEqual(this.previousData, data)) {
+    let previousData = this.previousData;
+    this.previousData = this.options.doNotClone ? data : JsonHelper.deepCopy(data);
+    if (!this.options.notifyOnlyOnChange || !Comparator.isEqual(previousData, data)) {
       this.notificationHandler.forEach(callback => {
         try {
           callback(data);
@@ -41,7 +42,6 @@ export class Notifier<T> {
       });
     }
 
-    this.previousData = data;
     this.firstTriggerHappened = true;
   }
 
