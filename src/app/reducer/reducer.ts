@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from '../helpers/notification-handler';
+import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 
 export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   id: number;

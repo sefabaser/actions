@@ -1,6 +1,6 @@
 {
   "name": "actions-lib",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "Typescript Helpers Library",
   "main": "dist/index.js",
   "repository": {

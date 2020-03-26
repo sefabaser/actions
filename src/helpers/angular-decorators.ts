@@ -1,14 +1,14 @@
 import { Comparator } from 'helpers-lib';
 
 import { ActionSubscription } from './notification-handler';
-import { Notifier } from '../notifier/notifier';
-import { Reducer } from '../reducer/reducer';
+import { Reducer } from '../app/reducer/reducer';
+import { Variable } from '../app/variable/variable';
 
 /**
  * IMPORTANT: In case of AOT build, components should define 'ngOnInit' and 'ngOnDestroy' even tough they are empty
  * AOT build is stripping decorator defined functions, therefore angular cannot trigger decorator defined ngOnInit and ngOnDestroy functions
  */
-export function SubscribeAction(action: Notifier<any> | Reducer<any, any>) {
+export function SubscribeAction(action: Variable<any> | Reducer<any, any>) {
   return function(constructor: any, key: string) {
     let subscription: ActionSubscription;
 
@@ -22,7 +22,7 @@ export function SubscribeAction(action: Notifier<any> | Reducer<any, any>) {
     }
 
     constructor.ngOnInit = function() {
-      if (action instanceof Notifier) {
+      if (action instanceof Variable) {
         subscription = action.subscribe(item => {
           this[key] = item;
         });
