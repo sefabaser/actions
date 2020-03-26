@@ -104,7 +104,7 @@ describe(`Reducer`, () => {
     });
 
     it('should always notify listeners only on change', () => {
-      let blocked: boolean = false;
+      let blocked = false;
       let triggerCount = 0;
       reducer.subscribe(response => {
         blocked = response;
@@ -137,7 +137,7 @@ describe(`Reducer`, () => {
 
     it('should always be persistent, always gives the last broadcasted value to new listeners', () => {
       reducer.effect();
-      let blocked: boolean = false;
+      let blocked = false;
 
       reducer.subscribe(response => {
         blocked = response;
