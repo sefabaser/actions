@@ -1,6 +1,11 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
+import { ActionLibDefaults } from '../../config';
+
+export interface ReducerOptions {
+  clone?: boolean;
+}
 
 export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   id: number;
@@ -70,9 +75,11 @@ export class Reducer<EffectType, ResponseType> {
 
   private previousBroadcast: ResponseType;
   private destroyed = false;
+  private clone = false;
 
-  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>) {
+  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
     this.reduceFunction = reduceFunction;
+    this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.reducer.cloneBeforeNotification;
 
     let reducerResponse = this.reduceFunction({
       id: 0,
@@ -147,7 +154,7 @@ export class Reducer<EffectType, ResponseType> {
     });
   }
 
-  static createCollector<EffectType>(): Reducer<EffectType, EffectType[]> {
+  static createCollector<EffectType>(options: ReducerOptions = {}): Reducer<EffectType, EffectType[]> {
     let collection = new Map<number, EffectType>();
     return new Reducer<EffectType, EffectType[]>(change => {
       if (change.type === 'destroy') {
@@ -161,41 +168,45 @@ export class Reducer<EffectType, ResponseType> {
         response.push(item);
       });
       return response;
-    });
+    }, options);
   }
 
   static createObjectCreator<ResultType>(options?: {
     initial?: ResultType;
     doNotUpdateValueAtEffectCreation?: boolean;
+    clone?: boolean;
   }): Reducer<{ key: string; value: any }, ResultType> {
     let collection: any = (options && options.initial) || {};
     let activeEffects = new Set<string>();
 
-    return new Reducer<{ key: string; value: any }, ResultType>(change => {
-      if (change.type === 'destroy') {
-        if (change.previous) {
-          delete collection[change.previous.key];
-          activeEffects.delete(change.previous.key);
-        }
-      } else if (change.type === 'update') {
-        if (change.current) {
-          collection[change.current.key] = change.current.value;
-        }
-      } else if (change.type === 'effect') {
-        if (change.current) {
-          if (activeEffects.has(change.current.key)) {
-            console.error(`There is another effect for '${change.current.key}' already exist!`);
-          } else {
-            activeEffects.add(change.current.key);
-            if (!options || !options.doNotUpdateValueAtEffectCreation) {
-              collection[change.current.key] = change.current.value;
+    return new Reducer<{ key: string; value: any }, ResultType>(
+      change => {
+        if (change.type === 'destroy') {
+          if (change.previous) {
+            delete collection[change.previous.key];
+            activeEffects.delete(change.previous.key);
+          }
+        } else if (change.type === 'update') {
+          if (change.current) {
+            collection[change.current.key] = change.current.value;
+          }
+        } else if (change.type === 'effect') {
+          if (change.current) {
+            if (activeEffects.has(change.current.key)) {
+              console.error(`There is another effect for '${change.current.key}' already exist!`);
+            } else {
+              activeEffects.add(change.current.key);
+              if (!options || !options.doNotUpdateValueAtEffectCreation) {
+                collection[change.current.key] = change.current.value;
+              }
             }
           }
         }
-      }
 
-      return <ResultType>collection;
-    });
+        return <ResultType>collection;
+      },
+      { clone: options && options.clone }
+    );
   }
 
   effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
@@ -241,8 +252,7 @@ export class Reducer<EffectType, ResponseType> {
 
   private broadcast(value: ResponseType) {
     if (!Comparator.isEqual(this.previousBroadcast, value)) {
-      if (Comparator.isObject(value)) {
-        // TODO: set option for cloning
+      if (this.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);
       }
 

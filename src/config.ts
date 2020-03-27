@@ -7,4 +7,7 @@ export const ActionLibDefaults =  new class {
     notifyOnChange: boolean = false;
     cloneBeforeNotification: boolean = false;
   };
+  readonly reducer = new class {
+    cloneBeforeNotification: boolean = false;
+  };
 };
