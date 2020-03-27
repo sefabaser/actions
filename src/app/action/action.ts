@@ -12,12 +12,14 @@ export interface ActionOptions {
 export class Action<T> {
   private notificationHandler = new NotificationHandler<T>();
   private clone: boolean;
+  private destroyed = false;
 
   constructor(options: ActionOptions = {}) {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
   }
 
   trigger(data: T): void {
+    this.checkIfDestroyed();
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
     }
@@ -32,6 +34,28 @@ export class Action<T> {
   }
 
   subscribe(callback: ActionListenerCallbackFunction<T>): ActionSubscription {
+    this.checkIfDestroyed();
     return this.notificationHandler.subscribe(callback);
+  }
+
+  next(): Promise<T> {
+    this.checkIfDestroyed();
+    return new Promise(resolve => {});
+  }
+
+  waitUntil(data: T): Promise<T> {
+    this.checkIfDestroyed();
+    return new Promise(resolve => {});
+  }
+
+  destroy() {
+    this.notificationHandler.destroy();
+    this.destroyed = true;
+  }
+
+  private checkIfDestroyed() {
+    if (this.destroyed) {
+      throw new Error(`Action: it is destroyed, cannot be subscribed!`);
+    }
   }
 }

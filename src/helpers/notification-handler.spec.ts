@@ -12,12 +12,12 @@ describe(`Notification Handler`, () => {
   });
 
   it('should be subscribable', () => {
-    notifier.subscribe(message => { });
+    notifier.subscribe(message => {});
     expect(notifier['listenersMap'].size).toEqual(1);
   });
 
   it('should be unsubscribable', () => {
-    let subscription = notifier.subscribe(message => { });
+    let subscription = notifier.subscribe(message => {});
     subscription.unsubscribe();
     expect(notifier['listenersMap'].size).toEqual(0);
   });
@@ -64,5 +64,18 @@ describe(`Notification Handler`, () => {
     notifier.forEach(listenerCallback => {
       listenerCallback('sample');
     });
+  });
+
+  it('should destroy', () => {
+    notifier.subscribe(() => {});
+    notifier.destroy();
+    expect(notifier['listenersMap'].size).toEqual(0);
+  });
+
+  it('should be non-operational after destroy', () => {
+    notifier.destroy();
+    expect(() => {
+      notifier.subscribe(() => {});
+    }).toThrow();
   });
 });
