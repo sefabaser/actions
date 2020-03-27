@@ -157,79 +157,79 @@ describe(`Variable`, () => {
   });
 
   describe(`Wait Until`, () => {
-    let action: Variable<SampleModel | undefined>;
+    let variable: Variable<SampleModel | undefined>;
 
     beforeEach(() => {
-      action = new Variable<SampleModel | undefined>();
+      variable = new Variable<SampleModel | undefined>();
     });
 
     it('wait until any change', async () => {
       setTimeout(() => {
-        action.trigger({ testData: 'sample' });
+        variable.trigger({ testData: 'sample' });
       }, 1);
-      let nextNotification = await action.next();
+      let nextNotification = await variable.next();
       expect(nextNotification).toEqual({ testData: 'sample' });
     });
 
     it('wait until spesific data', async () => {
       setTimeout(() => {
-        action.trigger({ testData: 'sample' });
-        action.trigger({ testData: 'expected' });
+        variable.trigger({ testData: 'sample' });
+        variable.trigger({ testData: 'expected' });
       }, 1);
-      let nextNotification = await action.waitUntil({ testData: 'expected' });
+      let nextNotification = await variable.waitUntil({ testData: 'expected' });
       expect(nextNotification).toEqual({ testData: 'expected' });
     });
 
     it('wait until undefined', async () => {
       setTimeout(() => {
-        action.trigger({ testData: 'sample' });
-        action.trigger(undefined);
+        variable.trigger({ testData: 'sample' });
+        variable.trigger(undefined);
       }, 1);
-      let nextNotification = await action.waitUntil(undefined);
+      let nextNotification = await variable.waitUntil(undefined);
       expect(nextNotification).toBeUndefined();
     });
 
     it('wait until spesific data should trigger immidiately if current data is equal', async () => {
-      action.trigger({ testData: 'expected' });
-      let nextNotification = await action.waitUntil({ testData: 'expected' });
+      variable.trigger({ testData: 'expected' });
+      let nextNotification = await variable.waitUntil({ testData: 'expected' });
       expect(nextNotification).toEqual({ testData: 'expected' });
     });
 
     it('wait until undefined should trigger immidiately if current data is equal', async () => {
-      let nextNotification = await action.waitUntil(undefined);
+      let nextNotification = await variable.waitUntil(undefined);
       expect(nextNotification).toBeUndefined();
     });
   });
 
   describe(`Destroy`, () => {
     it('should destroy', () => {
-      let action = new Variable<void>();
-      action.subscribe(() => {});
+      let variable = new Variable<void>();
+      variable.subscribe(() => {});
 
-      action.destroy();
-      expect(action['notificationHandler']['listenersMap'].size).toEqual(0);
-      expect(action['nextListeners'].size).toEqual(0);
-      expect(action['untilListeners'].size).toEqual(0);
+      variable.destroy();
+      expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(variable['nextListeners'].size).toEqual(0);
+      expect(variable['untilListeners'].size).toEqual(0);
     });
 
     it('should be non-operational after destroy', () => {
-      let action = new Variable<void>();
-      action.destroy();
+      let variable = new Variable<void>();
+      variable.destroy();
 
       expect(() => {
-        action.trigger();
+        variable.trigger();
       }).toThrow();
 
       expect(() => {
-        action.subscribe(() => {});
+        variable.subscribe(() => {});
       }).toThrow();
 
       expect(() => {
-        action.next();
+        variable.next();
       }).toThrow();
 
       expect(() => {
-        action.waitUntil();
+        variable.waitUntil();
       }).toThrow();
     });
   });

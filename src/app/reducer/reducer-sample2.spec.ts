@@ -54,7 +54,7 @@ describe(`Reducer Sample Scenario`, () => {
     let curseEffect = areaEffect.effect(-2);
 
     setTimeout(() => {
-      curseEffect.remove();
+      curseEffect.destroy();
     }, 5);
 
     expect(pikeman.getAttack()).toEqual(3);

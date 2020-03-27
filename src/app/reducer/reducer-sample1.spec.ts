@@ -37,7 +37,7 @@ class SomeAsyncService {
     let blocker = blockers.effect();
     setTimeout(() => {
       // after an async operation
-      blocker.remove();
+      blocker.destroy();
     }, 3);
   }
 }
