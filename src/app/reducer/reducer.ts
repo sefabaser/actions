@@ -1,12 +1,17 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
+import { ActionLibDefaults } from '../../config';
+
+export interface ReducerOptions {
+  clone?: boolean;
+}
 
 export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   id: number;
   current?: EffectType;
   previous?: EffectType;
-  type: 'initial' | 'effect' | 'update' | 'remove';
+  type: 'initial' | 'effect' | 'update' | 'destroy';
 }) => ResponseType;
 
 export class ReducerEffectChannel<EffectType, ResponseType> {
@@ -14,7 +19,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
   private id: number;
   private reducer: Reducer<EffectType, ResponseType>;
   private previousEffectValue: EffectType;
-  private active = true;
+  private destroyed = false;
 
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
     this.id = ReducerEffectChannel.nextAvailableId++;
@@ -27,11 +32,11 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     });
 
     this.previousEffectValue = value;
-    this.broadcast(reducerResponse);
+    this.reducer['broadcast'](reducerResponse);
   }
 
   update(value: EffectType) {
-    if (this.active) {
+    if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
         id: this.id,
         previous: this.previousEffectValue,
@@ -40,50 +45,41 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
       });
 
       this.previousEffectValue = value;
-      this.broadcast(reducerResponse);
+      this.reducer['broadcast'](reducerResponse);
+    } else {
+      throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
     }
   }
 
-  remove() {
-    if (this.active) {
+  destroy() {
+    if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
         id: this.id,
         previous: this.previousEffectValue,
-        type: 'remove'
+        type: 'destroy'
       });
 
-      this.broadcast(reducerResponse);
-      this.active = false;
-    }
-  }
+      this.reducer['broadcast'](reducerResponse);
 
-  private broadcast(value: ResponseType) {
-    if (!Comparator.isEqual(this.reducer['previousBroadcast'], value)) {
-      if (Comparator.isObject(value)) {
-        value = JsonHelper.deepCopy(value);
-      }
-
-      this.reducer['notificationHandler'].forEach(callback => {
-        try {
-          callback(value);
-        } catch (e) {
-          console.error('Reducer callback function error: ', e);
-        }
-      });
-
-      this.reducer['previousBroadcast'] = value;
+      this.reducer['effects'].delete(this);
+      this.destroyed = true;
     }
   }
 }
 
 export class Reducer<EffectType, ResponseType> {
   private notificationHandler = new NotificationHandler<ResponseType>();
+  private untilListeners = new Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>();
+  private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
   private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
   private previousBroadcast: ResponseType;
+  private destroyed = false;
+  private clone = false;
 
-  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>) {
+  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
     this.reduceFunction = reduceFunction;
+    this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.reducer.cloneBeforeNotification;
 
     let reducerResponse = this.reduceFunction({
       id: 0,
@@ -102,7 +98,7 @@ export class Reducer<EffectType, ResponseType> {
     return new Reducer(change => {
       if (change.type === 'effect' || change.type === 'update') {
         set.add(change.id);
-      } else if (change.type === 'remove') {
+      } else if (change.type === 'destroy') {
         set.delete(change.id);
       }
       return set.size > 0;
@@ -119,7 +115,7 @@ export class Reducer<EffectType, ResponseType> {
         } else {
           set.delete(change.id);
         }
-      } else if (change.type === 'remove') {
+      } else if (change.type === 'destroy') {
         set.delete(change.id);
       }
       return set.size > 0;
@@ -136,7 +132,7 @@ export class Reducer<EffectType, ResponseType> {
         } else {
           set.add(change.id);
         }
-      } else if (change.type === 'remove') {
+      } else if (change.type === 'destroy') {
         set.delete(change.id);
       }
       return set.size === 0;
@@ -146,7 +142,7 @@ export class Reducer<EffectType, ResponseType> {
   static createSum(): Reducer<number, number> {
     let sum = 0;
     return new Reducer<number, number>(change => {
-      if ((change.type === 'remove' || change.type === 'update') && change.previous) {
+      if ((change.type === 'destroy' || change.type === 'update') && change.previous) {
         sum -= change.previous;
       }
 
@@ -158,10 +154,10 @@ export class Reducer<EffectType, ResponseType> {
     });
   }
 
-  static createCollector<EffectType>(): Reducer<EffectType, EffectType[]> {
+  static createCollector<EffectType>(options: ReducerOptions = {}): Reducer<EffectType, EffectType[]> {
     let collection = new Map<number, EffectType>();
     return new Reducer<EffectType, EffectType[]>(change => {
-      if (change.type === 'remove') {
+      if (change.type === 'destroy') {
         collection.delete(change.id);
       } else if (change.type === 'effect' || change.type === 'update') {
         change.current && collection.set(change.id, change.current);
@@ -172,53 +168,116 @@ export class Reducer<EffectType, ResponseType> {
         response.push(item);
       });
       return response;
-    });
+    }, options);
   }
 
   static createObjectCreator<ResultType>(options?: {
     initial?: ResultType;
     doNotUpdateValueAtEffectCreation?: boolean;
+    clone?: boolean;
   }): Reducer<{ key: string; value: any }, ResultType> {
     let collection: any = (options && options.initial) || {};
     let activeEffects = new Set<string>();
 
-    return new Reducer<{ key: string; value: any }, ResultType>(change => {
-      if (change.type === 'remove') {
-        if (change.previous) {
-          delete collection[change.previous.key];
-          activeEffects.delete(change.previous.key);
-        }
-      } else if (change.type === 'update') {
-        if (change.current) {
-          collection[change.current.key] = change.current.value;
-        }
-      } else if (change.type === 'effect') {
-        if (change.current) {
-          if (activeEffects.has(change.current.key)) {
-            console.error(`There is another effect for '${change.current.key}' already exist!`);
-          } else {
-            activeEffects.add(change.current.key);
-            if (!options || !options.doNotUpdateValueAtEffectCreation) {
-              collection[change.current.key] = change.current.value;
+    return new Reducer<{ key: string; value: any }, ResultType>(
+      change => {
+        if (change.type === 'destroy') {
+          if (change.previous) {
+            delete collection[change.previous.key];
+            activeEffects.delete(change.previous.key);
+          }
+        } else if (change.type === 'update') {
+          if (change.current) {
+            collection[change.current.key] = change.current.value;
+          }
+        } else if (change.type === 'effect') {
+          if (change.current) {
+            if (activeEffects.has(change.current.key)) {
+              console.error(`There is another effect for '${change.current.key}' already exist!`);
+            } else {
+              activeEffects.add(change.current.key);
+              if (!options || !options.doNotUpdateValueAtEffectCreation) {
+                collection[change.current.key] = change.current.value;
+              }
             }
           }
         }
-      }
 
-      return <ResultType>collection;
-    });
+        return <ResultType>collection;
+      },
+      { clone: options && options.clone }
+    );
   }
 
   effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
-    return new ReducerEffectChannel<EffectType, ResponseType>(<any>this, value);
+    this.checkIfDestroyed();
+    let effect = new ReducerEffectChannel<EffectType, ResponseType>(<any>this, value);
+    this.effects.add(effect);
+    return effect;
   }
 
   subscribe(callback: (response: ResponseType) => void): ActionSubscription {
+    this.checkIfDestroyed();
     try {
       callback(this.previousBroadcast);
     } catch (e) {
       console.error('Reducer callback function error: ', e);
     }
     return this.notificationHandler.subscribe(callback);
+  }
+
+  waitUntil(data: ResponseType): Promise<ResponseType> {
+    this.checkIfDestroyed();
+    if (Comparator.isEqual(this.previousBroadcast, data)) {
+      return Promise.resolve(data);
+    } else {
+      return new Promise(resolve => {
+        this.untilListeners.add({
+          expected: data,
+          callback: resolve.bind(this)
+        });
+      });
+    }
+  }
+
+  destroy() {
+    this.notificationHandler.destroy();
+    this.untilListeners = new Set();
+    this.effects.forEach(effect => {
+      effect['destroyed'] = true;
+    });
+    this.effects = new Set();
+    this.destroyed = true;
+  }
+
+  private broadcast(value: ResponseType) {
+    if (!Comparator.isEqual(this.previousBroadcast, value)) {
+      if (this.clone && Comparator.isObject(value)) {
+        value = JsonHelper.deepCopy(value);
+      }
+
+      this.notificationHandler.forEach(callback => {
+        try {
+          callback(value);
+        } catch (e) {
+          console.error('Reducer callback function error: ', e);
+        }
+      });
+
+      this.untilListeners.forEach(item => {
+        if (Comparator.isEqual(item.expected, value)) {
+          item.callback(value);
+          this.untilListeners.delete(item);
+        }
+      });
+
+      this.previousBroadcast = value;
+    }
+  }
+
+  private checkIfDestroyed() {
+    if (this.destroyed) {
+      throw new Error(`Action: it is destroyed, cannot be subscribed!`);
+    }
   }
 }

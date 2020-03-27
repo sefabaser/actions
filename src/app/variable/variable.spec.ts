@@ -155,4 +155,82 @@ describe(`Variable`, () => {
       variable.trigger(2);
     });
   });
+
+  describe(`Wait Until`, () => {
+    let variable: Variable<SampleModel | undefined>;
+
+    beforeEach(() => {
+      variable = new Variable<SampleModel | undefined>();
+    });
+
+    it('wait until any change', async () => {
+      setTimeout(() => {
+        variable.trigger({ testData: 'sample' });
+      }, 1);
+      let nextNotification = await variable.next();
+      expect(nextNotification).toEqual({ testData: 'sample' });
+    });
+
+    it('wait until spesific data', async () => {
+      setTimeout(() => {
+        variable.trigger({ testData: 'sample' });
+        variable.trigger({ testData: 'expected' });
+      }, 1);
+      let nextNotification = await variable.waitUntil({ testData: 'expected' });
+      expect(nextNotification).toEqual({ testData: 'expected' });
+    });
+
+    it('wait until undefined', async () => {
+      setTimeout(() => {
+        variable.trigger({ testData: 'sample' });
+        variable.trigger(undefined);
+      }, 1);
+      let nextNotification = await variable.waitUntil(undefined);
+      expect(nextNotification).toBeUndefined();
+    });
+
+    it('wait until spesific data should trigger immidiately if current data is equal', async () => {
+      variable.trigger({ testData: 'expected' });
+      let nextNotification = await variable.waitUntil({ testData: 'expected' });
+      expect(nextNotification).toEqual({ testData: 'expected' });
+    });
+
+    it('wait until undefined should trigger immidiately if current data is equal', async () => {
+      let nextNotification = await variable.waitUntil(undefined);
+      expect(nextNotification).toBeUndefined();
+    });
+  });
+
+  describe(`Destroy`, () => {
+    it('should destroy', () => {
+      let variable = new Variable<void>();
+      variable.subscribe(() => {});
+
+      variable.destroy();
+      expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(variable['nextListeners'].size).toEqual(0);
+      expect(variable['untilListeners'].size).toEqual(0);
+    });
+
+    it('should be non-operational after destroy', () => {
+      let variable = new Variable<void>();
+      variable.destroy();
+
+      expect(() => {
+        variable.trigger();
+      }).toThrow();
+
+      expect(() => {
+        variable.subscribe(() => {});
+      }).toThrow();
+
+      expect(() => {
+        variable.next();
+      }).toThrow();
+
+      expect(() => {
+        variable.waitUntil();
+      }).toThrow();
+    });
+  });
 });

@@ -9,7 +9,7 @@ describe(`Reducer`, () => {
       reducer = new Reducer<void, boolean>(change => {
         if (change.type === 'effect' || change.type === 'update') {
           blockers.add(change.id);
-        } else if (change.type === 'remove') {
+        } else if (change.type === 'destroy') {
           blockers.delete(change.id);
         }
         return blockers.size > 0;
@@ -66,7 +66,7 @@ describe(`Reducer`, () => {
       let subscription = reducer.subscribe(change => {
         triggered = true;
       });
-      triggered = false; // remove initial trigger after subscription
+      triggered = false; // destroy initial trigger after subscription
 
       subscription.unsubscribe();
 
@@ -88,7 +88,7 @@ describe(`Reducer`, () => {
       reducer = new Reducer<void, boolean>(change => {
         if (change.type === 'effect' || change.type === 'update') {
           blockers.add(change.id);
-        } else if (change.type === 'remove') {
+        } else if (change.type === 'destroy') {
           blockers.delete(change.id);
         }
         return blockers.size > 0;
@@ -124,12 +124,12 @@ describe(`Reducer`, () => {
       expect(blocked).toEqual(true);
       expect(triggerCount).toEqual(2);
 
-      blocker1.remove(); // still there is blocker2 it shouldn't effect anything
+      blocker1.destroy(); // still there is blocker2 it shouldn't effect anything
 
       expect(blocked).toEqual(true);
       expect(triggerCount).toEqual(2);
 
-      blocker2.remove();
+      blocker2.destroy();
 
       expect(blocked).toEqual(false);
       expect(triggerCount).toEqual(3);
@@ -177,15 +177,15 @@ describe(`Reducer`, () => {
       effect.update(false);
     });
 
-    it('should trigger remove call', done => {
+    it('should trigger destroy call', done => {
       let reducer = new Reducer<boolean, void>(change => {
-        if (change.type === 'remove') {
+        if (change.type === 'destroy') {
           done();
         }
       });
 
       let effect = reducer.effect(true);
-      effect.remove();
+      effect.destroy();
     });
 
     it('should give unique id to different effecters', () => {
@@ -227,7 +227,7 @@ describe(`Reducer`, () => {
       let effect = reducer.effect(true);
       effect.update(false);
       effect.update(true);
-      effect.remove();
+      effect.destroy();
 
       expect(successful).toEqual(true);
     });
@@ -248,7 +248,7 @@ describe(`Reducer`, () => {
           if (change.current !== false || change.previous !== true) {
             successful = false;
           }
-        } else if (change.type === 'remove') {
+        } else if (change.type === 'destroy') {
           if (change.current !== undefined || change.previous !== false) {
             successful = false;
           }
@@ -259,12 +259,12 @@ describe(`Reducer`, () => {
 
       let effect = reducer.effect(true);
       effect.update(false);
-      effect.remove();
+      effect.destroy();
 
       expect(successful).toEqual(true);
     });
 
-    it('should not take effect after removed', () => {
+    it('updating effect should throw error after destroyd', () => {
       let triggerCount = 0;
       let reducer = new Reducer<void, void>(change => {
         triggerCount++;
@@ -273,12 +273,10 @@ describe(`Reducer`, () => {
       let effect = reducer.effect();
       expect(triggerCount).toEqual(2); // one initial and one after effect
 
-      effect.remove();
+      effect.destroy();
       expect(triggerCount).toEqual(3);
 
-      effect.update();
-      effect.remove();
-      expect(triggerCount).toEqual(3);
+      expect(() => effect.update()).toThrow();
     });
   });
 
@@ -294,13 +292,13 @@ describe(`Reducer`, () => {
         });
       });
 
-      it('should return false all effects are removed', done => {
+      it('should return false all effects are destroyd', done => {
         let existanceChecker = Reducer.createExistenceChecker();
 
         let firstEffect = existanceChecker.effect();
         let secondEffect = existanceChecker.effect();
-        firstEffect.remove();
-        secondEffect.remove();
+        firstEffect.destroy();
+        secondEffect.destroy();
 
         existanceChecker.subscribe(result => {
           if (result === false) {
@@ -314,7 +312,7 @@ describe(`Reducer`, () => {
 
         let firstEffect = existanceChecker.effect();
         existanceChecker.effect();
-        firstEffect.remove();
+        firstEffect.destroy();
 
         existanceChecker.subscribe(result => {
           if (result === true) {
@@ -417,7 +415,7 @@ describe(`Reducer`, () => {
         sumReducer.effect(5);
         let temporaryEffect = sumReducer.effect(3);
         sumReducer.effect(2);
-        temporaryEffect.remove();
+        temporaryEffect.destroy();
         sumReducer.effect(-4);
 
         sumReducer.subscribe(sum => {
@@ -509,6 +507,70 @@ describe(`Reducer`, () => {
           }
         });
       });
+    });
+  });
+
+  describe(`Wait Until`, () => {
+    let reducer: Reducer<boolean, boolean>;
+
+    beforeEach(() => {
+      reducer = Reducer.createOr();
+    });
+
+    it('wait until spesific data', async () => {
+      setTimeout(() => {
+        reducer.effect(true);
+      }, 1);
+      let nextNotification = await reducer.waitUntil(true);
+      expect(nextNotification).toEqual(true);
+    });
+
+    it('wait until spesific data should trigger immidiately if current data is equal', async () => {
+      reducer.effect(true);
+      let nextNotification = await reducer.waitUntil(true);
+      expect(nextNotification).toEqual(true);
+    });
+
+    it('wait until undefined should trigger immidiately if current data is equal', async () => {
+      let nextNotification = await reducer.waitUntil(false);
+      expect(nextNotification).toEqual(false);
+    });
+  });
+
+  describe(`Destroy`, () => {
+    it('should destroy', () => {
+      let reducer = Reducer.createOr();
+      reducer.subscribe(() => {});
+
+      reducer.destroy();
+      expect(reducer['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(reducer['untilListeners'].size).toEqual(0);
+    });
+
+    it('should be non-operational after destroy', () => {
+      let reducer = Reducer.createOr();
+      let effectChannel = reducer.effect(true);
+      reducer.destroy();
+
+      expect(() => {
+        reducer.effect(true);
+      }).toThrow();
+
+      expect(() => {
+        reducer.subscribe(() => {});
+      }).toThrow();
+
+      expect(() => {
+        effectChannel.update(false);
+      }).toThrow();
+
+      expect(() => {
+        effectChannel.destroy();
+      }).not.toThrow();
+
+      expect(() => {
+        reducer.waitUntil(true);
+      }).toThrow();
     });
   });
 });

@@ -1,4 +1,3 @@
-
 export class ActionSubscription {
   private unsubscribeCallback: () => void;
 
@@ -14,20 +13,30 @@ export class ActionSubscription {
 export class NotificationHandler<T> {
   private listenersMap = new Map<number, (data: T) => any>();
   private nextAvailableSubscriptionId = 1;
+  private destroyed = false;
 
   forEach(callback: (listenerCallbackFunction: (data: T) => any) => void) {
     this.listenersMap.forEach(callback);
   }
 
   subscribe(callback: (data: T) => any): ActionSubscription {
-    let subscriptionId = this.nextAvailableSubscriptionId;
-    this.listenersMap.set(subscriptionId, callback);
-    this.nextAvailableSubscriptionId++;
+    if (!this.destroyed) {
+      let subscriptionId = this.nextAvailableSubscriptionId;
+      this.listenersMap.set(subscriptionId, callback);
+      this.nextAvailableSubscriptionId++;
 
-    let subscription = new ActionSubscription(() => {
-      this.listenersMap.delete(subscriptionId);
-    });
+      let subscription = new ActionSubscription(() => {
+        this.listenersMap.delete(subscriptionId);
+      });
 
-    return subscription;
+      return subscription;
+    } else {
+      throw new Error(`Notification Handler: it is destroyed, cannot be subscribed!`);
+    }
+  }
+
+  destroy() {
+    this.listenersMap = new Map();
+    this.destroyed = true;
   }
 }

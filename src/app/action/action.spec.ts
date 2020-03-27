@@ -87,9 +87,7 @@ describe(`Action`, () => {
         set: new Set<string>()
       });
     });
-  });
 
-  describe(`Not Being Persistent`, () => {
     it('not persistant', done => {
       let normalAction = new Action<void>();
       normalAction.trigger();
@@ -104,6 +102,73 @@ describe(`Action`, () => {
           done();
         }
       }, 0);
+    });
+  });
+
+  describe(`Wait Until`, () => {
+    let action: Action<SampleModel | undefined>;
+
+    beforeEach(() => {
+      action = new Action<SampleModel | undefined>();
+    });
+
+    it('wait until any change', async () => {
+      setTimeout(() => {
+        action.trigger({ testData: 'sample' });
+      }, 1);
+      let nextNotification = await action.next();
+      expect(nextNotification).toEqual({ testData: 'sample' });
+    });
+
+    it('wait until spesific data', async () => {
+      setTimeout(() => {
+        action.trigger({ testData: 'sample' });
+        action.trigger({ testData: 'expected' });
+      }, 1);
+      let nextNotification = await action.waitUntil({ testData: 'expected' });
+      expect(nextNotification).toEqual({ testData: 'expected' });
+    });
+
+    it('wait until undefined', async () => {
+      setTimeout(() => {
+        action.trigger({ testData: 'sample' });
+        action.trigger(undefined);
+      }, 1);
+      let nextNotification = await action.waitUntil(undefined);
+      expect(nextNotification).toBeUndefined();
+    });
+  });
+
+  describe(`Destroy`, () => {
+    it('should destroy', () => {
+      let action = new Action<void>();
+      action.subscribe(() => {});
+
+      action.destroy();
+      expect(action['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(action['nextListeners'].size).toEqual(0);
+      expect(action['untilListeners'].size).toEqual(0);
+    });
+
+    it('should be non-operational after destroy', () => {
+      let action = new Action<void>();
+      action.destroy();
+
+      expect(() => {
+        action.trigger();
+      }).toThrow();
+
+      expect(() => {
+        action.subscribe(() => {});
+      }).toThrow();
+
+      expect(() => {
+        action.next();
+      }).toThrow();
+
+      expect(() => {
+        action.waitUntil();
+      }).toThrow();
     });
   });
 });
