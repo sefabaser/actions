@@ -155,4 +155,82 @@ describe(`Variable`, () => {
       variable.trigger(2);
     });
   });
+
+  describe(`Wait Until`, () => {
+    let action: Variable<SampleModel | undefined>;
+
+    beforeEach(() => {
+      action = new Variable<SampleModel | undefined>();
+    });
+
+    it('wait until any change', async () => {
+      setTimeout(() => {
+        action.trigger({ testData: 'sample' });
+      }, 1);
+      let nextNotification = await action.next();
+      expect(nextNotification).toEqual({ testData: 'sample' });
+    });
+
+    it('wait until spesific data', async () => {
+      setTimeout(() => {
+        action.trigger({ testData: 'sample' });
+        action.trigger({ testData: 'expected' });
+      }, 1);
+      let nextNotification = await action.waitUntil({ testData: 'expected' });
+      expect(nextNotification).toEqual({ testData: 'expected' });
+    });
+
+    it('wait until undefined', async () => {
+      setTimeout(() => {
+        action.trigger({ testData: 'sample' });
+        action.trigger(undefined);
+      }, 1);
+      let nextNotification = await action.waitUntil(undefined);
+      expect(nextNotification).toBeUndefined();
+    });
+
+    it('wait until spesific data should trigger immidiately if current data is equal', async () => {
+      action.trigger({ testData: 'expected' });
+      let nextNotification = await action.waitUntil({ testData: 'expected' });
+      expect(nextNotification).toEqual({ testData: 'expected' });
+    });
+
+    it('wait until undefined should trigger immidiately if current data is equal', async () => {
+      let nextNotification = await action.waitUntil(undefined);
+      expect(nextNotification).toBeUndefined();
+    });
+  });
+
+  describe(`Destroy`, () => {
+    it('should destroy', () => {
+      let action = new Variable<void>();
+      action.subscribe(() => {});
+
+      action.destroy();
+      expect(action['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(action['nextListeners'].size).toEqual(0);
+      expect(action['untilListeners'].size).toEqual(0);
+    });
+
+    it('should be non-operational after destroy', () => {
+      let action = new Variable<void>();
+      action.destroy();
+
+      expect(() => {
+        action.trigger();
+      }).toThrow();
+
+      expect(() => {
+        action.subscribe(() => {});
+      }).toThrow();
+
+      expect(() => {
+        action.next();
+      }).toThrow();
+
+      expect(() => {
+        action.waitUntil();
+      }).toThrow();
+    });
+  });
 });

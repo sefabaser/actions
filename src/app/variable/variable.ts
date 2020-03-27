@@ -16,11 +16,14 @@ export class Variable<T> {
   }
 
   private notificationHandler = new NotificationHandler<T>();
+  private nextListeners = new Set<(data: T) => void>();
+  private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
 
   private previousData!: T;
   private firstTriggerHappened = false;
   private notifyOnlyOnChange: boolean;
   private clone: boolean;
+  private destroyed = false;
 
   constructor(options: VariableOptions = {}) {
     this.notifyOnlyOnChange = options.notifyOnChange !== undefined ? options.notifyOnChange : ActionLibDefaults.variable.notifyOnChange;
@@ -28,6 +31,7 @@ export class Variable<T> {
   }
 
   trigger(data: T): void {
+    this.checkIfDestroyed();
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
     }
@@ -44,14 +48,59 @@ export class Variable<T> {
       });
     }
 
+    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners = new Set();
+
+    this.untilListeners.forEach(item => {
+      if (Comparator.isEqual(item.expected, data)) {
+        item.callback(data);
+        this.untilListeners.delete(item);
+      }
+    });
+
     this.firstTriggerHappened = true;
   }
 
   subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription {
+    this.checkIfDestroyed();
     if (this.firstTriggerHappened) {
       callback(this.previousData);
     }
 
     return this.notificationHandler.subscribe(callback);
+  }
+
+  next(): Promise<T> {
+    this.checkIfDestroyed();
+    return new Promise(resolve => {
+      this.nextListeners.add(resolve.bind(this));
+    });
+  }
+
+  waitUntil(data: T): Promise<T> {
+    this.checkIfDestroyed();
+    if (Comparator.isEqual(this.currentValue, data)) {
+      return Promise.resolve(data);
+    } else {
+      return new Promise(resolve => {
+        this.untilListeners.add({
+          expected: data,
+          callback: resolve.bind(this)
+        });
+      });
+    }
+  }
+
+  destroy() {
+    this.notificationHandler.destroy();
+    this.nextListeners = new Set();
+    this.untilListeners = new Set();
+    this.destroyed = true;
+  }
+
+  private checkIfDestroyed() {
+    if (this.destroyed) {
+      throw new Error(`Variable: it is destroyed, cannot be subscribed!`);
+    }
   }
 }
