@@ -11,6 +11,9 @@ export interface ActionOptions {
 
 export class Action<T> {
   private notificationHandler = new NotificationHandler<T>();
+  private nextListeners = new Set<(data: T) => void>();
+  private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
+
   private clone: boolean;
   private destroyed = false;
 
@@ -31,6 +34,16 @@ export class Action<T> {
         console.error('Notifier callback function error: ', e);
       }
     });
+
+    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners = new Set();
+
+    this.untilListeners.forEach(item => {
+      if (Comparator.isEqual(item.expected, data)) {
+        item.callback(data);
+        this.untilListeners.delete(item);
+      }
+    });
   }
 
   subscribe(callback: ActionListenerCallbackFunction<T>): ActionSubscription {
@@ -40,16 +53,25 @@ export class Action<T> {
 
   next(): Promise<T> {
     this.checkIfDestroyed();
-    return new Promise(resolve => {});
+    return new Promise(resolve => {
+      this.nextListeners.add(resolve.bind(this));
+    });
   }
 
   waitUntil(data: T): Promise<T> {
     this.checkIfDestroyed();
-    return new Promise(resolve => {});
+    return new Promise(resolve => {
+      this.untilListeners.add({
+        expected: data,
+        callback: resolve.bind(this)
+      });
+    });
   }
 
   destroy() {
     this.notificationHandler.destroy();
+    this.nextListeners = new Set();
+    this.untilListeners = new Set();
     this.destroyed = true;
   }
 

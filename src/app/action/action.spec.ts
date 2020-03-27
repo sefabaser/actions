@@ -132,20 +132,22 @@ describe(`Action`, () => {
     it('wait until undefined', async () => {
       setTimeout(() => {
         action.trigger({ testData: 'sample' });
-        action.trigger({ testData: 'expected' });
+        action.trigger(undefined);
       }, 1);
       let nextNotification = await action.waitUntil(undefined);
       expect(nextNotification).toBeUndefined();
     });
   });
 
-  fdescribe(`Destroy`, () => {
+  describe(`Destroy`, () => {
     it('should destroy', () => {
       let action = new Action<void>();
       action.subscribe(() => {});
 
       action.destroy();
       expect(action['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(action['nextListeners'].size).toEqual(0);
+      expect(action['untilListeners'].size).toEqual(0);
     });
 
     it('should be non-operational after destroy', () => {
