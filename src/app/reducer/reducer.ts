@@ -68,6 +68,10 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
 }
 
 export class Reducer<EffectType, ResponseType> {
+  get currentValue() {
+    return this.previousBroadcast;
+  }
+
   private notificationHandler = new NotificationHandler<ResponseType>();
   private untilListeners = new Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>();
   private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();

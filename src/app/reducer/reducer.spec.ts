@@ -510,6 +510,22 @@ describe(`Reducer`, () => {
     });
   });
 
+  describe(`Current Value`, () => {
+    it('basic', () => {
+      let reducer = Reducer.createSum();
+      expect(reducer.currentValue).toEqual(0);
+    });
+
+    it('after multiple operations', () => {
+      let reducer = Reducer.createSum();
+      let effect = reducer.effect(2);
+      reducer.effect(3);
+      effect.destroy();
+      reducer.effect(4);
+      expect(reducer.currentValue).toEqual(7);
+    });
+  });
+
   describe(`Wait Until`, () => {
     let reducer: Reducer<boolean, boolean>;
 
