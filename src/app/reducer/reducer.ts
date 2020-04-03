@@ -72,6 +72,10 @@ export class Reducer<EffectType, ResponseType> {
     return this.previousBroadcast;
   }
 
+  get effectCount() {
+    return this.effects.size;
+  }
+
   private notificationHandler = new NotificationHandler<ResponseType>();
   private untilListeners = new Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>();
   private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
@@ -99,7 +103,7 @@ export class Reducer<EffectType, ResponseType> {
   static createExistenceChecker(): Reducer<void, boolean> {
     let set = new Set<number>();
 
-    return new Reducer(change => {
+    return new Reducer((change) => {
       if (change.type === 'effect' || change.type === 'update') {
         set.add(change.id);
       } else if (change.type === 'destroy') {
@@ -112,7 +116,7 @@ export class Reducer<EffectType, ResponseType> {
   static createOr(): Reducer<boolean, boolean> {
     let set = new Set<number>();
 
-    return new Reducer(change => {
+    return new Reducer((change) => {
       if (change.type === 'effect' || change.type === 'update') {
         if (change.current) {
           set.add(change.id);
@@ -129,7 +133,7 @@ export class Reducer<EffectType, ResponseType> {
   static createAnd(): Reducer<boolean, boolean> {
     let set = new Set<number>();
 
-    return new Reducer(change => {
+    return new Reducer((change) => {
       if (change.type === 'effect' || change.type === 'update') {
         if (change.current) {
           set.delete(change.id);
@@ -145,7 +149,7 @@ export class Reducer<EffectType, ResponseType> {
 
   static createSum(): Reducer<number, number> {
     let sum = 0;
-    return new Reducer<number, number>(change => {
+    return new Reducer<number, number>((change) => {
       if ((change.type === 'destroy' || change.type === 'update') && change.previous) {
         sum -= change.previous;
       }
@@ -160,7 +164,7 @@ export class Reducer<EffectType, ResponseType> {
 
   static createCollector<EffectType>(options: ReducerOptions = {}): Reducer<EffectType, EffectType[]> {
     let collection = new Map<number, EffectType>();
-    return new Reducer<EffectType, EffectType[]>(change => {
+    return new Reducer<EffectType, EffectType[]>((change) => {
       if (change.type === 'destroy') {
         collection.delete(change.id);
       } else if (change.type === 'effect' || change.type === 'update') {
@@ -168,7 +172,7 @@ export class Reducer<EffectType, ResponseType> {
       }
 
       let response: EffectType[] = [];
-      collection.forEach(item => {
+      collection.forEach((item) => {
         response.push(item);
       });
       return response;
@@ -184,7 +188,7 @@ export class Reducer<EffectType, ResponseType> {
     let activeEffects = new Set<string>();
 
     return new Reducer<{ key: string; value: any }, ResultType>(
-      change => {
+      (change) => {
         if (change.type === 'destroy') {
           if (change.previous) {
             delete collection[change.previous.key];
@@ -235,7 +239,7 @@ export class Reducer<EffectType, ResponseType> {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
       return Promise.resolve(data);
     } else {
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         this.untilListeners.add({
           expected: data,
           callback: resolve.bind(this)
@@ -247,7 +251,7 @@ export class Reducer<EffectType, ResponseType> {
   destroy() {
     this.notificationHandler.destroy();
     this.untilListeners = new Set();
-    this.effects.forEach(effect => {
+    this.effects.forEach((effect) => {
       effect['destroyed'] = true;
     });
     this.effects = new Set();
@@ -260,7 +264,7 @@ export class Reducer<EffectType, ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.notificationHandler.forEach(callback => {
+      this.notificationHandler.forEach((callback) => {
         try {
           callback(value);
         } catch (e) {
@@ -268,7 +272,7 @@ export class Reducer<EffectType, ResponseType> {
         }
       });
 
-      this.untilListeners.forEach(item => {
+      this.untilListeners.forEach((item) => {
         if (Comparator.isEqual(item.expected, value)) {
           item.callback(value);
           this.untilListeners.delete(item);

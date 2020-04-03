@@ -15,6 +15,10 @@ export class NotificationHandler<T> {
   private nextAvailableSubscriptionId = 1;
   private destroyed = false;
 
+  get listenerCount() {
+    return this.listenersMap.size;
+  }
+
   forEach(callback: (listenerCallbackFunction: (data: T) => any) => void) {
     this.listenersMap.forEach(callback);
   }

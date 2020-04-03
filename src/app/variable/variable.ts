@@ -15,6 +15,10 @@ export class Variable<T> {
     return this.previousData;
   }
 
+  get listenerCount() {
+    return this.notificationHandler.listenerCount;
+  }
+
   private notificationHandler = new NotificationHandler<T>();
   private nextListeners = new Set<(data: T) => void>();
   private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
@@ -39,7 +43,7 @@ export class Variable<T> {
     let previousData = this.previousData;
     this.previousData = this.clone ? JsonHelper.deepCopy(data) : data;
     if (!this.notifyOnlyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.notificationHandler.forEach(callback => {
+      this.notificationHandler.forEach((callback) => {
         try {
           callback(data);
         } catch (e) {
@@ -48,10 +52,10 @@ export class Variable<T> {
       });
     }
 
-    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners.forEach((callback) => callback(data));
     this.nextListeners = new Set();
 
-    this.untilListeners.forEach(item => {
+    this.untilListeners.forEach((item) => {
       if (Comparator.isEqual(item.expected, data)) {
         item.callback(data);
         this.untilListeners.delete(item);
@@ -72,7 +76,7 @@ export class Variable<T> {
 
   next(): Promise<T> {
     this.checkIfDestroyed();
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.nextListeners.add(resolve.bind(this));
     });
   }
@@ -82,7 +86,7 @@ export class Variable<T> {
     if (Comparator.isEqual(this.currentValue, data)) {
       return Promise.resolve(data);
     } else {
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         this.untilListeners.add({
           expected: data,
           callback: resolve.bind(this)

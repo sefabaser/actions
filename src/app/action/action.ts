@@ -10,6 +10,10 @@ export interface ActionOptions {
 }
 
 export class Action<T> {
+  get listenerCount() {
+    return this.notificationHandler.listenerCount;
+  }
+
   private notificationHandler = new NotificationHandler<T>();
   private nextListeners = new Set<(data: T) => void>();
   private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
@@ -27,7 +31,7 @@ export class Action<T> {
       data = JsonHelper.deepCopy(data);
     }
 
-    this.notificationHandler.forEach(callback => {
+    this.notificationHandler.forEach((callback) => {
       try {
         callback(data);
       } catch (e) {
@@ -35,10 +39,10 @@ export class Action<T> {
       }
     });
 
-    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners.forEach((callback) => callback(data));
     this.nextListeners = new Set();
 
-    this.untilListeners.forEach(item => {
+    this.untilListeners.forEach((item) => {
       if (Comparator.isEqual(item.expected, data)) {
         item.callback(data);
         this.untilListeners.delete(item);
@@ -53,14 +57,14 @@ export class Action<T> {
 
   next(): Promise<T> {
     this.checkIfDestroyed();
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.nextListeners.add(resolve.bind(this));
     });
   }
 
   waitUntil(data: T): Promise<T> {
     this.checkIfDestroyed();
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.untilListeners.add({
         expected: data,
         callback: resolve.bind(this)
