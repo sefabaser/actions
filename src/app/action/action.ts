@@ -25,7 +25,7 @@ export class Action<T> {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
   }
 
-  trigger(data: T): void {
+  trigger(data: T): this {
     this.checkIfDestroyed();
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
@@ -48,6 +48,8 @@ export class Action<T> {
         this.untilListeners.delete(item);
       }
     });
+
+    return this;
   }
 
   subscribe(callback: ActionListenerCallbackFunction<T>): ActionSubscription {

@@ -11,8 +11,11 @@ export interface VariableOptions {
 }
 
 export class Variable<T> {
-  get currentValue() {
-    return this.previousData;
+  get value() {
+    return this.currentValue;
+  }
+  set value(value: T) {
+    this.set(value);
   }
 
   get listenerCount() {
@@ -23,7 +26,7 @@ export class Variable<T> {
   private nextListeners = new Set<(data: T) => void>();
   private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
 
-  private previousData!: T;
+  private currentValue!: T;
   private firstTriggerHappened = false;
   private notifyOnlyOnChange: boolean;
   private clone: boolean;
@@ -34,14 +37,14 @@ export class Variable<T> {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.variable.cloneBeforeNotification;
   }
 
-  trigger(data: T): void {
+  set(data: T): this {
     this.checkIfDestroyed();
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
     }
 
-    let previousData = this.previousData;
-    this.previousData = this.clone ? JsonHelper.deepCopy(data) : data;
+    let previousData = this.currentValue;
+    this.currentValue = this.clone ? JsonHelper.deepCopy(data) : data;
     if (!this.notifyOnlyOnChange || !Comparator.isEqual(previousData, data)) {
       this.notificationHandler.forEach((callback) => {
         try {
@@ -63,12 +66,13 @@ export class Variable<T> {
     });
 
     this.firstTriggerHappened = true;
+    return this;
   }
 
   subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription {
     this.checkIfDestroyed();
     if (this.firstTriggerHappened) {
-      callback(this.previousData);
+      callback(this.currentValue);
     }
 
     return this.notificationHandler.subscribe(callback);
@@ -83,7 +87,7 @@ export class Variable<T> {
 
   waitUntil(data: T): Promise<T> {
     this.checkIfDestroyed();
-    if (Comparator.isEqual(this.currentValue, data)) {
+    if (Comparator.isEqual(this.value, data)) {
       return Promise.resolve(data);
     } else {
       return new Promise((resolve) => {
