@@ -8,6 +8,11 @@ export class ActionSubscription {
   unsubscribe() {
     this.unsubscribeCallback();
   }
+
+  attach(parent: { setAttachment: (subscription: ActionSubscription) => void }) {
+    parent.setAttachment(this);
+    return this;
+  }
 }
 
 export class NotificationHandler<T> {
