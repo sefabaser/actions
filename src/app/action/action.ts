@@ -7,6 +7,7 @@ export type ActionListenerCallbackFunction<T> = (data: T) => void;
 
 export interface ActionOptions {
   clone?: boolean;
+  persistent?: boolean;
 }
 
 export class Action<T> {
@@ -19,14 +20,21 @@ export class Action<T> {
   private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
 
   private clone: boolean;
+  private triggered = false;
+  private currentValue?: T;
   private destroyed = false;
 
-  constructor(options: ActionOptions = {}) {
+  constructor(private options: ActionOptions = {}) {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
   }
 
   trigger(data: T): this {
     this.checkIfDestroyed();
+    if (this.options.persistent) {
+      this.currentValue = this.clone ? JsonHelper.deepCopy(data) : data;
+      this.triggered = true;
+    }
+
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
     }
@@ -54,6 +62,9 @@ export class Action<T> {
 
   subscribe(callback: ActionListenerCallbackFunction<T>): ActionSubscription {
     this.checkIfDestroyed();
+    if (this.options.persistent && this.triggered) {
+      callback(<T>this.currentValue);
+    }
     return this.notificationHandler.subscribe(callback);
   }
 
