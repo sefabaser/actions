@@ -18,6 +18,7 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
 		"declaration": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false
   }
 }
