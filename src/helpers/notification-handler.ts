@@ -5,11 +5,11 @@ export class ActionSubscription {
     this.unsubscribeCallback = unsubscribeCallback;
   }
 
-  unsubscribe() {
+  unsubscribe(): void {
     this.unsubscribeCallback();
   }
 
-  attach(parent: { setAttachment: (subscription: ActionSubscription) => void }) {
+  attach(parent: { setAttachment: (subscription: ActionSubscription) => void }): ActionSubscription {
     parent.setAttachment(this);
     return this;
   }
@@ -20,12 +20,13 @@ export class NotificationHandler<T> {
   private nextAvailableSubscriptionId = 1;
   private destroyed = false;
 
-  get listenerCount() {
+  get listenerCount(): number {
     return this.listenersMap.size;
   }
 
-  forEach(callback: (listenerCallbackFunction: (data: T) => any) => void) {
+  forEach(callback: (listenerCallbackFunction: (data: T) => any) => void): NotificationHandler<T> {
     this.listenersMap.forEach(callback);
+    return this;
   }
 
   subscribe(callback: (data: T) => any): ActionSubscription {
@@ -44,7 +45,7 @@ export class NotificationHandler<T> {
     }
   }
 
-  destroy() {
+  destroy(): void {
     this.listenersMap = new Map();
     this.destroyed = true;
   }
