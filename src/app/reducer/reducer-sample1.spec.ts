@@ -10,7 +10,7 @@ import { Reducer } from './reducer';
 /**
  * Assume that this is a separate file
  */
-const blockers = Reducer.createExistenceChecker();
+const Blockers = Reducer.createExistenceChecker();
 
 /**
  * Assume that this is a separate file
@@ -21,7 +21,7 @@ class LoadingIndicator {
   triggerCount = 0;
 
   constructor() {
-    blockers.subscribe(blockerExist => {
+    Blockers.subscribe(blockerExist => {
       this.screenIsBlocked = blockerExist;
       this.triggerCount++;
     });
@@ -34,7 +34,7 @@ class LoadingIndicator {
  */
 class SomeAsyncService {
   asyncOperation() {
-    let blocker = blockers.effect();
+    let blocker = Blockers.effect();
     setTimeout(() => {
       // after an async operation
       blocker.destroy();

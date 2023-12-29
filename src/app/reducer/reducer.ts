@@ -16,6 +16,7 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
 
 export class ReducerEffectChannel<EffectType, ResponseType> {
   private static nextAvailableId = 1;
+
   private id: number;
   private reducer: Reducer<EffectType, ResponseType>;
   private previousEffectValue: EffectType;
@@ -35,7 +36,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     this.reducer['broadcast'](reducerResponse);
   }
 
-  update(value: EffectType) {
+  update(value: EffectType): void {
     if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
         id: this.id,
@@ -51,12 +52,14 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     }
   }
 
-  attach(parent: { setAttachment: (effectChannel: ReducerEffectChannel<any, any>) => void }) {
+  attach(parent: {
+    setAttachment: (effectChannel: ReducerEffectChannel<any, any>) => void;
+  }): ReducerEffectChannel<EffectType, ResponseType> {
     parent.setAttachment(this);
     return this;
   }
 
-  destroy() {
+  destroy(): void {
     if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
         id: this.id,
@@ -73,42 +76,10 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
 }
 
 export class Reducer<EffectType, ResponseType> {
-  get currentValue() {
-    return this.previousBroadcast;
-  }
-
-  get effectCount() {
-    return this.effects.size;
-  }
-
-  private notificationHandler = new NotificationHandler<ResponseType>();
-  private untilListeners = new Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>();
-  private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
-  private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
-
-  private previousBroadcast: ResponseType;
-  private destroyed = false;
-  private clone = false;
-
-  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
-    this.reduceFunction = reduceFunction;
-    this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.reducer.cloneBeforeNotification;
-
-    let reducerResponse = this.reduceFunction({
-      id: 0,
-      type: 'initial'
-    });
-
-    if (Comparator.isObject(reducerResponse)) {
-      reducerResponse = JsonHelper.deepCopy(reducerResponse);
-    }
-    this.previousBroadcast = reducerResponse;
-  }
-
   static createExistenceChecker(): Reducer<void, boolean> {
     let set = new Set<number>();
 
-    return new Reducer((change) => {
+    return new Reducer(change => {
       if (change.type === 'effect' || change.type === 'update') {
         set.add(change.id);
       } else if (change.type === 'destroy') {
@@ -121,7 +92,7 @@ export class Reducer<EffectType, ResponseType> {
   static createOr(): Reducer<boolean, boolean> {
     let set = new Set<number>();
 
-    return new Reducer((change) => {
+    return new Reducer(change => {
       if (change.type === 'effect' || change.type === 'update') {
         if (change.current) {
           set.add(change.id);
@@ -138,7 +109,7 @@ export class Reducer<EffectType, ResponseType> {
   static createAnd(): Reducer<boolean, boolean> {
     let set = new Set<number>();
 
-    return new Reducer((change) => {
+    return new Reducer(change => {
       if (change.type === 'effect' || change.type === 'update') {
         if (change.current) {
           set.delete(change.id);
@@ -154,7 +125,7 @@ export class Reducer<EffectType, ResponseType> {
 
   static createSum(): Reducer<number, number> {
     let sum = 0;
-    return new Reducer<number, number>((change) => {
+    return new Reducer<number, number>(change => {
       if ((change.type === 'destroy' || change.type === 'update') && change.previous) {
         sum -= change.previous;
       }
@@ -169,7 +140,7 @@ export class Reducer<EffectType, ResponseType> {
 
   static createCollector<EffectType>(options: ReducerOptions = {}): Reducer<EffectType, EffectType[]> {
     let collection = new Map<number, EffectType>();
-    return new Reducer<EffectType, EffectType[]>((change) => {
+    return new Reducer<EffectType, EffectType[]>(change => {
       if (change.type === 'destroy') {
         collection.delete(change.id);
       } else if (change.type === 'effect' || change.type === 'update') {
@@ -177,7 +148,7 @@ export class Reducer<EffectType, ResponseType> {
       }
 
       let response: EffectType[] = [];
-      collection.forEach((item) => {
+      collection.forEach(item => {
         response.push(item);
       });
       return response;
@@ -193,7 +164,7 @@ export class Reducer<EffectType, ResponseType> {
     let activeEffects = new Set<string>();
 
     return new Reducer<{ key: string; value: any }, ResultType>(
-      (change) => {
+      change => {
         if (change.type === 'destroy') {
           if (change.previous) {
             delete collection[change.previous.key];
@@ -222,6 +193,38 @@ export class Reducer<EffectType, ResponseType> {
     );
   }
 
+  get currentValue(): ResponseType {
+    return this.previousBroadcast;
+  }
+
+  get effectCount(): number {
+    return this.effects.size;
+  }
+
+  private notificationHandler = new NotificationHandler<ResponseType>();
+  private untilListeners = new Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>();
+  private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
+  private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
+
+  private previousBroadcast: ResponseType;
+  private destroyed = false;
+  private clone = false;
+
+  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
+    this.reduceFunction = reduceFunction;
+    this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.reducer.cloneBeforeNotification;
+
+    let reducerResponse = this.reduceFunction({
+      id: 0,
+      type: 'initial'
+    });
+
+    if (Comparator.isObject(reducerResponse)) {
+      reducerResponse = JsonHelper.deepCopy(reducerResponse);
+    }
+    this.previousBroadcast = reducerResponse;
+  }
+
   effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
     this.checkIfDestroyed();
     let effect = new ReducerEffectChannel<EffectType, ResponseType>(<any>this, value);
@@ -244,7 +247,7 @@ export class Reducer<EffectType, ResponseType> {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
       return Promise.resolve(data);
     } else {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         this.untilListeners.add({
           expected: data,
           callback: resolve.bind(this)
@@ -253,10 +256,10 @@ export class Reducer<EffectType, ResponseType> {
     }
   }
 
-  destroy() {
+  destroy(): void {
     this.notificationHandler.destroy();
     this.untilListeners = new Set();
-    this.effects.forEach((effect) => {
+    this.effects.forEach(effect => {
       effect['destroyed'] = true;
     });
     this.effects = new Set();
@@ -269,7 +272,7 @@ export class Reducer<EffectType, ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.notificationHandler.forEach((callback) => {
+      this.notificationHandler.forEach(callback => {
         try {
           callback(value);
         } catch (e) {
@@ -277,7 +280,7 @@ export class Reducer<EffectType, ResponseType> {
         }
       });
 
-      this.untilListeners.forEach((item) => {
+      this.untilListeners.forEach(item => {
         if (Comparator.isEqual(item.expected, value)) {
           item.callback(value);
           this.untilListeners.delete(item);

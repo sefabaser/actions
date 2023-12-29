@@ -19,26 +19,26 @@ describe(`Variable`, () => {
     });
 
     it('should be subscribable', () => {
-      variable.subscribe((message) => {});
+      variable.subscribe(message => {});
       expect(variable['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
     it('should be unsubscribable', () => {
-      let subscription = variable.subscribe((message) => {});
+      let subscription = variable.subscribe(message => {});
       subscription.unsubscribe();
       expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
     });
 
-    it('triggerring without listeners', (done) => {
+    it('triggerring without listeners', done => {
       variable.set({ testData: 'sample' });
       done();
     });
 
-    it('should notify listeners', (done) => {
+    it('should notify listeners', done => {
       let listener1 = false;
       let listener2 = false;
 
-      variable.subscribe((message) => {
+      variable.subscribe(message => {
         if (message && message.testData === 'sample') {
           listener1 = true;
           if (listener2) {
@@ -47,7 +47,7 @@ describe(`Variable`, () => {
         }
       });
 
-      variable.subscribe((message) => {
+      variable.subscribe(message => {
         if (message && message.testData === 'sample') {
           listener2 = true;
           if (listener1) {
@@ -59,9 +59,9 @@ describe(`Variable`, () => {
       variable.set({ testData: 'sample' });
     });
 
-    it('should not notify unsubscribed listeners', (done) => {
+    it('should not notify unsubscribed listeners', done => {
       let triggered = false;
-      let subscription = variable.subscribe((message) => {
+      let subscription = variable.subscribe(message => {
         triggered = true;
       });
       subscription.unsubscribe();
@@ -76,12 +76,12 @@ describe(`Variable`, () => {
   });
 
   describe(`Complex Types`, () => {
-    it('should support type: Set', (done) => {
+    it('should support type: Set', done => {
       let variable = new Variable<{ set: Set<string> }>();
       variable.set({
         set: new Set<string>()
       });
-      variable.subscribe((message) => {
+      variable.subscribe(message => {
         if (message && message.set && Comparator.isSet(message.set)) {
           done();
         }
@@ -90,7 +90,7 @@ describe(`Variable`, () => {
   });
 
   describe(`Persistency`, () => {
-    it('persistent', (done) => {
+    it('persistent', done => {
       let persistentVariable = new Variable<boolean>();
       persistentVariable.set(true);
       persistentVariable.subscribe(() => {

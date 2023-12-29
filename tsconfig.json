@@ -1,10 +1,23 @@
 {
+  "include": ["src"],
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["es2017"],
-    "module": "CommonJS",
-    "declaration": true,
-    "outDir": "./dist",
-    "strict": true
+    "target": "ESNext",
+    "module": "commonjs",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "strict": true,
+    "strictFunctionTypes": false,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+		"declaration": true,
+    "emitDecoratorMetadata": true
   }
 }

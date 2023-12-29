@@ -477,7 +477,8 @@ describe(`Reducer`, () => {
       });
 
       it('should not update final value if there is another effect already exist', done => {
-        spyOn(console, 'error');
+        // Listen console.error and avoid it
+        let spy = jest.spyOn(console, 'error').mockImplementation();
 
         let collector = Reducer.createObjectCreator<{ value: string }>({ initial: { value: 'a' } });
         collector.effect({ key: 'value', value: 'b' });
@@ -488,6 +489,7 @@ describe(`Reducer`, () => {
             done();
           }
         });
+        spy.mockRestore();
       });
 
       it('should work with combination of effects', done => {

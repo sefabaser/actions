@@ -12,7 +12,7 @@ import { Reducer } from './reducer';
 /**
  * Assume that this is a separate file
  */
-const areaEffect = Reducer.createSum();
+const AreaEffect = Reducer.createSum();
 
 /**
  * Assume that this is a separate file
@@ -24,7 +24,7 @@ class Warrior {
   constructor(strength: number) {
     this.strength = strength;
 
-    areaEffect.subscribe(result => {
+    AreaEffect.subscribe(result => {
       // Lets say we need to update something or actively do some operations, after each area effect change. We can do those here.
       this.areaEffect = result;
     });
@@ -45,13 +45,13 @@ let knight = new Warrior(5);
 describe(`Reducer Sample Scenario`, () => {
   it('calculation of attack bonuses', done => {
     // we have a great commander and he has an aura which gives everyone +2 bonus
-    areaEffect.effect(2);
+    AreaEffect.effect(2);
 
     // all warriors are on fort walls which gives everyone +1 bonus
-    areaEffect.effect(1);
+    AreaEffect.effect(1);
 
     // a witch has cursed the area and it gives to everyone -2 for 5 minutes (in this case it is 5 ms to make tests faster :D)
-    let curseEffect = areaEffect.effect(-2);
+    let curseEffect = AreaEffect.effect(-2);
 
     setTimeout(() => {
       curseEffect.destroy();

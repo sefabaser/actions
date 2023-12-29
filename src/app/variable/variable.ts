@@ -11,14 +11,14 @@ export interface VariableOptions {
 }
 
 export class Variable<T> {
-  get value() {
+  get value(): T {
     return this.currentValue;
   }
   set value(value: T) {
     this.set(value);
   }
 
-  get listenerCount() {
+  get listenerCount(): number {
     return this.notificationHandler.listenerCount;
   }
 
@@ -33,7 +33,8 @@ export class Variable<T> {
   private destroyed = false;
 
   constructor(options: VariableOptions = {}) {
-    this.notifyOnlyOnChange = options.notifyOnChange !== undefined ? options.notifyOnChange : ActionLibDefaults.variable.notifyOnChange;
+    this.notifyOnlyOnChange =
+      options.notifyOnChange !== undefined ? options.notifyOnChange : ActionLibDefaults.variable.notifyOnChange;
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.variable.cloneBeforeNotification;
   }
 
@@ -46,7 +47,7 @@ export class Variable<T> {
     let previousData = this.currentValue;
     this.currentValue = this.clone ? JsonHelper.deepCopy(data) : data;
     if (!this.notifyOnlyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.notificationHandler.forEach((callback) => {
+      this.notificationHandler.forEach(callback => {
         try {
           callback(data);
         } catch (e) {
@@ -55,10 +56,10 @@ export class Variable<T> {
       });
     }
 
-    this.nextListeners.forEach((callback) => callback(data));
+    this.nextListeners.forEach(callback => callback(data));
     this.nextListeners = new Set();
 
-    this.untilListeners.forEach((item) => {
+    this.untilListeners.forEach(item => {
       if (Comparator.isEqual(item.expected, data)) {
         item.callback(data);
         this.untilListeners.delete(item);
@@ -80,7 +81,7 @@ export class Variable<T> {
 
   next(): Promise<T> {
     this.checkIfDestroyed();
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.nextListeners.add(resolve.bind(this));
     });
   }
@@ -90,7 +91,7 @@ export class Variable<T> {
     if (Comparator.isEqual(this.value, data)) {
       return Promise.resolve(data);
     } else {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         this.untilListeners.add({
           expected: data,
           callback: resolve.bind(this)
@@ -99,7 +100,7 @@ export class Variable<T> {
     }
   }
 
-  destroy() {
+  destroy(): void {
     this.notificationHandler.destroy();
     this.nextListeners = new Set();
     this.untilListeners = new Set();

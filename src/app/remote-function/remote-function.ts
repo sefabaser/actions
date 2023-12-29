@@ -1,7 +1,7 @@
 export class RemoteFunction<ParametersType, ReturnType> {
   private implementationFunction?: (parameters: ParametersType) => ReturnType;
 
-  trigger(parameters: ParametersType) {
+  trigger(parameters: ParametersType): ReturnType {
     if (this.implementationFunction) {
       return this.implementationFunction(parameters);
     } else {
@@ -9,7 +9,7 @@ export class RemoteFunction<ParametersType, ReturnType> {
     }
   }
 
-  implementation(implementationFunction?: (parameters: ParametersType) => ReturnType) {
+  implementation(implementationFunction?: (parameters: ParametersType) => ReturnType): void {
     if (this.implementationFunction) {
       throw new Error(`RemoteFunction: implementation already defined, it cannot be overriden!`);
     } else {
