@@ -1,58 +1,31 @@
-export class ObservableSet<T extends number | string> {
-  private set = new Set<T>();
+import { ObservableMap } from '../observable-map/observable-map';
 
-  private untilAddedListeners = new Map<T, Set<(data: T) => void>>();
-  private untilRemovedListeners = new Map<T, Set<(data: T) => void>>();
+export class ObservableSet<KeyType extends number | string> {
+  private observableMap = new ObservableMap<KeyType, void>();
 
   get size(): number {
-    return this.set.size;
+    return this.observableMap.size;
   }
 
-  has(value: T): boolean {
-    return this.set.has(value);
+  has(value: KeyType): boolean {
+    return this.observableMap.has(value);
   }
 
-  add(data: T): this {
-    this.set.add(data);
-    if (this.untilAddedListeners.has(data)) {
-      this.untilAddedListeners.get(data)?.forEach(callback => callback(data));
-      this.untilAddedListeners.delete(data);
-    }
+  add(key: KeyType): this {
+    this.observableMap.add(key, undefined);
     return this;
   }
 
-  remove(data: T): this {
-    this.set.delete(data);
-    if (this.untilRemovedListeners.has(data)) {
-      this.untilRemovedListeners.get(data)?.forEach(callback => callback(data));
-      this.untilRemovedListeners.delete(data);
-    }
+  remove(key: KeyType): this {
+    this.observableMap.remove(key);
     return this;
   }
 
-  async waitUntilAdded(value: T): Promise<void> {
-    if (this.set.has(value)) {
-      return;
-    }
-
-    return new Promise<void>(resolve => {
-      if (!this.untilAddedListeners.has(value)) {
-        this.untilAddedListeners.set(value, new Set());
-      }
-      this.untilAddedListeners.get(value)?.add(() => resolve());
-    });
+  async waitUntilAdded(value: KeyType): Promise<void> {
+    return this.observableMap.waitUntilAdded(value);
   }
 
-  async waitUntilRemoved(value: T): Promise<void> {
-    if (!this.set.has(value)) {
-      return;
-    }
-
-    return new Promise<void>(resolve => {
-      if (!this.untilRemovedListeners.has(value)) {
-        this.untilRemovedListeners.set(value, new Set());
-      }
-      this.untilRemovedListeners.get(value)?.add(() => resolve());
-    });
+  async waitUntilRemoved(value: KeyType): Promise<void> {
+    return this.observableMap.waitUntilRemoved(value);
   }
 }
