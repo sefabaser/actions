@@ -554,41 +554,4 @@ describe(`Reducer`, () => {
       expect(nextNotification).toEqual(false);
     });
   });
-
-  describe(`Destroy`, () => {
-    it('should destroy', () => {
-      let reducer = Reducer.createOr();
-      reducer.subscribe(() => {});
-
-      reducer.destroy();
-      expect(reducer['notificationHandler']['listenersMap'].size).toEqual(0);
-      expect(reducer['untilListeners'].size).toEqual(0);
-    });
-
-    it('should be non-operational after destroy', () => {
-      let reducer = Reducer.createOr();
-      let effectChannel = reducer.effect(true);
-      reducer.destroy();
-
-      expect(() => {
-        reducer.effect(true);
-      }).toThrow();
-
-      expect(() => {
-        reducer.subscribe(() => {});
-      }).toThrow();
-
-      expect(() => {
-        effectChannel.update(false);
-      }).toThrow();
-
-      expect(() => {
-        effectChannel.destroy();
-      }).not.toThrow();
-
-      expect(() => {
-        reducer.waitUntil(true);
-      }).toThrow();
-    });
-  });
 });

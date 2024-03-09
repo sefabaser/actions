@@ -65,17 +65,4 @@ describe(`Notification Handler`, () => {
       listenerCallback('sample');
     });
   });
-
-  it('should destroy', () => {
-    notifier.subscribe(() => {});
-    notifier.destroy();
-    expect(notifier['listenersMap'].size).toEqual(0);
-  });
-
-  it('should be non-operational after destroy', () => {
-    notifier.destroy();
-    expect(() => {
-      notifier.subscribe(() => {});
-    }).toThrow();
-  });
 });

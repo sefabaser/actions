@@ -200,37 +200,4 @@ describe(`Variable`, () => {
       expect(nextNotification).toBeUndefined();
     });
   });
-
-  describe(`Destroy`, () => {
-    it('should destroy', () => {
-      let variable = new Variable<void>();
-      variable.subscribe(() => {});
-
-      variable.destroy();
-      expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
-      expect(variable['nextListeners'].size).toEqual(0);
-      expect(variable['untilListeners'].size).toEqual(0);
-    });
-
-    it('should be non-operational after destroy', () => {
-      let variable = new Variable<void>();
-      variable.destroy();
-
-      expect(() => {
-        variable.set();
-      }).toThrow();
-
-      expect(() => {
-        variable.subscribe(() => {});
-      }).toThrow();
-
-      expect(() => {
-        variable.next();
-      }).toThrow();
-
-      expect(() => {
-        variable.waitUntil();
-      }).toThrow();
-    });
-  });
 });

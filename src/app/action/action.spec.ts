@@ -154,37 +154,4 @@ describe(`Action`, () => {
       expect(nextNotification).toBeUndefined();
     });
   });
-
-  describe(`Destroy`, () => {
-    it('should destroy', () => {
-      let action = new Action<void>();
-      action.subscribe(() => {});
-
-      action.destroy();
-      expect(action['notificationHandler']['listenersMap'].size).toEqual(0);
-      expect(action['nextListeners'].size).toEqual(0);
-      expect(action['untilListeners'].size).toEqual(0);
-    });
-
-    it('should be non-operational after destroy', () => {
-      let action = new Action<void>();
-      action.destroy();
-
-      expect(() => {
-        action.trigger();
-      }).toThrow();
-
-      expect(() => {
-        action.subscribe(() => {});
-      }).toThrow();
-
-      expect(() => {
-        action.next();
-      }).toThrow();
-
-      expect(() => {
-        action.waitUntil();
-      }).toThrow();
-    });
-  });
 });

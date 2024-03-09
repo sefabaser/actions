@@ -22,14 +22,12 @@ export class Action<T> {
   private clone: boolean;
   private triggered = false;
   private currentValue?: T;
-  private destroyed = false;
 
   constructor(private options: ActionOptions = {}) {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
   }
 
   trigger(data: T): this {
-    this.checkIfDestroyed();
     if (this.options.persistent) {
       this.currentValue = this.clone ? JsonHelper.deepCopy(data) : data;
       this.triggered = true;
@@ -61,7 +59,6 @@ export class Action<T> {
   }
 
   subscribe(callback: ActionListenerCallbackFunction<T>): ActionSubscription {
-    this.checkIfDestroyed();
     if (this.options.persistent && this.triggered) {
       callback(<T>this.currentValue);
     }
@@ -69,32 +66,17 @@ export class Action<T> {
   }
 
   next(): Promise<T> {
-    this.checkIfDestroyed();
     return new Promise(resolve => {
       this.nextListeners.add(resolve.bind(this));
     });
   }
 
   waitUntil(data: T): Promise<T> {
-    this.checkIfDestroyed();
     return new Promise(resolve => {
       this.untilListeners.add({
         expected: data,
         callback: resolve.bind(this)
       });
     });
-  }
-
-  destroy(): void {
-    this.notificationHandler.destroy();
-    this.nextListeners = new Set();
-    this.untilListeners = new Set();
-    this.destroyed = true;
-  }
-
-  private checkIfDestroyed() {
-    if (this.destroyed) {
-      throw new Error(`Action: it is destroyed, cannot be subscribed!`);
-    }
   }
 }
