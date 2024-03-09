@@ -76,13 +76,13 @@ export class Variable<T> {
     return this.notificationHandler.subscribe(callback);
   }
 
-  next(): Promise<T> {
+  async next(): Promise<T> {
     return new Promise(resolve => {
       this.nextListeners.add(resolve.bind(this));
     });
   }
 
-  waitUntil(data: T): Promise<T> {
+  async waitUntil(data: T): Promise<T> {
     if (Comparator.isEqual(this.value, data)) {
       return Promise.resolve(data);
     } else {

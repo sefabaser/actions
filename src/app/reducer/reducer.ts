@@ -20,6 +20,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
   private id: number;
   private reducer: Reducer<EffectType, ResponseType>;
   private previousEffectValue: EffectType;
+  private destroyed = false;
 
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
     this.id = ReducerEffectChannel.nextAvailableId++;
@@ -36,15 +37,19 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
   }
 
   update(value: EffectType): void {
-    let reducerResponse = this.reducer['reduceFunction']({
-      id: this.id,
-      previous: this.previousEffectValue,
-      current: value,
-      type: 'update'
-    });
+    if (!this.destroyed) {
+      let reducerResponse = this.reducer['reduceFunction']({
+        id: this.id,
+        previous: this.previousEffectValue,
+        current: value,
+        type: 'update'
+      });
 
-    this.previousEffectValue = value;
-    this.reducer['broadcast'](reducerResponse);
+      this.previousEffectValue = value;
+      this.reducer['broadcast'](reducerResponse);
+    } else {
+      throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
+    }
   }
 
   attach(parent: {
@@ -55,15 +60,18 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
   }
 
   destroy(): void {
-    let reducerResponse = this.reducer['reduceFunction']({
-      id: this.id,
-      previous: this.previousEffectValue,
-      type: 'destroy'
-    });
+    if (!this.destroyed) {
+      let reducerResponse = this.reducer['reduceFunction']({
+        id: this.id,
+        previous: this.previousEffectValue,
+        type: 'destroy'
+      });
 
-    this.reducer['broadcast'](reducerResponse);
+      this.reducer['broadcast'](reducerResponse);
 
-    this.reducer['effects'].delete(this);
+      this.reducer['effects'].delete(this);
+      this.destroyed = true;
+    }
   }
 }
 
@@ -231,7 +239,7 @@ export class Reducer<EffectType, ResponseType> {
     return this.notificationHandler.subscribe(callback);
   }
 
-  waitUntil(data: ResponseType): Promise<ResponseType> {
+  async waitUntil(data: ResponseType): Promise<ResponseType> {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
       return Promise.resolve(data);
     } else {
