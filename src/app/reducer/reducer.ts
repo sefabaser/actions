@@ -52,13 +52,6 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     }
   }
 
-  attach(parent: {
-    setAttachment: (effectChannel: ReducerEffectChannel<any, any>) => void;
-  }): ReducerEffectChannel<EffectType, ResponseType> {
-    parent.setAttachment(this);
-    return this;
-  }
-
   destroy(): void {
     if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
