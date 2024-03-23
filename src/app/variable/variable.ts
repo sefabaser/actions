@@ -76,7 +76,7 @@ export class Variable<T> {
     return this.notificationHandler.subscribe(callback);
   }
 
-  async next(): Promise<T> {
+  async waitUntilNext(): Promise<T> {
     return new Promise(resolve => {
       this.nextListeners.add(resolve.bind(this));
     });

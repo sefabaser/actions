@@ -167,7 +167,7 @@ describe(`Variable`, () => {
       setTimeout(() => {
         variable.set({ testData: 'sample' });
       }, 1);
-      let nextNotification = await variable.next();
+      let nextNotification = await variable.waitUntilNext();
       expect(nextNotification).toEqual({ testData: 'sample' });
     });
 

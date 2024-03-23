@@ -132,7 +132,7 @@ describe(`Action`, () => {
       setTimeout(() => {
         action.trigger({ testData: 'sample' });
       }, 1);
-      let nextNotification = await action.next();
+      let nextNotification = await action.waitUntilNext();
       expect(nextNotification).toEqual({ testData: 'sample' });
     });
 
