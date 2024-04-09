@@ -232,17 +232,18 @@ export class Reducer<EffectType, ResponseType> {
     return this.notificationHandler.subscribe(callback);
   }
 
-  async waitUntil(data: ResponseType): Promise<ResponseType> {
+  waitUntilCallback(data: ResponseType, callback: (data: ResponseType) => void): void {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
-      return Promise.resolve(data);
+      callback(data);
     } else {
-      return new Promise(resolve => {
-        this.untilListeners.add({
-          expected: data,
-          callback: resolve.bind(this)
-        });
-      });
+      this.untilListeners.add({ expected: data, callback });
     }
+  }
+
+  async waitUntil(data: ResponseType): Promise<ResponseType> {
+    return new Promise(resolve => {
+      this.waitUntilCallback(data, resolve);
+    });
   }
 
   private broadcast(value: ResponseType) {

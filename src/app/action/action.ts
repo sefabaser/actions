@@ -65,18 +65,23 @@ export class Action<T> {
     return this.notificationHandler.subscribe(callback);
   }
 
+  waitUntilNextCallback(callback: (data: T) => void): void {
+    this.nextListeners.add(callback);
+  }
+
   async waitUntilNext(): Promise<T> {
     return new Promise(resolve => {
-      this.nextListeners.add(resolve.bind(this));
+      this.waitUntilNextCallback(resolve);
     });
+  }
+
+  waitUntilCallback(data: T, callback: (data: T) => void): void {
+    this.untilListeners.add({ expected: data, callback: callback });
   }
 
   async waitUntil(data: T): Promise<T> {
     return new Promise(resolve => {
-      this.untilListeners.add({
-        expected: data,
-        callback: resolve.bind(this)
-      });
+      this.waitUntilCallback(data, resolve);
     });
   }
 }
