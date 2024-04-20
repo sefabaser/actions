@@ -1,4 +1,6 @@
 {
   "javascript.preferences.importModuleSpecifier": "relative",
-  "typescript.preferences.importModuleSpecifier": "relative"
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "workbench.activityBar.location": "top",
+  "window.zoomLevel": 0,
 }

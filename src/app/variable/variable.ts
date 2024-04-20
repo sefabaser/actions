@@ -10,7 +10,18 @@ export interface VariableOptions {
   notifyOnChange?: boolean;
 }
 
-export class Variable<T> {
+export interface IVariable<T> {
+  value: T;
+  listenerCount: number;
+  set(data: T): this;
+  subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription;
+  waitUntilNextCallback(callback: (data: T) => void): void;
+  waitUntilNext(): Promise<T>;
+  waitUntilCallback(data: T, callback: (data: T) => void): void;
+  waitUntil(data: T): Promise<T>;
+}
+
+export class Variable<T> implements IVariable<T> {
   get value(): T {
     return this.currentValue;
   }
