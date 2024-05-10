@@ -33,7 +33,7 @@ class LoadingIndicator {
  * Lets say we have lots of different files are effecting to show loading indicator.
  */
 class SomeAsyncService {
-  asyncOperation() {
+  asyncOperation(): void {
     let blocker = Blockers.effect();
     setTimeout(() => {
       // after an async operation

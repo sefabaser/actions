@@ -246,7 +246,7 @@ export class Reducer<EffectType, ResponseType> {
     });
   }
 
-  private broadcast(value: ResponseType) {
+  private broadcast(value: ResponseType): void {
     if (!Comparator.isEqual(this.previousBroadcast, value)) {
       if (this.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);
