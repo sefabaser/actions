@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, test } from 'vitest';
+
 import { NotificationHandler } from './notification-handler';
 
 describe(`Notification Handler`, () => {
@@ -7,27 +9,28 @@ describe(`Notification Handler`, () => {
     notifier = new NotificationHandler<string>();
   });
 
-  it('should be definable', () => {
+  test('should be definable', () => {
     expect(notifier).toBeDefined();
   });
 
-  it('should be subscribable', () => {
+  test('should be subscribable', () => {
     notifier.subscribe(message => {});
     expect(notifier['listenersMap'].size).toEqual(1);
   });
 
-  it('should be unsubscribable', () => {
+  test('should be unsubscribable', () => {
     let subscription = notifier.subscribe(message => {});
     subscription.unsubscribe();
     expect(notifier['listenersMap'].size).toEqual(0);
   });
 
-  it('should iterate without listeners', done => {
-    notifier.forEach(() => {});
-    done();
-  });
+  test('should iterate without listeners', () =>
+    new Promise<void>(done => {
+      notifier.forEach(() => {});
+      done();
+    }));
 
-  it('should iterate through listeners', () => {
+  test('should iterate through listeners', () => {
     notifier.subscribe(() => {});
     notifier.subscribe(() => {});
 
@@ -39,30 +42,31 @@ describe(`Notification Handler`, () => {
     expect(count).toEqual(2);
   });
 
-  it('should notify listeners', done => {
-    let listener1 = false;
-    let listener2 = false;
+  test('should notify listeners', () =>
+    new Promise<void>(done => {
+      let listener1 = false;
+      let listener2 = false;
 
-    notifier.subscribe(message => {
-      if (message === 'sample') {
-        listener1 = true;
-        if (listener2) {
-          done();
+      notifier.subscribe(message => {
+        if (message === 'sample') {
+          listener1 = true;
+          if (listener2) {
+            done();
+          }
         }
-      }
-    });
+      });
 
-    notifier.subscribe(message => {
-      if (message === 'sample') {
-        listener2 = true;
-        if (listener1) {
-          done();
+      notifier.subscribe(message => {
+        if (message === 'sample') {
+          listener2 = true;
+          if (listener1) {
+            done();
+          }
         }
-      }
-    });
+      });
 
-    notifier.forEach(listenerCallback => {
-      listenerCallback('sample');
-    });
-  });
+      notifier.forEach(listenerCallback => {
+        listenerCallback('sample');
+      });
+    }));
 });
