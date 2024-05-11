@@ -23,12 +23,12 @@
   "homepage": "https://github.com/sefabaser/actions#readme",
   "scripts": {
     "clean-install": "cls && rm -rf node_modules && rm -rf package-lock.json && npm install",
+    "pretest": "clear",
+    "test": "vitest",
     "start": "npm run build && node dist",
     "build": "tsc",
-    "pretest": "clear",
     "lint": "eslint \"src/**/*.ts\" --fix",
-    "test": "vitest",
-    "deploy": "npm test && npm run build && npm publish"
+    "deploy": "vitest run && npm run build && npm publish"
   },
   "dependencies": {
     "helpers-lib": "1.5.5"
