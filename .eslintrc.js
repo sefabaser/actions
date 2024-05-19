@@ -51,7 +51,10 @@ module.exports = {
     '@typescript-eslint/ban-types': 'error',
     '@typescript-eslint/consistent-type-definitions': 'error',
     '@typescript-eslint/dot-notation': 'off',
-    '@typescript-eslint/explicit-function-return-type': 'warn',
+    '@typescript-eslint/explicit-function-return-type': [
+      "warn",
+      { "allowExpressions": true } 
+    ],
     '@typescript-eslint/explicit-member-accessibility': [
       'off',
       {
