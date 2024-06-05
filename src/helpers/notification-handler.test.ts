@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { NotificationHandler } from './notification-handler';
+import { ActionSubscription, NotificationHandler } from './notification-handler';
 
 describe(`Notification Handler`, () => {
   let notifier: NotificationHandler<string>;
@@ -21,6 +21,13 @@ describe(`Notification Handler`, () => {
   test('should be unsubscribable', () => {
     let subscription = notifier.subscribe(message => {});
     subscription.unsubscribe();
+    expect(notifier['listenersMap'].size).toEqual(0);
+  });
+
+  test('should be combinable', () => {
+    let subscription1 = notifier.subscribe(message => {});
+    let subscription2 = notifier.subscribe(message => {});
+    ActionSubscription.combine([subscription1, subscription2]).unsubscribe();
     expect(notifier['listenersMap'].size).toEqual(0);
   });
 

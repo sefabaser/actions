@@ -1,4 +1,12 @@
 export class ActionSubscription {
+  static combine(subscriptions: ActionSubscription[]): ActionSubscription {
+    return new ActionSubscription(() => {
+      subscriptions.forEach(subscription => {
+        subscription.unsubscribe();
+      });
+    });
+  }
+
   private unsubscribeCallback: () => void;
 
   constructor(unsubscribeCallback: () => void) {
