@@ -30,29 +30,37 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     return this;
   }
 
-  async waitUntilAdded(value: KeyType): Promise<ItemType> {
+  waitUntilAddedSync(value: KeyType, callback: (item: ItemType) => void): void {
     if (this.map.has(value)) {
-      return this.map.get(value) as ItemType;
-    }
-
-    return new Promise<ItemType>(resolve => {
+      callback(this.map.get(value) as ItemType);
+    } else {
       if (!this.untilAddedListeners.has(value)) {
         this.untilAddedListeners.set(value, new Set());
       }
-      this.untilAddedListeners.get(value)?.add(() => resolve(this.map.get(value) as ItemType));
+      this.untilAddedListeners.get(value)?.add(() => callback(this.map.get(value) as ItemType));
+    }
+  }
+
+  async waitUntilAdded(value: KeyType): Promise<ItemType> {
+    return new Promise<ItemType>(resolve => {
+      this.waitUntilAddedSync(value, item => resolve(item));
     });
   }
 
-  async waitUntilRemoved(value: KeyType): Promise<void> {
+  waitUntilRemovedSync(value: KeyType, callback: () => void): void {
     if (!this.map.has(value)) {
-      return;
-    }
-
-    return new Promise<void>(resolve => {
+      callback();
+    } else {
       if (!this.untilRemovedListeners.has(value)) {
         this.untilRemovedListeners.set(value, new Set());
       }
-      this.untilRemovedListeners.get(value)?.add(() => resolve());
+      this.untilRemovedListeners.get(value)?.add(() => callback());
+    }
+  }
+
+  async waitUntilRemoved(value: KeyType): Promise<void> {
+    return new Promise<void>(resolve => {
+      this.waitUntilRemovedSync(value, () => resolve());
     });
   }
 }

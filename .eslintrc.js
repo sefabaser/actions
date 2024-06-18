@@ -35,6 +35,8 @@ module.exports = {
           '[static-properties]',
           '[static-private-properties]',
           '[static-methods]',
+          '[static-properties]',
+          '[static-private-properties]',
           '[getters]',
           '[setters]',
           '[properties]',

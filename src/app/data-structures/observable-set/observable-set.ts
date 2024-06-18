@@ -21,8 +21,16 @@ export class ObservableSet<KeyType extends number | string> {
     return this;
   }
 
+  waitUntilAddedSync(value: KeyType, callback: (value: KeyType) => void): void {
+    this.observableMap.waitUntilAddedSync(value, () => callback(value));
+  }
+
   async waitUntilAdded(value: KeyType): Promise<void> {
     return this.observableMap.waitUntilAdded(value);
+  }
+
+  waitUntilRemovedSync(value: KeyType, callback: () => void): void {
+    this.observableMap.waitUntilRemovedSync(value, callback);
   }
 
   async waitUntilRemoved(value: KeyType): Promise<void> {
