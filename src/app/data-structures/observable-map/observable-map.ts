@@ -21,6 +21,10 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     return this;
   }
 
+  get(key: KeyType): ItemType | undefined {
+    return this.map.get(key);
+  }
+
   remove(key: KeyType): this {
     this.map.delete(key);
     if (this.untilRemovedListeners.has(key)) {
