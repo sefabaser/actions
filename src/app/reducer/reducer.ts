@@ -186,7 +186,7 @@ export class Reducer<EffectType, ResponseType> {
     );
   }
 
-  get currentValue(): ResponseType {
+  get value(): ResponseType {
     return this.previousBroadcast;
   }
 

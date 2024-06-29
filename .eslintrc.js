@@ -43,6 +43,7 @@ module.exports = {
           '[conventional-private-properties]',
           'constructor',
           '[methods]',
+          '[conventional-private-properties]',
           '[conventional-private-methods]'
         ],
         accessorPairPositioning: 'getThenSet'

@@ -542,7 +542,7 @@ describe(`Reducer`, () => {
   describe(`Current Value`, () => {
     test('basic', () => {
       let reducer = Reducer.createSum();
-      expect(reducer.currentValue).toEqual(0);
+      expect(reducer.value).toEqual(0);
     });
 
     test('after multiple operations', () => {
@@ -551,7 +551,7 @@ describe(`Reducer`, () => {
       reducer.effect(3);
       effect.destroy();
       reducer.effect(4);
-      expect(reducer.currentValue).toEqual(7);
+      expect(reducer.value).toEqual(7);
     });
   });
 
