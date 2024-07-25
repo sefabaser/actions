@@ -45,12 +45,22 @@ export class Action<T> {
       }
     });
 
-    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners.forEach(callback => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
+    });
     this.nextListeners = new Set();
 
     this.untilListeners.forEach(item => {
       if (Comparator.isEqual(item.expected, data)) {
-        item.callback(data);
+        try {
+          item.callback(data);
+        } catch (e) {
+          console.error('Notifier callback function error: ', e);
+        }
         this.untilListeners.delete(item);
       }
     });

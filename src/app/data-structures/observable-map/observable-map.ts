@@ -15,7 +15,13 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
   add(key: KeyType, item: ItemType): this {
     this.map.set(key, item);
     if (this.untilAddedListeners.has(key)) {
-      this.untilAddedListeners.get(key)?.forEach(callback => callback(key));
+      this.untilAddedListeners.get(key)?.forEach(callback => {
+        try {
+          callback(key);
+        } catch (e) {
+          console.error('Observable map callback function error: ', e);
+        }
+      });
       this.untilAddedListeners.delete(key);
     }
     return this;
@@ -28,7 +34,13 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
   remove(key: KeyType): this {
     this.map.delete(key);
     if (this.untilRemovedListeners.has(key)) {
-      this.untilRemovedListeners.get(key)?.forEach(callback => callback(key));
+      this.untilRemovedListeners.get(key)?.forEach(callback => {
+        try {
+          callback(key);
+        } catch (e) {
+          console.error('Observable map callback function error: ', e);
+        }
+      });
       this.untilRemovedListeners.delete(key);
     }
     return this;
@@ -36,12 +48,22 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
 
   waitUntilAddedSync(value: KeyType, callback: (item: ItemType) => void): void {
     if (this.map.has(value)) {
-      callback(this.map.get(value) as ItemType);
+      try {
+        callback(this.map.get(value) as ItemType);
+      } catch (e) {
+        console.error('Observable map callback function error: ', e);
+      }
     } else {
       if (!this.untilAddedListeners.has(value)) {
         this.untilAddedListeners.set(value, new Set());
       }
-      this.untilAddedListeners.get(value)?.add(() => callback(this.map.get(value) as ItemType));
+      this.untilAddedListeners.get(value)?.add(() => {
+        try {
+          callback(this.map.get(value) as ItemType);
+        } catch (e) {
+          console.error('Observable map callback function error: ', e);
+        }
+      });
     }
   }
 
@@ -53,12 +75,22 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
 
   waitUntilRemovedSync(value: KeyType, callback: () => void): void {
     if (!this.map.has(value)) {
-      callback();
+      try {
+        callback();
+      } catch (e) {
+        console.error('Observable map callback function error: ', e);
+      }
     } else {
       if (!this.untilRemovedListeners.has(value)) {
         this.untilRemovedListeners.set(value, new Set());
       }
-      this.untilRemovedListeners.get(value)?.add(() => callback());
+      this.untilRemovedListeners.get(value)?.add(() => {
+        try {
+          callback();
+        } catch (e) {
+          console.error('Observable map callback function error: ', e);
+        }
+      });
     }
   }
 

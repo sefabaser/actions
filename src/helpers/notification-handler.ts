@@ -27,7 +27,13 @@ export class NotificationHandler<T> {
   }
 
   forEach(callback: (listenerCallbackFunction: (data: T) => any) => void): NotificationHandler<T> {
-    this.listenersMap.forEach(callback);
+    this.listenersMap.forEach(data => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Observable map callback function error: ', e);
+      }
+    });
     return this;
   }
 

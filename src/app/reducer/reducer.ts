@@ -234,7 +234,11 @@ export class Reducer<EffectType, ResponseType> {
 
   waitUntilCallback(data: ResponseType, callback: (data: ResponseType) => void): void {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
-      callback(data);
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Reducer callback function error: ', e);
+      }
     } else {
       this.untilListeners.add({ expected: data, callback });
     }
@@ -262,7 +266,11 @@ export class Reducer<EffectType, ResponseType> {
 
       this.untilListeners.forEach(item => {
         if (Comparator.isEqual(item.expected, value)) {
-          item.callback(value);
+          try {
+            item.callback(value);
+          } catch (e) {
+            console.error('Reducer callback function error: ', e);
+          }
           this.untilListeners.delete(item);
         }
       });

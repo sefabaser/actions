@@ -65,12 +65,22 @@ export class Variable<T> implements IVariable<T> {
       });
     }
 
-    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners.forEach(callback => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
+    });
     this.nextListeners = new Set();
 
     this.untilListeners.forEach(item => {
       if (Comparator.isEqual(item.expected, data)) {
-        item.callback(data);
+        try {
+          item.callback(data);
+        } catch (e) {
+          console.error('Notifier callback function error: ', e);
+        }
         this.untilListeners.delete(item);
       }
     });
@@ -81,7 +91,11 @@ export class Variable<T> implements IVariable<T> {
 
   subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription {
     if (this.firstTriggerHappened) {
-      callback(this.currentValue);
+      try {
+        callback(this.currentValue);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
     }
 
     return this.notificationHandler.subscribe(callback);
@@ -99,7 +113,11 @@ export class Variable<T> implements IVariable<T> {
 
   waitUntilCallback(data: T, callback: (data: T) => void): void {
     if (Comparator.isEqual(this.value, data)) {
-      callback(data);
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
     } else {
       this.untilListeners.add({ expected: data, callback });
     }
