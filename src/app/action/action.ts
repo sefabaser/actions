@@ -1,13 +1,12 @@
-import { JsonHelper, Comparator } from 'helpers-lib';
+import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { ActionLibDefaults } from '../../config';
+import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 
 export type ActionListenerCallbackFunction<T> = (data: T) => void;
 
 export interface ActionOptions {
   clone?: boolean;
-  persistent?: boolean;
 }
 
 export class Action<T> {
@@ -20,21 +19,12 @@ export class Action<T> {
   private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
 
   private clone: boolean;
-  private triggered = false;
-  private currentValue?: T;
-  private destroyed = false;
 
   constructor(private options: ActionOptions = {}) {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
   }
 
   trigger(data: T): this {
-    this.checkIfDestroyed();
-    if (this.options.persistent) {
-      this.currentValue = this.clone ? JsonHelper.deepCopy(data) : data;
-      this.triggered = true;
-    }
-
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
     }
@@ -47,12 +37,22 @@ export class Action<T> {
       }
     });
 
-    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners.forEach(callback => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
+    });
     this.nextListeners = new Set();
 
     this.untilListeners.forEach(item => {
       if (Comparator.isEqual(item.expected, data)) {
-        item.callback(data);
+        try {
+          item.callback(data);
+        } catch (e) {
+          console.error('Notifier callback function error: ', e);
+        }
         this.untilListeners.delete(item);
       }
     });
@@ -61,40 +61,26 @@ export class Action<T> {
   }
 
   subscribe(callback: ActionListenerCallbackFunction<T>): ActionSubscription {
-    this.checkIfDestroyed();
-    if (this.options.persistent && this.triggered) {
-      callback(<T>this.currentValue);
-    }
     return this.notificationHandler.subscribe(callback);
   }
 
-  next(): Promise<T> {
-    this.checkIfDestroyed();
+  waitUntilNextCallback(callback: (data: T) => void): void {
+    this.nextListeners.add(callback);
+  }
+
+  async waitUntilNext(): Promise<T> {
     return new Promise(resolve => {
-      this.nextListeners.add(resolve.bind(this));
+      this.waitUntilNextCallback(resolve);
     });
   }
 
-  waitUntil(data: T): Promise<T> {
-    this.checkIfDestroyed();
+  waitUntilCallback(data: T, callback: (data: T) => void): void {
+    this.untilListeners.add({ expected: data, callback: callback });
+  }
+
+  async waitUntil(data: T): Promise<T> {
     return new Promise(resolve => {
-      this.untilListeners.add({
-        expected: data,
-        callback: resolve.bind(this)
-      });
+      this.waitUntilCallback(data, resolve);
     });
-  }
-
-  destroy(): void {
-    this.notificationHandler.destroy();
-    this.nextListeners = new Set();
-    this.untilListeners = new Set();
-    this.destroyed = true;
-  }
-
-  private checkIfDestroyed() {
-    if (this.destroyed) {
-      throw new Error(`Action: it is destroyed, cannot be subscribed!`);
-    }
   }
 }

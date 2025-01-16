@@ -1,3 +1,5 @@
+import { describe, expect, test } from 'vitest';
+
 import { Reducer } from './reducer';
 
 /**
@@ -43,28 +45,29 @@ let pikeman = new Warrior(2);
 let knight = new Warrior(5);
 
 describe(`Reducer Sample Scenario`, () => {
-  it('calculation of attack bonuses', done => {
-    // we have a great commander and he has an aura which gives everyone +2 bonus
-    AreaEffect.effect(2);
+  test('calculation of attack bonuses', () =>
+    new Promise<void>(done => {
+      // we have a great commander and he has an aura which gives everyone +2 bonus
+      AreaEffect.effect(2);
 
-    // all warriors are on fort walls which gives everyone +1 bonus
-    AreaEffect.effect(1);
+      // all warriors are on fort walls which gives everyone +1 bonus
+      AreaEffect.effect(1);
 
-    // a witch has cursed the area and it gives to everyone -2 for 5 minutes (in this case it is 5 ms to make tests faster :D)
-    let curseEffect = AreaEffect.effect(-2);
+      // a witch has cursed the area and it gives to everyone -2 for 5 minutes (in this case it is 5 ms to make tests faster :D)
+      let curseEffect = AreaEffect.effect(-2);
 
-    setTimeout(() => {
-      curseEffect.destroy();
-    }, 5);
+      setTimeout(() => {
+        curseEffect.destroy();
+      }, 5);
 
-    expect(pikeman.getAttack()).toEqual(3);
-    expect(knight.getAttack()).toEqual(6);
+      expect(pikeman.getAttack()).toEqual(3);
+      expect(knight.getAttack()).toEqual(6);
 
-    setTimeout(() => {
-      // after curse effect
-      if (pikeman.getAttack() === 5 && knight.getAttack() === 8) {
-        done();
-      }
-    }, 5);
-  });
+      setTimeout(() => {
+        // after curse effect
+        if (pikeman.getAttack() === 5 && knight.getAttack() === 8) {
+          done();
+        }
+      }, 5);
+    }));
 });

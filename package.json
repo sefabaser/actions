@@ -1,6 +1,6 @@
 {
   "name": "actions-lib",
-  "version": "1.5.1",
+  "version": "1.8.0",
   "description": "Typescript Helpers Library",
   "main": "dist/index.js",
   "repository": {
@@ -20,41 +20,20 @@
     "trailingComma": "none",
     "arrowParens": "avoid"
   },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "moduleDirectories": [
-      "node_modules",
-      "__dirname/"
-    ],
-    "rootDir": "src",
-    "testRegex": ".spec.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
-  },
   "homepage": "https://github.com/sefabaser/actions#readme",
   "scripts": {
     "clean-install": "cls && rm -rf node_modules && rm -rf package-lock.json && npm install",
+    "pretest": "clear",
+    "test": "vitest",
     "start": "npm run build && node dist",
     "build": "tsc",
-    "pretest": "clear",
     "lint": "eslint \"src/**/*.ts\" --fix",
-    "test": "jest",
-    "test-watch": "jest --watch",
-    "test-coverage": "jest --coverage",
-    "deploy": "npm test && npm run build && npm publish"
+    "deploy": "vitest run && npm run build && npm publish"
   },
   "dependencies": {
-    "helpers-lib": "1.5.5"
+    "helpers-lib": "1.8.13"
   },
   "devDependencies": {
-    "@types/jest": "29.5.11",
     "@typescript-eslint/eslint-plugin": "6.18.0",
     "@typescript-eslint/parser": "6.18.0",
     "eslint": "8.56.0",
@@ -62,8 +41,7 @@
     "eslint-plugin-import": "2.29.1",
     "eslint-plugin-no-null": "1.0.2",
     "eslint-plugin-sort-class-members": "1.19.0",
-    "jest": "29.7.0",
-    "ts-jest": "29.1.1",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "vitest": "1.6.0"
   }
 }

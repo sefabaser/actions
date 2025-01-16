@@ -1,10 +1,14 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { ActionLibDefaults } from '../../config';
+import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 
 export interface ReducerOptions {
   clone?: boolean;
+}
+
+export interface ReducerSubscriptionOptions {
+  listenOnlyNewChanges?: boolean;
 }
 
 export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
@@ -50,13 +54,6 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
     }
-  }
-
-  attach(parent: {
-    setAttachment: (effectChannel: ReducerEffectChannel<any, any>) => void;
-  }): ReducerEffectChannel<EffectType, ResponseType> {
-    parent.setAttachment(this);
-    return this;
   }
 
   destroy(): void {
@@ -193,7 +190,7 @@ export class Reducer<EffectType, ResponseType> {
     );
   }
 
-  get currentValue(): ResponseType {
+  get value(): ResponseType {
     return this.previousBroadcast;
   }
 
@@ -207,7 +204,6 @@ export class Reducer<EffectType, ResponseType> {
   private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
   private previousBroadcast: ResponseType;
-  private destroyed = false;
   private clone = false;
 
   constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
@@ -226,47 +222,41 @@ export class Reducer<EffectType, ResponseType> {
   }
 
   effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
-    this.checkIfDestroyed();
     let effect = new ReducerEffectChannel<EffectType, ResponseType>(<any>this, value);
     this.effects.add(effect);
     return effect;
   }
 
-  subscribe(callback: (response: ResponseType) => void): ActionSubscription {
-    this.checkIfDestroyed();
-    try {
-      callback(this.previousBroadcast);
-    } catch (e) {
-      console.error('Reducer callback function error: ', e);
+  subscribe(callback: (response: ResponseType) => void, options?: ReducerSubscriptionOptions): ActionSubscription {
+    if (!options?.listenOnlyNewChanges) {
+      try {
+        callback(this.previousBroadcast);
+      } catch (e) {
+        console.error('Reducer callback function error: ', e);
+      }
     }
     return this.notificationHandler.subscribe(callback);
   }
 
-  waitUntil(data: ResponseType): Promise<ResponseType> {
-    this.checkIfDestroyed();
+  waitUntilCallback(data: ResponseType, callback: (data: ResponseType) => void): void {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
-      return Promise.resolve(data);
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Reducer callback function error: ', e);
+      }
     } else {
-      return new Promise(resolve => {
-        this.untilListeners.add({
-          expected: data,
-          callback: resolve.bind(this)
-        });
-      });
+      this.untilListeners.add({ expected: data, callback });
     }
   }
 
-  destroy(): void {
-    this.notificationHandler.destroy();
-    this.untilListeners = new Set();
-    this.effects.forEach(effect => {
-      effect['destroyed'] = true;
+  async waitUntil(data: ResponseType): Promise<ResponseType> {
+    return new Promise(resolve => {
+      this.waitUntilCallback(data, resolve);
     });
-    this.effects = new Set();
-    this.destroyed = true;
   }
 
-  private broadcast(value: ResponseType) {
+  private broadcast(value: ResponseType): void {
     if (!Comparator.isEqual(this.previousBroadcast, value)) {
       if (this.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);
@@ -282,18 +272,16 @@ export class Reducer<EffectType, ResponseType> {
 
       this.untilListeners.forEach(item => {
         if (Comparator.isEqual(item.expected, value)) {
-          item.callback(value);
+          try {
+            item.callback(value);
+          } catch (e) {
+            console.error('Reducer callback function error: ', e);
+          }
           this.untilListeners.delete(item);
         }
       });
 
       this.previousBroadcast = value;
-    }
-  }
-
-  private checkIfDestroyed() {
-    if (this.destroyed) {
-      throw new Error(`Action: it is destroyed, cannot be subscribed!`);
     }
   }
 }

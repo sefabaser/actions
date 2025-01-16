@@ -1,0 +1,13 @@
+{
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "workbench.activityBar.location": "top",
+  "window.zoomLevel": 0,
+  "editor.stickyScroll.enabled": false,
+  "workbench.tree.enableStickyScroll": false,
+  "terminal.integrated.shellIntegration.decorationsEnabled": "never",
+  "editor.wrappingIndent": "indent",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always"
+  }
+}

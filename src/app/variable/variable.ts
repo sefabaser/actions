@@ -1,7 +1,7 @@
-import { JsonHelper, Comparator } from 'helpers-lib';
+import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { ActionLibDefaults } from '../../config';
+import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
 
@@ -10,7 +10,22 @@ export interface VariableOptions {
   notifyOnChange?: boolean;
 }
 
-export class Variable<T> {
+export interface VariableSubscriptionOptions {
+  listneOnlyNewChanges?: boolean;
+}
+
+export interface IVariable<T> {
+  value: T;
+  listenerCount: number;
+  set(data: T): this;
+  subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription;
+  waitUntilNextCallback(callback: (data: T) => void): void;
+  waitUntilNext(): Promise<T>;
+  waitUntilCallback(data: T, callback: (data: T) => void): void;
+  waitUntil(data: T): Promise<T>;
+}
+
+export class Variable<T> implements IVariable<T> {
   get value(): T {
     return this.currentValue;
   }
@@ -30,7 +45,6 @@ export class Variable<T> {
   private firstTriggerHappened = false;
   private notifyOnlyOnChange: boolean;
   private clone: boolean;
-  private destroyed = false;
 
   constructor(options: VariableOptions = {}) {
     this.notifyOnlyOnChange =
@@ -39,7 +53,6 @@ export class Variable<T> {
   }
 
   set(data: T): this {
-    this.checkIfDestroyed();
     if (this.clone && Comparator.isObject(data)) {
       data = JsonHelper.deepCopy(data);
     }
@@ -56,12 +69,22 @@ export class Variable<T> {
       });
     }
 
-    this.nextListeners.forEach(callback => callback(data));
+    this.nextListeners.forEach(callback => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
+    });
     this.nextListeners = new Set();
 
     this.untilListeners.forEach(item => {
       if (Comparator.isEqual(item.expected, data)) {
-        item.callback(data);
+        try {
+          item.callback(data);
+        } catch (e) {
+          console.error('Notifier callback function error: ', e);
+        }
         this.untilListeners.delete(item);
       }
     });
@@ -70,46 +93,43 @@ export class Variable<T> {
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription {
-    this.checkIfDestroyed();
-    if (this.firstTriggerHappened) {
-      callback(this.currentValue);
+  subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): ActionSubscription {
+    if (this.firstTriggerHappened && !options?.listneOnlyNewChanges) {
+      try {
+        callback(this.currentValue);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
     }
 
     return this.notificationHandler.subscribe(callback);
   }
 
-  next(): Promise<T> {
-    this.checkIfDestroyed();
+  waitUntilNextCallback(callback: (data: T) => void): void {
+    this.nextListeners.add(callback);
+  }
+
+  async waitUntilNext(): Promise<T> {
     return new Promise(resolve => {
-      this.nextListeners.add(resolve.bind(this));
+      this.waitUntilNextCallback(resolve);
     });
   }
 
-  waitUntil(data: T): Promise<T> {
-    this.checkIfDestroyed();
+  waitUntilCallback(data: T, callback: (data: T) => void): void {
     if (Comparator.isEqual(this.value, data)) {
-      return Promise.resolve(data);
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Notifier callback function error: ', e);
+      }
     } else {
-      return new Promise(resolve => {
-        this.untilListeners.add({
-          expected: data,
-          callback: resolve.bind(this)
-        });
-      });
+      this.untilListeners.add({ expected: data, callback });
     }
   }
 
-  destroy(): void {
-    this.notificationHandler.destroy();
-    this.nextListeners = new Set();
-    this.untilListeners = new Set();
-    this.destroyed = true;
-  }
-
-  private checkIfDestroyed() {
-    if (this.destroyed) {
-      throw new Error(`Variable: it is destroyed, cannot be subscribed!`);
-    }
+  async waitUntil(data: T): Promise<T> {
+    return new Promise(resolve => {
+      this.waitUntilCallback(data, resolve);
+    });
   }
 }
