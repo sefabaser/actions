@@ -5,5 +5,9 @@
   "window.zoomLevel": 0,
   "editor.stickyScroll.enabled": false,
   "workbench.tree.enableStickyScroll": false,
-  "terminal.integrated.shellIntegration.decorationsEnabled": "never"
+  "terminal.integrated.shellIntegration.decorationsEnabled": "never",
+  "editor.wrappingIndent": "indent",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always"
+  }
 }

@@ -1,5 +1,5 @@
+import { Comparator, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
-import { Comparator } from 'helpers-lib';
 
 import { Variable } from './variable';
 
@@ -62,21 +62,44 @@ describe(`Variable`, () => {
         variable.set({ testData: 'sample' });
       }));
 
-    test('should not notify unsubscribed listeners', () =>
-      new Promise<void>(done => {
-        let triggered = false;
-        let subscription = variable.subscribe(message => {
-          triggered = true;
-        });
-        subscription.unsubscribe();
-        variable.set({ testData: 'sample' });
+    test('should be able to use subscribe only new changes', () => {
+      let triggered = false;
+      variable.set({ testData: 'sample1' });
 
-        setTimeout(() => {
-          if (!triggered) {
-            done();
-          }
-        }, 0);
-      }));
+      variable.subscribe(
+        () => {
+          triggered = true;
+        },
+        { listneOnlyNewChanges: true }
+      );
+
+      expect(triggered).toEqual(false);
+      variable.set({ testData: 'sample2' });
+      expect(triggered).toEqual(true);
+    });
+
+    test('should not notify unsubscribed listeners', async () => {
+      let triggered = false;
+      let subscription = variable.subscribe(message => {
+        triggered = true;
+      });
+      subscription.unsubscribe();
+
+      variable.set({ testData: 'sample' });
+
+      await Wait();
+      expect(triggered).toBeFalsy();
+    });
+
+    test('should not notify subscription before the trigger', async () => {
+      let triggered = false;
+      variable.subscribe(message => {
+        triggered = true;
+      });
+
+      await Wait();
+      expect(triggered).toBeFalsy();
+    });
   });
 
   describe(`Complex Types`, () => {

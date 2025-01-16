@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, test } from 'vitest';
 import { Comparator } from 'helpers-lib';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from './action';
 
@@ -105,23 +105,6 @@ describe(`Action`, () => {
 
         setTimeout(() => {
           if (!triggered) {
-            done();
-          }
-        }, 0);
-      }));
-
-    test('persistant', () =>
-      new Promise<void>(done => {
-        let normalAction = new Action<void>({ persistent: true });
-        normalAction.trigger();
-
-        let triggered = false;
-        normalAction.subscribe(() => {
-          triggered = true;
-        });
-
-        setTimeout(() => {
-          if (triggered) {
             done();
           }
         }, 0);

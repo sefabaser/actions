@@ -1,10 +1,14 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { ActionLibDefaults } from '../../config';
+import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 
 export interface ReducerOptions {
   clone?: boolean;
+}
+
+export interface ReducerSubscriptionOptions {
+  listenOnlyNewChanges?: boolean;
 }
 
 export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
@@ -223,11 +227,13 @@ export class Reducer<EffectType, ResponseType> {
     return effect;
   }
 
-  subscribe(callback: (response: ResponseType) => void): ActionSubscription {
-    try {
-      callback(this.previousBroadcast);
-    } catch (e) {
-      console.error('Reducer callback function error: ', e);
+  subscribe(callback: (response: ResponseType) => void, options?: ReducerSubscriptionOptions): ActionSubscription {
+    if (!options?.listenOnlyNewChanges) {
+      try {
+        callback(this.previousBroadcast);
+      } catch (e) {
+        console.error('Reducer callback function error: ', e);
+      }
     }
     return this.notificationHandler.subscribe(callback);
   }

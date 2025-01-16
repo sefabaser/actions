@@ -27,6 +27,20 @@ describe(`Reducer`, () => {
       expect(reducer['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
+    test('should be able to use subscribe only new changes', () => {
+      let triggered = false;
+      reducer.subscribe(
+        () => {
+          triggered = true;
+        },
+        { listenOnlyNewChanges: true }
+      );
+
+      expect(triggered).toEqual(false);
+      reducer.effect();
+      expect(triggered).toEqual(true);
+    });
+
     test('should be unsubscribable', () => {
       let subscription = reducer.subscribe(() => {});
       subscription.unsubscribe();

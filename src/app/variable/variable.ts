@@ -1,13 +1,17 @@
-import { JsonHelper, Comparator } from 'helpers-lib';
+import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { ActionLibDefaults } from '../../config';
+import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
 
 export interface VariableOptions {
   clone?: boolean;
   notifyOnChange?: boolean;
+}
+
+export interface VariableSubscriptionOptions {
+  listneOnlyNewChanges?: boolean;
 }
 
 export interface IVariable<T> {
@@ -89,8 +93,8 @@ export class Variable<T> implements IVariable<T> {
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription {
-    if (this.firstTriggerHappened) {
+  subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): ActionSubscription {
+    if (this.firstTriggerHappened && !options?.listneOnlyNewChanges) {
       try {
         callback(this.currentValue);
       } catch (e) {
