@@ -1,4 +1,8 @@
 export class ActionSubscription {
+  /**
+   * @param subscriptions the subscriptions to combine
+   * @returns a new ActionSubscription that combines the given subscriptions, when unsubscribed, all given subscriptions will be unsubscribed
+   */
   static combine(subscriptions: ActionSubscription[]): ActionSubscription {
     return new ActionSubscription(() => {
       subscriptions.forEach(subscription => {
@@ -7,11 +11,7 @@ export class ActionSubscription {
     });
   }
 
-  private unsubscribeCallback: () => void;
-
-  constructor(unsubscribeCallback: () => void) {
-    this.unsubscribeCallback = unsubscribeCallback;
-  }
+  constructor(private unsubscribeCallback: () => void) {}
 
   unsubscribe(): void {
     this.unsubscribeCallback();
@@ -27,7 +27,8 @@ export class NotificationHandler<T> {
   }
 
   forEach(callback: (listenerCallbackFunction: (data: T) => any) => void): NotificationHandler<T> {
-    this.listenersMap.forEach(data => {
+    let newMap = new Map<number, (data: T) => any>(this.listenersMap);
+    newMap.forEach(data => {
       try {
         callback(data);
       } catch (e) {

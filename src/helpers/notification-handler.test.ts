@@ -76,4 +76,29 @@ describe(`Notification Handler`, () => {
         listenerCallback('sample');
       });
     }));
+
+  test('unsubscribe should not take affect until all subscribers being notified', () => {
+    let listener1 = false;
+    let listener2 = false;
+
+    let subscription1: ActionSubscription;
+    let subscription2: ActionSubscription;
+
+    subscription1 = notifier.subscribe(message => {
+      listener1 = true;
+      subscription2.unsubscribe();
+    });
+
+    subscription2 = notifier.subscribe(message => {
+      listener2 = true;
+      subscription1.unsubscribe();
+    });
+
+    notifier.forEach(listenerCallback => {
+      listenerCallback('sample');
+    });
+
+    expect(listener1).toEqual(true);
+    expect(listener2).toEqual(true);
+  });
 });
