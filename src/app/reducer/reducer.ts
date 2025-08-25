@@ -23,8 +23,15 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
 
   private id: number;
   private reducer: Reducer<EffectType, ResponseType>;
-  private previousEffectValue: EffectType;
   private destroyed = false;
+
+  private effectValue: EffectType;
+  get value(): EffectType {
+    return this.effectValue;
+  }
+  set value(value: EffectType) {
+    this.update(value);
+  }
 
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
     this.id = ReducerEffectChannel.nextAvailableId++;
@@ -36,7 +43,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
       type: 'effect'
     });
 
-    this.previousEffectValue = value;
+    this.effectValue = value;
     this.reducer['broadcast'](reducerResponse);
   }
 
@@ -44,12 +51,12 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
         id: this.id,
-        previous: this.previousEffectValue,
+        previous: this.effectValue,
         current: value,
         type: 'update'
       });
 
-      this.previousEffectValue = value;
+      this.effectValue = value;
       this.reducer['broadcast'](reducerResponse);
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
@@ -60,7 +67,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
     if (!this.destroyed) {
       let reducerResponse = this.reducer['reduceFunction']({
         id: this.id,
-        previous: this.previousEffectValue,
+        previous: this.effectValue,
         type: 'destroy'
       });
 
