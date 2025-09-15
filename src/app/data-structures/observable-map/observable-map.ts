@@ -12,7 +12,7 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     return this.map.has(value);
   }
 
-  add(key: KeyType, item: ItemType): this {
+  set(key: KeyType, item: ItemType): this {
     this.map.set(key, item);
     if (this.untilAddedListeners.has(key)) {
       this.untilAddedListeners.get(key)?.forEach(callback => {

@@ -12,7 +12,7 @@ export class ObservableSet<KeyType extends number | string> {
   }
 
   add(key: KeyType): this {
-    this.observableMap.add(key, undefined);
+    this.observableMap.set(key, undefined);
     return this;
   }
 

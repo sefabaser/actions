@@ -66,7 +66,7 @@ describe(`Reducer Sample Scenario`, () => {
         // in here still we expect to see no trigger
         if (!(loadingIndicator.screenIsBlocked === true && loadingIndicator.triggerCount === 2)) {
           successful = false;
-          console.error('Reducer Sample Scenario: second operation error!');
+          console.error('Reducer Sample Scenario: second operation error 1!');
         }
 
         setTimeout(() => {
@@ -74,7 +74,7 @@ describe(`Reducer Sample Scenario`, () => {
           // in here still we expect to see no trigger because second operation is still happening
           if (!(loadingIndicator.screenIsBlocked === true && loadingIndicator.triggerCount === 2)) {
             successful = false;
-            console.error('Reducer Sample Scenario: second operation error!');
+            console.error('Reducer Sample Scenario: second operation error 2!');
           }
 
           setTimeout(() => {
