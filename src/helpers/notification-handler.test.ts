@@ -14,19 +14,19 @@ describe(`Notification Handler`, () => {
   });
 
   test('should be subscribable', () => {
-    notifier.subscribe(message => {});
+    notifier.subscribe(_ => {});
     expect(notifier['listenersMap'].size).toEqual(1);
   });
 
   test('should be unsubscribable', () => {
-    let subscription = notifier.subscribe(message => {});
+    let subscription = notifier.subscribe(_ => {});
     subscription.unsubscribe();
     expect(notifier['listenersMap'].size).toEqual(0);
   });
 
   test('should be combinable', () => {
-    let subscription1 = notifier.subscribe(message => {});
-    let subscription2 = notifier.subscribe(message => {});
+    let subscription1 = notifier.subscribe(_ => {});
+    let subscription2 = notifier.subscribe(_ => {});
     ActionSubscription.combine([subscription1, subscription2]).unsubscribe();
     expect(notifier['listenersMap'].size).toEqual(0);
   });
@@ -42,7 +42,7 @@ describe(`Notification Handler`, () => {
     notifier.subscribe(() => {});
 
     let count = 0;
-    notifier.forEach(listenerCallback => {
+    notifier.forEach(_ => {
       count++;
     });
 
@@ -84,12 +84,12 @@ describe(`Notification Handler`, () => {
     let subscription1: ActionSubscription;
     let subscription2: ActionSubscription;
 
-    subscription1 = notifier.subscribe(message => {
+    subscription1 = notifier.subscribe(_ => {
       listener1 = true;
       subscription2.unsubscribe();
     });
 
-    subscription2 = notifier.subscribe(message => {
+    subscription2 = notifier.subscribe(_ => {
       listener2 = true;
       subscription1.unsubscribe();
     });

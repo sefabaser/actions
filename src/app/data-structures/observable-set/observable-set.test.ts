@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
 import { Wait } from 'helpers-lib';
+import { describe, expect, test } from 'vitest';
 
 import { ObservableSet } from './observable-set';
 

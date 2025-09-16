@@ -21,7 +21,7 @@ const AreaEffect = Reducer.createSum();
  */
 class Warrior {
   private strength: number;
-  private areaEffect: number = 0;
+  private areaEffect = 0;
 
   constructor(strength: number) {
     this.strength = strength;

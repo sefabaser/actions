@@ -82,7 +82,7 @@ describe(`Reducer`, () => {
     test('should not notify unsubscribed listeners', () =>
       new Promise<void>(done => {
         let triggered: boolean;
-        let subscription = reducer.subscribe(change => {
+        let subscription = reducer.subscribe(_ => {
           triggered = true;
         });
         triggered = false; // destroy initial trigger after subscription
@@ -170,7 +170,7 @@ describe(`Reducer`, () => {
   describe(`Reduce Function`, () => {
     test('should trigger initial call', () =>
       new Promise<void>(done => {
-        let reducer = new Reducer<boolean, void>(change => {
+        new Reducer<boolean, void>(change => {
           if (change.type === 'initial') {
             done();
           }
@@ -290,7 +290,7 @@ describe(`Reducer`, () => {
 
     test('updating effect should throw error after destroyd', () => {
       let triggerCount = 0;
-      let reducer = new Reducer<void, void>(change => {
+      let reducer = new Reducer<void, void>(_ => {
         triggerCount++;
       });
 

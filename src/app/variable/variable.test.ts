@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { Variable } from './variable';
 
 class SampleModel {
-  testData: string = '';
+  testData = '';
 }
 
 describe(`Variable`, () => {
@@ -20,12 +20,12 @@ describe(`Variable`, () => {
     });
 
     test('should be subscribable', () => {
-      variable.subscribe(message => {});
+      variable.subscribe(_ => {});
       expect(variable['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
     test('should be unsubscribable', () => {
-      let subscription = variable.subscribe(message => {});
+      let subscription = variable.subscribe(_ => {});
       subscription.unsubscribe();
       expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
     });
@@ -80,7 +80,7 @@ describe(`Variable`, () => {
 
     test('should not notify unsubscribed listeners', async () => {
       let triggered = false;
-      let subscription = variable.subscribe(message => {
+      let subscription = variable.subscribe(_ => {
         triggered = true;
       });
       subscription.unsubscribe();
@@ -93,7 +93,7 @@ describe(`Variable`, () => {
 
     test('should not notify subscription before the trigger', async () => {
       let triggered = false;
-      variable.subscribe(message => {
+      variable.subscribe(_ => {
         triggered = true;
       });
 

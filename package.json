@@ -32,20 +32,25 @@
     "test": "vitest",
     "start": "npm run build && node dist",
     "build": "tsc",
-    "lint": "eslint \"src/**/*.ts\" --fix",
+    "lint": "npm run lint:fix && npm run lint:biome && npm run lint:eslint",
+    "lint:biome": "biome check . --reporter=summary",
+    "lint:eslint": "eslint --ext .ts,.tsx .",
+    "lint:fix": "npm run lint:biome:fix && npm run lint:eslint:fix",
+    "lint:biome:fix": "biome check . --write --reporter=summary",
+    "lint:eslint:fix": "eslint --ext .ts,.tsx . --fix",
     "deploy": "vitest run && npm run build && npm publish"
   },
   "dependencies": {
     "helpers-lib": "1.13.10"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.2.4",
     "@typescript-eslint/eslint-plugin": "6.18.0",
     "@typescript-eslint/parser": "6.18.0",
     "eslint": "8.56.0",
-    "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.29.1",
     "eslint-plugin-no-null": "1.0.2",
-    "eslint-plugin-sort-class-members": "1.19.0",
+    "eslint-plugin-simple-import-sort": "12.1.1",
     "typescript": "5.3.3",
     "vitest": "1.6.0"
   }
