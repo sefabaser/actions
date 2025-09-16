@@ -2,7 +2,8 @@
   "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
   "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": false,
+    "includes": ["src/**/*.ts"]
   },
   "formatter": {
     "enabled": true,
@@ -208,6 +209,16 @@
   ],
   "assist": {
     "enabled": true,
-    "actions": { "source": { "organizeImports": "off" } }
-  }
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [":PACKAGE:", ":BLANK_LINE:", ":PATH:"]
+          }
+        }
+      }
+    }
+  },
+  "plugins": ["./biome-custom-plugins/ban-null.grit"]
 }
