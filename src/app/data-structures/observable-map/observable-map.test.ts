@@ -94,4 +94,18 @@ describe('ObservableMap', () => {
     await Wait();
     expect(called).toEqual(true);
   });
+
+  test('should convert to map', () => {
+    let set = new ObservableMap<number, string>();
+    set.set(1, 'test');
+    expect(set.convertToMap()).toEqual(new Map([[1, 'test']]));
+  });
+
+  test('should conveted map should not change the original map', () => {
+    let set = new ObservableMap<number, string>();
+    set.set(1, 'test');
+    let map = set.convertToMap();
+    map.set(2, 'test2');
+    expect(set.convertToMap()).toEqual(new Map([[1, 'test']]));
+  });
 });

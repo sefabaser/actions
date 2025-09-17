@@ -3,6 +3,10 @@ import { ObservableMap } from '../observable-map/observable-map';
 export class ObservableSet<KeyType extends number | string> {
   private observableMap = new ObservableMap<KeyType, void>();
 
+  convertToSet(): Set<KeyType> {
+    return new Set(this.observableMap.convertToMap().keys());
+  }
+
   get size(): number {
     return this.observableMap.size;
   }

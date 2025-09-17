@@ -4,6 +4,10 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
   private untilAddedListeners = new Map<KeyType, Set<(data: KeyType) => void>>();
   private untilRemovedListeners = new Map<KeyType, Set<(data: KeyType) => void>>();
 
+  convertToMap(): Map<KeyType, ItemType> {
+    return new Map(this.map);
+  }
+
   get size(): number {
     return this.map.size;
   }

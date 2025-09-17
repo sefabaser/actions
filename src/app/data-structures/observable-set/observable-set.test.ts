@@ -94,4 +94,18 @@ describe('ObservableSet', () => {
     await Wait();
     expect(called).toEqual(true);
   });
+
+  test('should convert to set', () => {
+    let set = new ObservableSet<number>();
+    set.add(1);
+    expect(set.convertToSet()).toEqual(new Set([1]));
+  });
+
+  test('should conveted set should not change the original set', () => {
+    let set = new ObservableSet<number>();
+    set.add(1);
+    let set2 = set.convertToSet();
+    set2.add(2);
+    expect(set.convertToSet()).toEqual(new Set([1]));
+  });
 });
