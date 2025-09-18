@@ -8,6 +8,19 @@ describe('ObservableMap', () => {
     expect(new ObservableMap()).toBeTruthy();
   });
 
+  test('should create an instance with a map', () => {
+    let map = new ObservableMap(new Map<number, string>([[1, 'test']]));
+    map.set(2, 'test2');
+
+    expect(map.size).toBe(2);
+    expect(map.convertToMap()).toEqual(
+      new Map<number, string>([
+        [1, 'test'],
+        [2, 'test2']
+      ])
+    );
+  });
+
   test('should set a value', () => {
     let set = new ObservableMap<number, string>();
     set.set(1, 'test');

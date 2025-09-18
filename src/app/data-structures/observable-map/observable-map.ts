@@ -1,10 +1,14 @@
-export class ObservableMap<KeyType extends number | string, ItemType> {
-  private map = new Map<KeyType, ItemType>();
+export class ObservableMap<KeyType extends number | string, ValueType> {
+  private map: Map<KeyType, ValueType>;
 
   private untilAddedListeners = new Map<KeyType, Set<(data: KeyType) => void>>();
   private untilRemovedListeners = new Map<KeyType, Set<(data: KeyType) => void>>();
 
-  convertToMap(): Map<KeyType, ItemType> {
+  constructor(map?: Map<KeyType, ValueType> | undefined) {
+    this.map = map ?? new Map<KeyType, ValueType>();
+  }
+
+  convertToMap(): Map<KeyType, ValueType> {
     return new Map(this.map);
   }
 
@@ -16,7 +20,7 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     return this.map.has(value);
   }
 
-  set(key: KeyType, item: ItemType): this {
+  set(key: KeyType, item: ValueType): this {
     this.map.set(key, item);
     if (this.untilAddedListeners.has(key)) {
       this.untilAddedListeners.get(key)?.forEach(callback => {
@@ -31,7 +35,7 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     return this;
   }
 
-  get(key: KeyType): ItemType | undefined {
+  get(key: KeyType): ValueType | undefined {
     return this.map.get(key);
   }
 
@@ -50,10 +54,10 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     return this;
   }
 
-  waitUntilAddedSync(value: KeyType, callback: (item: ItemType) => void): void {
+  waitUntilAddedSync(value: KeyType, callback: (item: ValueType) => void): void {
     if (this.map.has(value)) {
       try {
-        callback(this.map.get(value) as ItemType);
+        callback(this.map.get(value) as ValueType);
       } catch (e) {
         console.error('Observable map callback function error: ', e);
       }
@@ -63,7 +67,7 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
       }
       this.untilAddedListeners.get(value)?.add(() => {
         try {
-          callback(this.map.get(value) as ItemType);
+          callback(this.map.get(value) as ValueType);
         } catch (e) {
           console.error('Observable map callback function error: ', e);
         }
@@ -71,8 +75,8 @@ export class ObservableMap<KeyType extends number | string, ItemType> {
     }
   }
 
-  async waitUntilAdded(value: KeyType): Promise<ItemType> {
-    return new Promise<ItemType>(resolve => {
+  async waitUntilAdded(value: KeyType): Promise<ValueType> {
+    return new Promise<ValueType>(resolve => {
       this.waitUntilAddedSync(value, item => resolve(item));
     });
   }

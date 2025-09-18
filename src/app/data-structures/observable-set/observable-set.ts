@@ -3,6 +3,11 @@ import { ObservableMap } from '../observable-map/observable-map';
 export class ObservableSet<KeyType extends number | string> {
   private observableMap = new ObservableMap<KeyType, void>();
 
+  constructor(set?: Set<KeyType> | undefined) {
+    let map = set ? new Map(Array.from(set.keys()).map(key => [key, undefined])) : undefined;
+    this.observableMap = new ObservableMap<KeyType, void>(map);
+  }
+
   convertToSet(): Set<KeyType> {
     return new Set(this.observableMap.convertToMap().keys());
   }

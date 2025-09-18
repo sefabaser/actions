@@ -8,6 +8,12 @@ describe('ObservableSet', () => {
     expect(new ObservableSet()).toBeTruthy();
   });
 
+  test('should create an instance with a set', () => {
+    let set = new ObservableSet(new Set<number>([1]));
+    set.add(2);
+    expect(set.convertToSet()).toEqual(new Set([1, 2]));
+  });
+
   test('should add a value', () => {
     let set = new ObservableSet<number>();
     set.add(1);
