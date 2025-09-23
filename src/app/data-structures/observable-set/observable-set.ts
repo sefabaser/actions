@@ -29,8 +29,8 @@ export class ObservableSet<KeyType extends number | string> {
     this.observableMap.get(key);
   }
 
-  remove(key: KeyType): this {
-    this.observableMap.remove(key);
+  delete(key: KeyType): this {
+    this.observableMap.delete(key);
     return this;
   }
 

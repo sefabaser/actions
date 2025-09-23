@@ -20,10 +20,10 @@ describe('ObservableSet', () => {
     expect(set.size).toBe(1);
   });
 
-  test('should remove a value', () => {
+  test('should delete a value', () => {
     let set = new ObservableSet<number>();
     set.add(1);
-    set.remove(1);
+    set.delete(1);
     expect(set.size).toBe(0);
   });
 
@@ -73,10 +73,10 @@ describe('ObservableSet', () => {
     expect(called).toEqual(true);
   });
 
-  test('should return waitUntilRemovedSync if item is already removed', () => {
+  test('should return waitUntilRemovedSync if item is already deleted', () => {
     let set = new ObservableSet<number>();
     set.add(1);
-    set.remove(1);
+    set.delete(1);
     let called = false;
     set.waitUntilRemovedSync(1, () => {
       called = true;
@@ -89,14 +89,14 @@ describe('ObservableSet', () => {
     expect(await set.waitUntilRemoved(1)).toBeUndefined();
   });
 
-  test('should return waitUntilRemoved if item is already removed', async () => {
+  test('should return waitUntilRemoved if item is already deleted', async () => {
     let set = new ObservableSet<number>();
     let called = false;
     set.add(1);
     set.waitUntilRemoved(1).then(() => {
       called = true;
     });
-    set.remove(1);
+    set.delete(1);
     await Wait();
     expect(called).toEqual(true);
   });

@@ -39,7 +39,7 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
     return this.map.get(key);
   }
 
-  remove(key: KeyType): this {
+  delete(key: KeyType): this {
     this.map.delete(key);
     if (this.untilRemovedListeners.has(key)) {
       this.untilRemovedListeners.get(key)?.forEach(callback => {

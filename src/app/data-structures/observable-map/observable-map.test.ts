@@ -27,10 +27,10 @@ describe('ObservableMap', () => {
     expect(set.size).toBe(1);
   });
 
-  test('should remove a value', () => {
+  test('should delete a value', () => {
     let set = new ObservableMap<number, string>();
     set.set(1, 'test');
-    set.remove(1);
+    set.delete(1);
     expect(set.size).toBe(0);
   });
 
@@ -80,11 +80,11 @@ describe('ObservableMap', () => {
     expect(called).toEqual(true);
   });
 
-  test('should return waitUntilRemovedSync if item is already removed', async () => {
+  test('should return waitUntilRemovedSync if item is already deleted', async () => {
     let set = new ObservableMap<number, string>();
     let called = false;
     set.set(1, 'test');
-    set.remove(1);
+    set.delete(1);
     set.waitUntilRemovedSync(1, () => {
       called = true;
     });
@@ -96,14 +96,14 @@ describe('ObservableMap', () => {
     expect(await set.waitUntilRemoved(1)).toBeUndefined();
   });
 
-  test('should return waitUntilRemoved if item is already removed', async () => {
+  test('should return waitUntilRemoved if item is already deleted', async () => {
     let set = new ObservableMap<number, string>();
     let called = false;
     set.set(1, 'test');
     set.waitUntilRemoved(1).then(() => {
       called = true;
     });
-    set.remove(1);
+    set.delete(1);
     await Wait();
     expect(called).toEqual(true);
   });
