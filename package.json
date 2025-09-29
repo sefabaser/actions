@@ -17,17 +17,10 @@
   "bugs": {
     "url": "https://github.com/sefabaser/actions/issues"
   },
-  "prettier": {
-    "printWidth": 120,
-    "tabWidth": 2,
-    "semicolons": true,
-    "singleQuote": true,
-    "trailingComma": "none",
-    "arrowParens": "avoid"
-  },
   "homepage": "https://github.com/sefabaser/actions#readme",
   "scripts": {
-    "clean-install": "cls && rm -rf node_modules && rm -rf package-lock.json && npm install",
+    "clean-install": "cls && rm -rf node_modules && rm -rf package-lock.json && npm run i",
+    "i": "npm cache clean --force && npm install",
     "pretest": "clear",
     "test": "vitest",
     "start": "npm run build && node dist",
@@ -41,6 +34,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "typescript": "5.3.3",
-    "vitest": "1.6.0"
+    "vitest": "3.2.4"
   }
 }
