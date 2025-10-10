@@ -26,7 +26,7 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
     });
 
     try {
-      const cleanupOrVoid = executor(
+      let cleanupOrVoid = executor(
         value => {
           if (!this.isSettled) {
             this.resolveInternal?.(value);
@@ -41,7 +41,6 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
         }
       );
 
-      // Handle async executor (returns a Promise)
       if (cleanupOrVoid instanceof Promise) {
         cleanupOrVoid
           .then(cleanup => {
@@ -54,7 +53,6 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
             }
           })
           .catch(error => {
-            // Catch errors from async executor
             if (!this.isSettled) {
               this.rejectInternal?.(error);
               this.settle();
@@ -68,7 +66,6 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
         }
       }
     } catch (error) {
-      // Catch synchronous errors
       if (!this.isSettled) {
         this.rejectInternal?.(error);
         this.settle();
@@ -77,11 +74,11 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
   }
 
   private settle(): void {
-    this.isSettled = true;
     this.cleanup?.();
     this.cleanup = undefined;
     this.resolveInternal = undefined;
     this.rejectInternal = undefined;
+    this.isSettled = true;
   }
 
   destroy(): void {
