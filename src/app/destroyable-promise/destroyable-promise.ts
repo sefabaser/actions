@@ -14,29 +14,65 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
   private rejectInternal?: (reason?: any) => void;
   private cleanup?: () => void;
 
-  constructor(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void | (() => void)) {
+  constructor(
+    executor: (
+      resolve: (value: T | PromiseLike<T>) => void,
+      reject: (reason?: any) => void
+    ) => void | (() => void) | Promise<void | (() => void)>
+  ) {
     this.promise = new Promise<T>((resolve, reject) => {
       this.resolveInternal = resolve;
       this.rejectInternal = reject;
     });
 
-    const cleanupOrVoid = executor(
-      value => {
-        if (!this.isSettled) {
-          this.resolveInternal?.(value);
-          this.settle();
+    try {
+      const cleanupOrVoid = executor(
+        value => {
+          if (!this.isSettled) {
+            this.resolveInternal?.(value);
+            this.settle();
+          }
+        },
+        reason => {
+          if (!this.isSettled) {
+            this.rejectInternal?.(reason);
+            this.settle();
+          }
         }
-      },
-      reason => {
-        if (!this.isSettled) {
-          this.rejectInternal?.(reason);
-          this.settle();
+      );
+
+      // Handle async executor (returns a Promise)
+      if (cleanupOrVoid instanceof Promise) {
+        cleanupOrVoid
+          .then(cleanup => {
+            if (Comparator.isFunction(cleanup)) {
+              if (this.isSettled) {
+                cleanup();
+              } else {
+                this.cleanup = cleanup;
+              }
+            }
+          })
+          .catch(error => {
+            // Catch errors from async executor
+            if (!this.isSettled) {
+              this.rejectInternal?.(error);
+              this.settle();
+            }
+          });
+      } else if (Comparator.isFunction(cleanupOrVoid)) {
+        if (this.isSettled) {
+          cleanupOrVoid();
+        } else {
+          this.cleanup = cleanupOrVoid;
         }
       }
-    );
-
-    if (Comparator.isFunction(cleanupOrVoid)) {
-      this.cleanup = cleanupOrVoid;
+    } catch (error) {
+      // Catch synchronous errors
+      if (!this.isSettled) {
+        this.rejectInternal?.(error);
+        this.settle();
+      }
     }
   }
 
