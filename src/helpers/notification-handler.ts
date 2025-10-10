@@ -1,4 +1,6 @@
-export class ActionSubscription {
+import { LightweightAttachable } from '../app/attachable/lightweight-attachable';
+
+export class ActionSubscription extends LightweightAttachable {
   /**
    * @param subscriptions the subscriptions to combine
    * @returns a new ActionSubscription that combines the given subscriptions, when unsubscribed, all given subscriptions will be unsubscribed
@@ -6,15 +8,20 @@ export class ActionSubscription {
   static combine(subscriptions: ActionSubscription[]): ActionSubscription {
     return new ActionSubscription(() => {
       subscriptions.forEach(subscription => {
-        subscription.unsubscribe();
+        subscription.destroy();
       });
     });
   }
 
-  constructor(private unsubscribeCallback: () => void) {}
+  constructor(private unsubscribeCallback: () => void) {
+    super();
+  }
 
-  unsubscribe(): void {
-    this.unsubscribeCallback();
+  destroy(): void {
+    if (!this.destroyed) {
+      this.unsubscribeCallback();
+      super.destroy();
+    }
   }
 }
 

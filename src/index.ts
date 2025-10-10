@@ -1,5 +1,5 @@
-import { AttachmentTargetStore } from './app/attachable/attachment-target.store';
-import { ClassId } from './app/attachable/class-id';
+import { AttachmentTargetStore } from './app/attachable/helpers/attachment-target.store';
+import { ClassId } from './app/attachable/helpers/class-id';
 
 export { Action, ActionListenerCallbackFunction, ActionOptions } from './app/action/action';
 export { ObservableMap } from './app/data-structures/observable-map/observable-map';

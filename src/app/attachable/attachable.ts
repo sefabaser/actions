@@ -1,5 +1,5 @@
-import { AttachmentTargetStore } from './attachment-target.store';
-import { ClassId } from './class-id';
+import { AttachmentTargetStore } from './helpers/attachment-target.store';
+import { ClassId } from './helpers/class-id';
 
 export interface IAttachable {
   destroy(): void;

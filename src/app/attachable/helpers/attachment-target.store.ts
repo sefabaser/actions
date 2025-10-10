@@ -1,6 +1,6 @@
 import { Comparator } from 'helpers-lib';
 
-import { Attachable } from './attachable';
+import { Attachable } from '../attachable';
 
 export class AttachmentTargetStore {
   private static nextAvailableIds = new WeakMap<typeof Attachable, number>();

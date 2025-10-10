@@ -10,19 +10,37 @@ describe('DestroyablePromise', () => {
     expect(result).toBe(42);
   });
 
+  test('await function returns destroyable promise', async () => {
+    let foo = function (): DestroyablePromise<number> {
+      return new DestroyablePromise<number>(resolve => {
+        setTimeout(() => resolve(42), 10);
+      });
+    };
+    let promise = await foo();
+    expect(promise).toBe(42);
+  });
+
   test('rejects successfully', async () => {
     let error = new Error('test error');
     let promise = new DestroyablePromise<number>((_, reject) => reject(error));
     await expect(promise).rejects.toThrow('test error');
   });
 
-  test('resolves with async executor', async () => {
+  test('resolves delayed', async () => {
     let promise = new DestroyablePromise<string>(resolve => {
       setTimeout(() => resolve('delayed'), 10);
     });
 
     let result = await promise;
     expect(result).toBe('delayed');
+  });
+
+  test('async executor', async () => {
+    let promise = new DestroyablePromise<number>(async resolve => {
+      await Wait(10);
+      resolve(42);
+    });
+    let result = await promise;
   });
 
   test('destruction before resolution rejects with PromiseIsDestroyedError', async () => {

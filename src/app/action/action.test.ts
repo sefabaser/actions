@@ -20,13 +20,13 @@ describe(`Action`, () => {
     });
 
     test('should be subscribable', () => {
-      action.subscribe(_ => {});
+      action.subscribe(_ => {}).attachToRoot();
       expect(action['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
-    test('should be unsubscribable', () => {
-      let subscription = action.subscribe(_ => {});
-      subscription.unsubscribe();
+    test('subscription should be destroyable', () => {
+      let subscription = action.subscribe(_ => {}).attachToRoot();
+      subscription.destroy();
       expect(action['notificationHandler']['listenersMap'].size).toEqual(0);
     });
 
@@ -41,34 +41,40 @@ describe(`Action`, () => {
         let listener1 = false;
         let listener2 = false;
 
-        action.subscribe(message => {
-          if (message && message.testData === 'sample') {
-            listener1 = true;
-            if (listener2) {
-              done();
+        action
+          .subscribe(message => {
+            if (message && message.testData === 'sample') {
+              listener1 = true;
+              if (listener2) {
+                done();
+              }
             }
-          }
-        });
+          })
+          .attachToRoot();
 
-        action.subscribe(message => {
-          if (message && message.testData === 'sample') {
-            listener2 = true;
-            if (listener1) {
-              done();
+        action
+          .subscribe(message => {
+            if (message && message.testData === 'sample') {
+              listener2 = true;
+              if (listener1) {
+                done();
+              }
             }
-          }
-        });
+          })
+          .attachToRoot();
 
         action.trigger({ testData: 'sample' });
       }));
 
-    test('should not notify unsubscribed listeners', () =>
+    test('should not notify destroyed listeners', () =>
       new Promise<void>(done => {
         let triggered = false;
-        let subscription = action.subscribe(_ => {
-          triggered = true;
-        });
-        subscription.unsubscribe();
+        let subscription = action
+          .subscribe(_ => {
+            triggered = true;
+          })
+          .attachToRoot();
+        subscription.destroy();
         action.trigger({ testData: 'sample' });
 
         setTimeout(() => {
@@ -119,29 +125,56 @@ describe(`Action`, () => {
     });
 
     test('wait until any change', async () => {
-      setTimeout(() => {
-        action.trigger({ testData: 'sample' });
-      }, 1);
-      let nextNotification = await action.waitUntilNext();
-      expect(nextNotification).toEqual({ testData: 'sample' });
+      let resolvedWith: SampleModel | undefined;
+
+      action
+        .waitUntilNext(state => {
+          resolvedWith = state;
+        })
+        .attachToRoot();
+
+      expect(resolvedWith).toBeUndefined();
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toEqual({ testData: 'sample' });
     });
 
     test('wait until spesific data', async () => {
-      setTimeout(() => {
-        action.trigger({ testData: 'sample' });
-        action.trigger({ testData: 'expected' });
-      }, 1);
-      let nextNotification = await action.waitUntil({ testData: 'expected' });
-      expect(nextNotification).toEqual({ testData: 'expected' });
+      let resolvedWith: SampleModel | undefined;
+
+      action
+        .waitUntil({ testData: 'expected' }, state => {
+          resolvedWith = state;
+        })
+        .attachToRoot();
+
+      expect(resolvedWith).toBeUndefined();
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toBeUndefined();
+      action.trigger({ testData: 'expected' });
+      expect(resolvedWith).toEqual({ testData: 'expected' });
     });
 
     test('wait until undefined', async () => {
-      setTimeout(() => {
-        action.trigger({ testData: 'sample' });
-        action.trigger(undefined);
-      }, 1);
-      let nextNotification = await action.waitUntil(undefined);
-      expect(nextNotification).toBeUndefined();
+      let resolvedWith: SampleModel | undefined;
+      let resolved = false;
+
+      action
+        .waitUntil(undefined, state => {
+          resolvedWith = state;
+          resolved = true;
+        })
+        .attachToRoot();
+
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
+
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
+
+      action.trigger(undefined);
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(true);
     });
   });
 });
