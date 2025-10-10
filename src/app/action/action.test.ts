@@ -176,5 +176,55 @@ describe(`Action`, () => {
       expect(resolvedWith).toBeUndefined();
       expect(resolved).toBe(true);
     });
+
+    test('wait until promise any change', async () => {
+      let resolvedWith: SampleModel | undefined;
+
+      let promise = action.waitUntilNextPromise();
+      promise.then(state => {
+        resolvedWith = state;
+      });
+
+      expect(resolvedWith).toBeUndefined();
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toEqual({ testData: 'sample' });
+    });
+
+    test('wait until promise spesific data', async () => {
+      let resolvedWith: SampleModel | undefined;
+
+      let promise = action.waitUntilPromise({ testData: 'expected' });
+      promise.then(state => {
+        resolvedWith = state;
+      });
+
+      expect(resolvedWith).toBeUndefined();
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toBeUndefined();
+      action.trigger({ testData: 'expected' });
+      expect(resolvedWith).toEqual({ testData: 'expected' });
+    });
+
+    test('wait until promise undefined', async () => {
+      let resolvedWith: SampleModel | undefined;
+      let resolved = false;
+
+      let promise = action.waitUntilPromise(undefined);
+      promise.then(state => {
+        resolvedWith = state;
+        resolved = true;
+      });
+
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
+
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
+
+      action.trigger(undefined);
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(true);
+    });
   });
 });

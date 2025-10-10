@@ -82,13 +82,16 @@ export class Action<T> {
 
   waitUntilNextPromise(): DestroyablePromise<T> {
     return new DestroyablePromise(resolve => {
-      this.waitUntilNext(resolve);
+      this.nextListeners.add(resolve);
+      return () => this.nextListeners.delete(resolve);
     });
   }
 
   waitUntilPromise(data: T): DestroyablePromise<T> {
     return new DestroyablePromise<T>(resolve => {
-      this.waitUntil(data, resolve);
+      let item = { expected: data, callback: resolve };
+      this.untilListeners.add(item);
+      return () => this.untilListeners.delete(item);
     });
   }
 

@@ -1,12 +1,14 @@
 import { Comparator } from 'helpers-lib';
 
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
+
 export class PromiseIsDestroyedError extends Error {
   constructor() {
     super('Promise is destroyed');
   }
 }
 
-export class DestroyablePromise<T> implements PromiseLike<T> {
+export class DestroyablePromise<T> extends LightweightAttachable implements PromiseLike<T> {
   private promise: Promise<T>;
   private isSettled = false;
 
@@ -20,6 +22,8 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
       reject: (reason?: any) => void
     ) => void | (() => void) | Promise<void | (() => void)>
   ) {
+    super();
+
     this.promise = new Promise<T>((resolve, reject) => {
       this.resolveInternal = resolve;
       this.rejectInternal = reject;
@@ -79,6 +83,7 @@ export class DestroyablePromise<T> implements PromiseLike<T> {
     this.resolveInternal = undefined;
     this.rejectInternal = undefined;
     this.isSettled = true;
+    super.destroy();
   }
 
   destroy(): void {

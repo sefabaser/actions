@@ -1,12 +1,13 @@
 import { Wait } from 'helpers-lib';
 import { describe, expect, test } from 'vitest';
 
+import { Attachable } from '../attachable/attachable';
 import { DestroyablePromise, PromiseIsDestroyedError } from './destroyable-promise';
 
 describe('DestroyablePromise', () => {
   describe('Sync Executor', () => {
     test('resolves successfully', async () => {
-      let promise = new DestroyablePromise<number>(resolve => resolve(42));
+      let promise = new DestroyablePromise<number>(resolve => resolve(42)).attachToRoot();
       let result = await promise;
       expect(result).toBe(42);
     });
@@ -15,7 +16,7 @@ describe('DestroyablePromise', () => {
       let foo = function (): DestroyablePromise<number> {
         return new DestroyablePromise<number>(resolve => {
           setTimeout(() => resolve(42), 10);
-        });
+        }).attachToRoot();
       };
       let promise = await foo();
       expect(promise).toBe(42);
@@ -23,14 +24,14 @@ describe('DestroyablePromise', () => {
 
     test('rejects successfully', async () => {
       let error = new Error('test error');
-      let promise = new DestroyablePromise<number>((_, reject) => reject(error));
+      let promise = new DestroyablePromise<number>((_, reject) => reject(error)).attachToRoot();
       await expect(promise).rejects.toThrow('test error');
     });
 
     test('resolves delayed', async () => {
       let promise = new DestroyablePromise<string>(resolve => {
         setTimeout(() => resolve('delayed'), 10);
-      });
+      }).attachToRoot();
 
       let result = await promise;
       expect(result).toBe('delayed');
@@ -39,7 +40,7 @@ describe('DestroyablePromise', () => {
     test('destruction before resolution rejects with PromiseIsDestroyedError', async () => {
       let promise = new DestroyablePromise<number>(resolve => {
         setTimeout(() => resolve(42), 100);
-      });
+      }).attachToRoot();
 
       promise.destroy();
 
@@ -50,7 +51,7 @@ describe('DestroyablePromise', () => {
       let resolveExternal: ((value: number) => void) | undefined;
       let promise = new DestroyablePromise<number>(resolve => {
         resolveExternal = resolve;
-      });
+      }).attachToRoot();
 
       promise.destroy();
 
@@ -63,7 +64,7 @@ describe('DestroyablePromise', () => {
 
       let promise = new DestroyablePromise<number>(() => () => {
         cleanupCalled = true;
-      });
+      }).attachToRoot();
 
       promise.catch(() => {});
       promise.destroy();
@@ -75,7 +76,7 @@ describe('DestroyablePromise', () => {
       let cleanupArgs: any[] = [];
       let promise = new DestroyablePromise<number>(() => (...args: any[]) => {
         cleanupArgs = args;
-      });
+      }).attachToRoot();
 
       promise.catch(() => {});
       promise.destroy();
@@ -107,7 +108,7 @@ describe('DestroyablePromise', () => {
     test('then method chains correctly', async () => {
       let promise = new DestroyablePromise<number>(resolve => {
         resolve(10);
-      });
+      }).attachToRoot();
 
       let result = await promise.then(value => value * 2);
       expect(result).toBe(20);
@@ -116,7 +117,7 @@ describe('DestroyablePromise', () => {
     test('then with rejection handler', async () => {
       let promise = new DestroyablePromise<number>((_, reject) => {
         reject(new Error('failed'));
-      });
+      }).attachToRoot();
 
       let result = await promise.then(
         value => value,
@@ -128,7 +129,7 @@ describe('DestroyablePromise', () => {
     test('catch method handles rejection', async () => {
       let promise = new DestroyablePromise<number>((_, reject) => {
         reject(new Error('test error'));
-      });
+      }).attachToRoot();
 
       let result = await promise.catch(error => error.message);
       expect(result).toBe('test error');
@@ -137,7 +138,7 @@ describe('DestroyablePromise', () => {
     test('catch method handles destruction', async () => {
       let promise = new DestroyablePromise<number>(resolve => {
         setTimeout(() => resolve(42), 100);
-      });
+      }).attachToRoot();
 
       promise.destroy();
 
@@ -155,7 +156,7 @@ describe('DestroyablePromise', () => {
       let finallyCalled = false;
       let promise = new DestroyablePromise<number>(resolve => {
         resolve(42);
-      });
+      }).attachToRoot();
 
       let result = await promise.finally(() => {
         finallyCalled = true;
@@ -169,7 +170,7 @@ describe('DestroyablePromise', () => {
       let finallyCalled = false;
       let promise = new DestroyablePromise<number>((_, reject) => {
         reject(new Error('failed'));
-      });
+      }).attachToRoot();
 
       await promise
         .catch(() => {})
@@ -198,7 +199,7 @@ describe('DestroyablePromise', () => {
     test('resolves with PromiseLike value', async () => {
       let promise = new DestroyablePromise<number>(resolve => {
         resolve(Promise.resolve(99));
-      });
+      }).attachToRoot();
 
       let result = await promise;
       expect(result).toBe(99);
@@ -237,7 +238,7 @@ describe('DestroyablePromise', () => {
     test('chaining multiple then calls', async () => {
       let promise = new DestroyablePromise<number>(resolve => {
         resolve(5);
-      });
+      }).attachToRoot();
 
       let result1 = await promise;
       let result2 = await promise
@@ -252,7 +253,7 @@ describe('DestroyablePromise', () => {
     test('works with async/await', async () => {
       let promise = new DestroyablePromise<string>(resolve => {
         setTimeout(() => resolve('async result'), 10);
-      });
+      }).attachToRoot();
 
       let result = await promise;
       expect(result).toBe('async result');
@@ -285,7 +286,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise;
       expect(cleanupCalled).toBe(true);
@@ -299,7 +300,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise.catch(() => {});
       expect(cleanupCalled).toBe(true);
@@ -313,7 +314,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise;
       expect(cleanupCalled).toBe(true);
@@ -327,7 +328,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise.catch(() => {});
       expect(cleanupCalled).toBe(true);
@@ -341,7 +342,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise;
       expect(cleanupCalled).toBe(true);
@@ -355,7 +356,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise.catch(() => {});
       expect(cleanupCalled).toBe(true);
@@ -401,7 +402,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCount++;
         };
-      });
+      }).attachToRoot();
 
       await promise;
       expect(cleanupCount).toBe(1);
@@ -425,7 +426,7 @@ describe('DestroyablePromise', () => {
         mockEmitter.addEventListener();
         queueMicrotask(() => resolve());
         return () => mockEmitter.removeEventListener();
-      });
+      }).attachToRoot();
 
       await promise;
       expect(eventListenerRemoved).toBe(true);
@@ -439,7 +440,7 @@ describe('DestroyablePromise', () => {
         return () => {
           subscriptionCancelled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise.catch(() => {});
       expect(subscriptionCancelled).toBe(true);
@@ -455,7 +456,7 @@ describe('DestroyablePromise', () => {
           clearInterval(intervalId);
           intervalCleared = true;
         };
-      });
+      }).attachToRoot();
 
       await promise;
       expect(intervalCleared).toBe(true);
@@ -484,7 +485,7 @@ describe('DestroyablePromise', () => {
       let promise = new DestroyablePromise<number>((resolve, reject) => {
         resolve(42);
         rejectExternal = reject;
-      });
+      }).attachToRoot();
 
       await promise;
 
@@ -509,7 +510,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanup2Called = true;
         };
-      });
+      }).attachToRoot();
 
       resolveExternal?.('first');
 
@@ -538,7 +539,7 @@ describe('DestroyablePromise', () => {
           resources.listener = false;
           resources.connection = false;
         };
-      });
+      }).attachToRoot();
 
       await promise;
 
@@ -549,14 +550,40 @@ describe('DestroyablePromise', () => {
     test('promise all with destroyable promises', async () => {
       let promise1 = new DestroyablePromise<number>(resolve => {
         resolve(42);
-      });
+      }).attachToRoot();
 
       let promise2 = new DestroyablePromise<number>(resolve => {
         resolve(42);
-      });
+      }).attachToRoot();
 
       let result = await Promise.all([promise1, promise2]);
       expect(result).toEqual([42, 42]);
+    });
+
+    test('failing promise all with destroyable promises', async () => {
+      let promise1 = new DestroyablePromise<number>(resolve => {
+        resolve(42);
+      }).attachToRoot();
+
+      let promise2 = new DestroyablePromise<number>((_, reject) => {
+        setTimeout(() => {
+          reject('failed');
+        }, 10);
+      }).attachToRoot();
+
+      let resolvedWith: number[] | undefined;
+      let rejectedWith: any | undefined;
+      Promise.all([promise1, promise2])
+        .then(result => {
+          resolvedWith = result;
+        })
+        .catch(error => {
+          rejectedWith = error;
+        });
+
+      await Wait(20);
+      expect(resolvedWith).toEqual(undefined);
+      expect(rejectedWith).toBe('failed');
     });
   });
 
@@ -569,7 +596,7 @@ describe('DestroyablePromise', () => {
       let promise = new DestroyablePromise<number>(async resolve => {
         await Wait(10);
         resolve(42);
-      });
+      }).attachToRoot();
 
       let result = await promise;
       expect(result).toBe(42);
@@ -579,7 +606,7 @@ describe('DestroyablePromise', () => {
       let promise = new DestroyablePromise<number>(async (_, reject) => {
         await Wait(10);
         reject(new Error('async error'));
-      });
+      }).attachToRoot();
 
       await expect(promise).rejects.toThrow('async error');
     });
@@ -588,7 +615,7 @@ describe('DestroyablePromise', () => {
       let promise = new DestroyablePromise<number>(async resolve => {
         failureFunction();
         resolve(42);
-      });
+      }).attachToRoot();
 
       await expect(promise).rejects.toThrow('error');
     });
@@ -598,7 +625,7 @@ describe('DestroyablePromise', () => {
         await Wait(10);
         failureFunction();
         resolve(42);
-      });
+      }).attachToRoot();
 
       await expect(promise).rejects.toThrow('error');
     });
@@ -612,7 +639,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise;
       expect(cleanupCalled).toBe(true);
@@ -627,7 +654,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise.catch(() => {});
       expect(cleanupCalled).toBe(true);
@@ -641,7 +668,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       promise.catch(() => {});
       await Wait(20);
@@ -660,7 +687,7 @@ describe('DestroyablePromise', () => {
         return () => {
           cleanupCalled = true;
         };
-      });
+      }).attachToRoot();
 
       await promise.catch(() => {});
       expect(cleanupCalled).toBe(true);
@@ -677,7 +704,7 @@ describe('DestroyablePromise', () => {
         resolve('done');
 
         return () => clearTimeout(timerId);
-      });
+      }).attachToRoot();
 
       await promise;
       await Wait(100);
@@ -700,13 +727,56 @@ describe('DestroyablePromise', () => {
         return () => {
           values.push(999);
         };
-      });
+      }).attachToRoot();
 
       promise.then(() => values.push(10));
       let result = await promise;
       values.push(result);
 
       expect(values).toEqual([1, 2, 3, 10, 999, 100]);
+    });
+  });
+
+  describe('Attachable', () => {
+    test('resolved promise should also be destroyed', async () => {
+      let promise = new DestroyablePromise<number>(resolve => {
+        resolve(42);
+      }).attachToRoot();
+
+      await promise;
+      expect(promise.destroyed).toBe(true);
+    });
+
+    test('rejected promise should also be destroyed', async () => {
+      let promise = new DestroyablePromise<number>((_, reject) => {
+        reject(new Error('failed'));
+      }).attachToRoot();
+
+      await promise.catch(() => {});
+      expect(promise.destroyed).toBe(true);
+    });
+
+    test('attached parent destruction should reject the promise', async () => {
+      let parent = new Attachable().attachToRoot();
+      let promise = new DestroyablePromise<number>(resolve => {
+        setTimeout(() => {
+          resolve(42);
+        }, 10);
+      }).attach(parent);
+
+      let resolvedWith: number | undefined;
+      let rejectedWith: any | undefined;
+
+      promise.catch(e => {
+        rejectedWith = e;
+      });
+
+      parent.destroy();
+      await promise;
+      await Wait(20);
+
+      expect(resolvedWith).toBeUndefined();
+      expect(rejectedWith).toBeInstanceOf(PromiseIsDestroyedError);
     });
   });
 });
