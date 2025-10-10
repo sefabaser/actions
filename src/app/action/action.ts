@@ -78,6 +78,11 @@ export class Action<T> {
     this.untilListeners.add({ expected: data, callback: callback });
   }
 
+  /** @internal */
+  getAllListeners(): ((data: T) => any)[] {
+    return this.notificationHandler.getAllListeners();
+  }
+
   async waitUntil(data: T): Promise<T> {
     return new Promise(resolve => {
       this.waitUntilCallback(data, resolve);

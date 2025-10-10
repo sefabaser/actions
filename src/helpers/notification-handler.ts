@@ -49,4 +49,9 @@ export class NotificationHandler<T> {
 
     return subscription;
   }
+
+  /** @internal */
+  getAllListeners(): ((data: T) => any)[] {
+    return [...this.listenersMap.values()];
+  }
 }
