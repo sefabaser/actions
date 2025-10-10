@@ -265,4 +265,245 @@ describe('DestroyablePromise', () => {
     expect(error.message).toBe('Promise is destroyed');
     expect(error).toBeInstanceOf(Error);
   });
+
+  test('cleanup is called on successful resolution', async () => {
+    let cleanupCalled = false;
+
+    let promise = new DestroyablePromise<number>(resolve => {
+      queueMicrotask(() => resolve(42));
+      return () => {
+        cleanupCalled = true;
+      };
+    });
+
+    await promise;
+    expect(cleanupCalled).toBe(true);
+  });
+
+  test('cleanup is called on rejection', async () => {
+    let cleanupCalled = false;
+
+    let promise = new DestroyablePromise<number>((_, reject) => {
+      queueMicrotask(() => reject(new Error('failed')));
+      return () => {
+        cleanupCalled = true;
+      };
+    });
+
+    await promise.catch(() => {});
+    expect(cleanupCalled).toBe(true);
+  });
+
+  test('cleanup is called on async resolution', async () => {
+    let cleanupCalled = false;
+
+    let promise = new DestroyablePromise<string>(resolve => {
+      setTimeout(() => resolve('done'), 10);
+      return () => {
+        cleanupCalled = true;
+      };
+    });
+
+    await promise;
+    expect(cleanupCalled).toBe(true);
+  });
+
+  test('cleanup is called on async rejection', async () => {
+    let cleanupCalled = false;
+
+    let promise = new DestroyablePromise<string>((_, reject) => {
+      setTimeout(() => reject(new Error('async error')), 10);
+      return () => {
+        cleanupCalled = true;
+      };
+    });
+
+    await promise.catch(() => {});
+    expect(cleanupCalled).toBe(true);
+  });
+
+  test('cleanup is not called twice on resolution then destroy', async () => {
+    let cleanupCount = 0;
+
+    let promise = new DestroyablePromise<number>(resolve => {
+      queueMicrotask(() => resolve(42));
+      return () => {
+        cleanupCount++;
+      };
+    });
+
+    await promise;
+    promise.destroy();
+
+    expect(cleanupCount).toBe(1);
+  });
+
+  test('cleanup is not called twice on rejection then destroy', async () => {
+    let cleanupCount = 0;
+
+    let promise = new DestroyablePromise<number>((_, reject) => {
+      queueMicrotask(() => reject(new Error('failed')));
+      return () => {
+        cleanupCount++;
+      };
+    });
+
+    await promise.catch(() => {});
+    promise.destroy();
+
+    expect(cleanupCount).toBe(1);
+  });
+
+  test('destroy after resolution does not call cleanup again', async () => {
+    let cleanupCount = 0;
+
+    let promise = new DestroyablePromise<number>(resolve => {
+      setTimeout(() => resolve(42), 10);
+      return () => {
+        cleanupCount++;
+      };
+    });
+
+    await promise;
+    expect(cleanupCount).toBe(1);
+
+    promise.destroy();
+    promise.destroy();
+
+    expect(cleanupCount).toBe(1);
+  });
+
+  test('cleanup clears subscriptions on resolution', async () => {
+    let eventListenerRemoved = false;
+    let mockEmitter = {
+      addEventListener: () => {},
+      removeEventListener: () => {
+        eventListenerRemoved = true;
+      }
+    };
+
+    let promise = new DestroyablePromise<void>(resolve => {
+      mockEmitter.addEventListener();
+      queueMicrotask(() => resolve());
+      return () => mockEmitter.removeEventListener();
+    });
+
+    await promise;
+    expect(eventListenerRemoved).toBe(true);
+  });
+
+  test('cleanup clears subscriptions on rejection', async () => {
+    let subscriptionCancelled = false;
+
+    let promise = new DestroyablePromise<void>((_, reject) => {
+      queueMicrotask(() => reject(new Error('error')));
+      return () => {
+        subscriptionCancelled = true;
+      };
+    });
+
+    await promise.catch(() => {});
+    expect(subscriptionCancelled).toBe(true);
+  });
+
+  test('cleanup clears interval on resolution', async () => {
+    let intervalCleared = false;
+
+    let promise = new DestroyablePromise<number>(resolve => {
+      let intervalId = setInterval(() => {}, 1000);
+      queueMicrotask(() => resolve(42));
+      return () => {
+        clearInterval(intervalId);
+        intervalCleared = true;
+      };
+    });
+
+    await promise;
+    expect(intervalCleared).toBe(true);
+  });
+
+  test('resolve after settlement is ignored', async () => {
+    let resolveExternal: ((value: number) => void) | undefined;
+
+    let promise = new DestroyablePromise<number>(resolve => {
+      resolveExternal = resolve;
+    });
+
+    promise.destroy();
+
+    await promise.catch(() => {});
+
+    resolveExternal?.(42);
+    resolveExternal?.(100);
+
+    await expect(promise).rejects.toThrow(PromiseIsDestroyedError);
+  });
+
+  test('reject after settlement is ignored', async () => {
+    let rejectExternal: ((reason?: any) => void) | undefined;
+
+    let promise = new DestroyablePromise<number>((resolve, reject) => {
+      resolve(42);
+      rejectExternal = reject;
+    });
+
+    await promise;
+
+    rejectExternal?.(new Error('should be ignored'));
+
+    let result = await promise;
+    expect(result).toBe(42);
+  });
+
+  test('multiple async operations cleanup correctly on first resolution', async () => {
+    let cleanup1Called = false;
+    let cleanup2Called = false;
+    let resolveExternal: ((value: string) => void) | undefined;
+
+    let promise = new DestroyablePromise<string>(resolve => {
+      resolveExternal = resolve;
+
+      setTimeout(() => {
+        cleanup1Called = true;
+      }, 100);
+
+      return () => {
+        cleanup2Called = true;
+      };
+    });
+
+    resolveExternal?.('first');
+
+    await promise;
+
+    expect(cleanup2Called).toBe(true);
+    expect(cleanup1Called).toBe(false);
+  });
+
+  test('cleanup with complex resource management', async () => {
+    let resources = {
+      timer: undefined as ReturnType<typeof setTimeout> | undefined,
+      listener: false,
+      connection: false
+    };
+
+    let promise = new DestroyablePromise<void>(resolve => {
+      resources.timer = setTimeout(() => resolve(), 10);
+      resources.listener = true;
+      resources.connection = true;
+
+      return () => {
+        if (resources.timer) {
+          clearTimeout(resources.timer);
+        }
+        resources.listener = false;
+        resources.connection = false;
+      };
+    });
+
+    await promise;
+
+    expect(resources.listener).toBe(false);
+    expect(resources.connection).toBe(false);
+  });
 });

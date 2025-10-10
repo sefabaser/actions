@@ -1,3 +1,5 @@
+import { Comparator } from 'helpers-lib';
+
 export class PromiseIsDestroyedError extends Error {
   constructor() {
     super('Promise is destroyed');
@@ -6,35 +8,50 @@ export class PromiseIsDestroyedError extends Error {
 
 export class DestroyablePromise<T> implements PromiseLike<T> {
   private promise: Promise<T>;
+  private isSettled = false;
+
+  private resolveInternal?: (value: T | PromiseLike<T>) => void;
+  private rejectInternal?: (reason?: any) => void;
   private cleanup?: () => void;
-  private isDestroyed = false;
-  private rejectInternal!: (reason?: any) => void;
 
   constructor(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void | (() => void)) {
-    let resolveInternal!: (value: T | PromiseLike<T>) => void;
-
     this.promise = new Promise<T>((resolve, reject) => {
+      this.resolveInternal = resolve;
       this.rejectInternal = reject;
-      resolveInternal = value => {
-        if (!this.isDestroyed) {
-          resolve(value);
-        }
-      };
     });
 
-    let cleanupOrVoid = executor(resolveInternal, this.rejectInternal);
-    if (typeof cleanupOrVoid === 'function') {
+    const cleanupOrVoid = executor(
+      value => {
+        if (!this.isSettled) {
+          this.resolveInternal?.(value);
+          this.settle();
+        }
+      },
+      reason => {
+        if (!this.isSettled) {
+          this.rejectInternal?.(reason);
+          this.settle();
+        }
+      }
+    );
+
+    if (Comparator.isFunction(cleanupOrVoid)) {
       this.cleanup = cleanupOrVoid;
     }
   }
 
+  private settle(): void {
+    this.isSettled = true;
+    this.cleanup?.();
+    this.cleanup = undefined;
+    this.resolveInternal = undefined;
+    this.rejectInternal = undefined;
+  }
+
   destroy(): void {
-    if (!this.isDestroyed) {
-      this.isDestroyed = true;
-      this.cleanup?.();
-      this.rejectInternal(new PromiseIsDestroyedError());
-      this.cleanup = undefined;
-      this.rejectInternal = () => {};
+    if (!this.isSettled) {
+      this.rejectInternal?.(new PromiseIsDestroyedError());
+      this.settle();
     }
   }
 
