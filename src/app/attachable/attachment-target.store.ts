@@ -2,7 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { Attachable } from './attachable';
 
-export class AttachableStore {
+export class AttachmentTargetStore {
   private static nextAvailableIds = new WeakMap<typeof Attachable, number>();
 
   private static idToAttachmentTarget = new Map<string, Attachable>();

@@ -20,7 +20,7 @@ export class Action<T> {
 
   private clone: boolean;
 
-  constructor(private options: ActionOptions = {}) {
+  constructor(options: ActionOptions = {}) {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
   }
 

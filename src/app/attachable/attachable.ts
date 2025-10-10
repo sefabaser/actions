@@ -1,18 +1,36 @@
-import { Comparator } from 'helpers-lib';
-
-import { AttachableStore } from './attachable.store';
+import { AttachmentTargetStore } from './attachment-target.store';
 import { ClassId } from './class-id';
 
+export interface IAttachable {
+  destroy(): void;
+}
+
 export class Attachable extends ClassId {
-  readonly id: string = AttachableStore.registerAttachmentTarget(this);
+  readonly id: string = AttachmentTargetStore.registerAttachmentTarget(this);
 
   private attachedParent: Attachable | undefined;
-  private attachments: Attachable[] = [];
+  private attachments: IAttachable[] = [];
 
   private _attachIsCalled = false;
   private _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;
+  }
+
+  /** @internal */
+  static attach(parent: Attachable | string, child: IAttachable): Attachable {
+    let parentEntity = AttachmentTargetStore.findAttachmentTarget(parent);
+
+    let currentParent: Attachable | undefined = parentEntity;
+    while (currentParent) {
+      if (currentParent === child) {
+        throw new Error(`Circular attachment detected!`);
+      }
+      currentParent = currentParent.attachedParent;
+    }
+
+    parentEntity.setAttachment(child);
+    return parentEntity;
   }
 
   constructor() {
@@ -28,10 +46,10 @@ export class Attachable extends ClassId {
     if (!this._destroyed) {
       this.attachedParent?.removeAttachment(this);
       this.attachedParent = undefined;
-      AttachableStore.unregisterAttachmentTarget(this);
+      AttachmentTargetStore.unregisterAttachmentTarget(this);
 
       let attachedEntities = [...this.attachments];
-      attachedEntities.forEach(item => this.destroyAttachment(item));
+      attachedEntities.forEach(item => item.destroy());
       this.attachments = [];
       this._destroyed = true;
     }
@@ -44,11 +62,8 @@ export class Attachable extends ClassId {
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      let parentEntity = AttachableStore.findAttachmentTarget(parent);
-      this.checkCircularAttachment(parentEntity);
-
+      let parentEntity = Attachable.attach(parent, this);
       this.attachedParent = parentEntity;
-      parentEntity.setAttachment(this);
     }
     return this;
   }
@@ -62,42 +77,20 @@ export class Attachable extends ClassId {
     return this;
   }
 
-  private setAttachment(child: Attachable): void {
+  /** @internal */
+  setAttachment(child: IAttachable): void {
     if (this.destroyed) {
-      this.destroyAttachment(child);
+      child.destroy();
     } else {
       this.attachments.push(child);
     }
   }
 
-  private removeAttachment(child: Attachable): void {
+  /** @internal */
+  removeAttachment(child: IAttachable): void {
     let index = this.attachments.indexOf(child);
     if (index >= 0) {
       this.attachments.splice(index, 1);
     }
-  }
-
-  private checkCircularAttachment(parentEntity: Attachable | undefined): void {
-    while (parentEntity) {
-      if (parentEntity === this) {
-        throw new Error(`Circular attachment detected!`);
-      }
-      parentEntity = parentEntity.attachedParent;
-    }
-  }
-
-  private destroyAttachment(object: Attachable): void {
-    if (Comparator.isObject(object)) {
-      let item: any = object;
-      if (Comparator.isFunction(item.destroy)) {
-        item.destroy();
-        return;
-      } else if (Comparator.isFunction(item.unsubscribe)) {
-        item.unsubscribe();
-        return;
-      }
-    }
-
-    throw new Error(`AttachmentTarget: destroyAttachment is used with not supperted type! Target: "${object}"`);
   }
 }

@@ -1,34 +1,55 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from './attachable';
-import { AttachableStore } from './attachable.store';
+import { AttachmentTargetStore } from './attachment-target.store';
 
 describe('Attachable', () => {
   beforeEach(() => {
-    AttachableStore.hardReset();
+    AttachmentTargetStore.hardReset();
   });
 
   describe('basic', () => {
     test('attachable should have an id', () => {
-      class Sample extends Attachable {}
-      let sample = new Sample().attachToRoot();
+      let sample = new Attachable().attachToRoot();
       expect(sample.id).toBeDefined();
     });
 
     test('ids should be unique', () => {
-      class Sample extends Attachable {}
-      let sample1 = new Sample().attachToRoot();
-      let sample2 = new Sample().attachToRoot();
+      let sample1 = new Attachable().attachToRoot();
+      let sample2 = new Attachable().attachToRoot();
       expect(sample1.id !== sample2.id).toBeTruthy();
     });
 
+    test('not attaching to anything should throw error', () => {
+      let operation = async (): Promise<void> => {
+        new Attachable();
+      };
+
+      vi.useFakeTimers();
+      expect(() => {
+        operation();
+        vi.runAllTimers();
+      }).toThrow('Attachable: The object is not attached to anything!');
+      vi.useRealTimers();
+    });
+
+    test('attachment is not necessary if attachable is destroyed right after creation', () => {
+      let operation = async (): Promise<void> => {
+        let sample = new Attachable();
+        sample.destroy();
+      };
+
+      vi.useFakeTimers();
+      expect(() => {
+        operation();
+        vi.runAllTimers();
+      }).not.toThrow('Attachable: The object is not attached to anything!');
+      vi.useRealTimers();
+    });
+
     test('when attachment target is destroyed, it should destroy its attachments', () => {
-      class Target extends Attachable {}
-      class Attachment extends Attachable {}
-
-      let target = new Target();
-      let attachment = new Attachment().attach(target);
-
+      let target = new Attachable();
+      let attachment = new Attachable().attach(target);
       target.destroy();
 
       expect(attachment.destroyed).toBeTruthy();
@@ -91,14 +112,8 @@ describe('Attachable', () => {
       expect(child?.destroyed).toBeTruthy();
     });
 
-    test('onDestroy should be triggered when destroy listener is attached to itself', () => {
-      // TODO
-    });
-
     test('attach to self should throw error', () => {
-      class Sample extends Attachable {}
-
-      let sample = new Sample();
+      let sample = new Attachable();
       expect(() => {
         sample.attach(sample);
       }).toThrow('Circular attachment detected!');
@@ -120,20 +135,8 @@ describe('Attachable', () => {
       // TODO
     });
 
-    test('attachment is not necessary if attachable is destroyed right after creation', () => {
-      class Sample extends Attachable {}
-
-      let operation = async (): Promise<void> => {
-        let sample = new Sample();
-        sample.destroy();
-      };
-
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
-        vi.runAllTimers();
-      }).not.toThrow('Attachable: The object is not attached to anything!');
-      vi.useRealTimers();
+    test('onDestroy should be triggered when destroy listener is attached to itself', () => {
+      // TODO
     });
   });
 });
