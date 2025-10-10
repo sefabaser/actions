@@ -28,8 +28,8 @@
     "lint": "biome check . --write --max-diagnostics=1",
     "deploy": "vitest run && npm run build && npm publish"
   },
-  "dependencies": {
-    "helpers-lib": "1.13.10"
+  "peerDependencies": {
+    "helpers-lib": "^1.13.10"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
