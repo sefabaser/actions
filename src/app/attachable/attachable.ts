@@ -79,7 +79,7 @@ export class Attachable extends ClassId {
 
   /** @internal */
   setAttachment(child: IAttachable): void {
-    if (this.destroyed) {
+    if (this._destroyed) {
       child.destroy();
     } else {
       this.attachments.push(child);

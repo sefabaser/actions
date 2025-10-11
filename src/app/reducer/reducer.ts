@@ -208,13 +208,20 @@ export class Reducer<EffectType, ResponseType> {
     return this.effects.size;
   }
 
+  private previousBroadcast: ResponseType;
+  private clone = false;
+
   private notificationHandler = new NotificationHandler<ResponseType>();
-  private untilListeners = new Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>();
   private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
   private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
-  private previousBroadcast: ResponseType;
-  private clone = false;
+  private _untilListeners?: Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>;
+  private get untilListeners(): Set<{ expected: ResponseType; callback: (data: ResponseType) => void }> {
+    if (!this._untilListeners) {
+      this._untilListeners = new Set();
+    }
+    return this._untilListeners;
+  }
 
   constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
     this.reduceFunction = reduceFunction;
@@ -280,16 +287,23 @@ export class Reducer<EffectType, ResponseType> {
         }
       });
 
-      this.untilListeners.forEach(item => {
-        if (Comparator.isEqual(item.expected, value)) {
-          try {
-            item.callback(value);
-          } catch (e) {
-            console.error('Reducer callback function error: ', e);
+      if (this._untilListeners) {
+        let allItems = Array.from(this._untilListeners.values());
+        allItems.forEach(item => {
+          if (Comparator.isEqual(item.expected, value)) {
+            try {
+              item.callback(value);
+            } catch (e) {
+              console.error('Reducer callback function error: ', e);
+            }
+            this._untilListeners!.delete(item);
           }
-          this.untilListeners.delete(item);
+        });
+
+        if (this._untilListeners.size === 0) {
+          this._untilListeners = undefined;
         }
-      });
+      }
 
       this.previousBroadcast = value;
     }

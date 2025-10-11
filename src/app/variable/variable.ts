@@ -36,12 +36,12 @@ export class Variable<T> implements IVariable<T> {
     return this.action.listenerCount;
   }
 
+  private notifyOnlyOnChange: boolean;
+  private clone: boolean;
+
   private action: Action<T>;
   private currentValue!: T;
   private firstTriggerHappened = false;
-
-  private notifyOnlyOnChange: boolean;
-  private clone: boolean;
 
   constructor(options: VariableOptions = {}) {
     this.notifyOnlyOnChange =

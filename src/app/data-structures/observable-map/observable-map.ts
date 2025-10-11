@@ -3,8 +3,21 @@ import { ActionSubscription } from '../../../helpers/notification-handler';
 export class ObservableMap<KeyType extends number | string, ValueType> {
   private map: Map<KeyType, ValueType>;
 
-  private untilAddedListeners = new Map<KeyType, Set<(data: KeyType) => void>>();
-  private untilRemovedListeners = new Map<KeyType, Set<(data: KeyType) => void>>();
+  private _untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
+  private get untilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
+    if (!this._untilAddedListeners) {
+      this._untilAddedListeners = new Map();
+    }
+    return this._untilAddedListeners;
+  }
+
+  private _untilRemovedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
+  private get untilRemovedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
+    if (!this._untilRemovedListeners) {
+      this._untilRemovedListeners = new Map();
+    }
+    return this._untilRemovedListeners;
+  }
 
   constructor(map?: Map<KeyType, ValueType> | undefined) {
     this.map = map ?? new Map<KeyType, ValueType>();
@@ -24,15 +37,21 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
 
   set(key: KeyType, item: ValueType): this {
     this.map.set(key, item);
-    if (this.untilAddedListeners.has(key)) {
-      this.untilAddedListeners.get(key)?.forEach(callback => {
-        try {
-          callback(key);
-        } catch (e) {
-          console.error('Observable map callback function error: ', e);
+    if (this._untilAddedListeners) {
+      if (this._untilAddedListeners.has(key)) {
+        this._untilAddedListeners.get(key)?.forEach(callback => {
+          try {
+            callback(key);
+          } catch (e) {
+            console.error('Observable map callback function error: ', e);
+          }
+        });
+        this._untilAddedListeners.delete(key);
+
+        if (this._untilAddedListeners.size === 0) {
+          this._untilAddedListeners = undefined;
         }
-      });
-      this.untilAddedListeners.delete(key);
+      }
     }
     return this;
   }
@@ -43,15 +62,21 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
 
   delete(key: KeyType): this {
     this.map.delete(key);
-    if (this.untilRemovedListeners.has(key)) {
-      this.untilRemovedListeners.get(key)?.forEach(callback => {
-        try {
-          callback(key);
-        } catch (e) {
-          console.error('Observable map callback function error: ', e);
+    if (this._untilRemovedListeners) {
+      if (this._untilRemovedListeners.has(key)) {
+        this._untilRemovedListeners.get(key)?.forEach(callback => {
+          try {
+            callback(key);
+          } catch (e) {
+            console.error('Observable map callback function error: ', e);
+          }
+        });
+        this._untilRemovedListeners.delete(key);
+
+        if (this._untilRemovedListeners.size === 0) {
+          this._untilRemovedListeners = undefined;
         }
-      });
-      this.untilRemovedListeners.delete(key);
+      }
     }
     return this;
   }
@@ -69,13 +94,15 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
       triggerCallback();
       return ActionSubscription.destroyed;
     } else {
-      if (!this.untilAddedListeners.has(value)) {
-        this.untilAddedListeners.set(value, new Set());
+      let untilAddedListenerSet = this.untilAddedListeners.get(value);
+      if (!untilAddedListenerSet) {
+        untilAddedListenerSet = new Set();
+        this.untilAddedListeners.set(value, untilAddedListenerSet);
       }
 
-      this.untilAddedListeners.get(value)!.add(triggerCallback);
+      untilAddedListenerSet.add(triggerCallback);
       return new ActionSubscription(() => {
-        this.untilAddedListeners.get(value)?.delete(triggerCallback);
+        this._untilAddedListeners?.get(value)?.delete(triggerCallback);
       });
     }
   }
@@ -89,8 +116,10 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
       }
       return ActionSubscription.destroyed;
     } else {
-      if (!this.untilRemovedListeners.has(value)) {
-        this.untilRemovedListeners.set(value, new Set());
+      let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
+      if (!untilRemovedListenerSet) {
+        untilRemovedListenerSet = new Set();
+        this.untilRemovedListeners.set(value, untilRemovedListenerSet);
       }
 
       let item = () => {
@@ -100,9 +129,9 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
           console.error('Observable map callback function error: ', e);
         }
       };
-      this.untilRemovedListeners.get(value)?.add(item);
+      untilRemovedListenerSet.add(item);
       return new ActionSubscription(() => {
-        this.untilRemovedListeners.get(value)?.delete(item);
+        this._untilRemovedListeners?.get(value)?.delete(item);
       });
     }
   }

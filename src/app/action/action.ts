@@ -14,11 +14,25 @@ export class Action<T> {
     return this.notificationHandler.listenerCount;
   }
 
-  private notificationHandler = new NotificationHandler<T>();
-  private nextListeners = new Set<(data: T) => void>();
-  private untilListeners = new Set<{ expected: T; callback: (data: T) => void }>();
-
   private clone: boolean;
+
+  private notificationHandler = new NotificationHandler<T>();
+
+  private _nextListeners?: Set<(data: T) => void>;
+  private get nextListeners(): Set<(data: T) => void> {
+    if (!this._nextListeners) {
+      this._nextListeners = new Set();
+    }
+    return this._nextListeners;
+  }
+
+  private _untilListeners?: Set<{ expected: T; callback: (data: T) => void }>;
+  private get untilListeners(): Set<{ expected: T; callback: (data: T) => void }> {
+    if (!this._untilListeners) {
+      this._untilListeners = new Set();
+    }
+    return this._untilListeners;
+  }
 
   constructor(options: ActionOptions = {}) {
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.action.cloneBeforeNotification;
@@ -37,25 +51,33 @@ export class Action<T> {
       }
     });
 
-    this.nextListeners.forEach(callback => {
-      try {
-        callback(data);
-      } catch (e) {
-        console.error('Notifier callback function error: ', e);
-      }
-    });
-    this.nextListeners = new Set();
-
-    this.untilListeners.forEach(item => {
-      if (Comparator.isEqual(item.expected, data)) {
+    if (this._nextListeners) {
+      this.nextListeners.forEach(callback => {
         try {
-          item.callback(data);
+          callback(data);
         } catch (e) {
           console.error('Notifier callback function error: ', e);
         }
-        this.untilListeners.delete(item);
+      });
+      this._nextListeners = undefined;
+    }
+
+    if (this._untilListeners) {
+      this.untilListeners.forEach(item => {
+        if (Comparator.isEqual(item.expected, data)) {
+          try {
+            item.callback(data);
+          } catch (e) {
+            console.error('Notifier callback function error: ', e);
+          }
+          this.untilListeners.delete(item);
+        }
+      });
+
+      if (this.untilListeners.size === 0) {
+        this._untilListeners = undefined;
       }
-    });
+    }
 
     return this;
   }
