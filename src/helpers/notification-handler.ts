@@ -1,6 +1,16 @@
 import { LightweightAttachable } from '../app/attachable/lightweight-attachable';
 
 export class ActionSubscription extends LightweightAttachable {
+  private static destroyedSubscription: ActionSubscription;
+
+  static get destroyed(): ActionSubscription {
+    if (!this.destroyedSubscription) {
+      this.destroyedSubscription = new ActionSubscription(() => {});
+      this.destroyedSubscription.destroy();
+    }
+    return this.destroyedSubscription;
+  }
+
   /**
    * @param subscriptions the subscriptions to combine
    * @returns a new ActionSubscription that combines the given subscriptions, when unsubscribed, all given subscriptions will be unsubscribed
