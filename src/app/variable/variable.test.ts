@@ -20,13 +20,13 @@ describe(`Variable`, () => {
     });
 
     test('should be subscribable', () => {
-      variable.subscribe(_ => {});
+      variable.subscribe(_ => {}).attachToRoot();
       expect(variable['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
     test('should be unsubscribable', () => {
-      let subscription = variable.subscribe(_ => {});
-      subscription.unsubscribe();
+      let subscription = variable.subscribe(_ => {}).attachToRoot();
+      subscription.destroy();
       expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
     });
 
@@ -41,23 +41,27 @@ describe(`Variable`, () => {
         let listener1 = false;
         let listener2 = false;
 
-        variable.subscribe(message => {
-          if (message && message.testData === 'sample') {
-            listener1 = true;
-            if (listener2) {
-              done();
+        variable
+          .subscribe(message => {
+            if (message && message.testData === 'sample') {
+              listener1 = true;
+              if (listener2) {
+                done();
+              }
             }
-          }
-        });
+          })
+          .attachToRoot();
 
-        variable.subscribe(message => {
-          if (message && message.testData === 'sample') {
-            listener2 = true;
-            if (listener1) {
-              done();
+        variable
+          .subscribe(message => {
+            if (message && message.testData === 'sample') {
+              listener2 = true;
+              if (listener1) {
+                done();
+              }
             }
-          }
-        });
+          })
+          .attachToRoot();
 
         variable.set({ testData: 'sample' });
       }));
@@ -66,12 +70,14 @@ describe(`Variable`, () => {
       let triggered = false;
       variable.set({ testData: 'sample1' });
 
-      variable.subscribe(
-        () => {
-          triggered = true;
-        },
-        { listneOnlyNewChanges: true }
-      );
+      variable
+        .subscribe(
+          () => {
+            triggered = true;
+          },
+          { listneOnlyNewChanges: true }
+        )
+        .attachToRoot();
 
       expect(triggered).toEqual(false);
       variable.set({ testData: 'sample2' });
@@ -80,10 +86,12 @@ describe(`Variable`, () => {
 
     test('should not notify unsubscribed listeners', async () => {
       let triggered = false;
-      let subscription = variable.subscribe(_ => {
-        triggered = true;
-      });
-      subscription.unsubscribe();
+      let subscription = variable
+        .subscribe(_ => {
+          triggered = true;
+        })
+        .attachToRoot();
+      subscription.destroy();
 
       variable.set({ testData: 'sample' });
 
@@ -93,9 +101,11 @@ describe(`Variable`, () => {
 
     test('should not notify subscription before the trigger', async () => {
       let triggered = false;
-      variable.subscribe(_ => {
-        triggered = true;
-      });
+      variable
+        .subscribe(_ => {
+          triggered = true;
+        })
+        .attachToRoot();
 
       await Wait();
       expect(triggered).toBeFalsy();
@@ -109,11 +119,13 @@ describe(`Variable`, () => {
         variable.set({
           set: new Set<string>()
         });
-        variable.subscribe(message => {
-          if (message && message.set && Comparator.isSet(message.set)) {
-            done();
-          }
-        });
+        variable
+          .subscribe(message => {
+            if (message && message.set && Comparator.isSet(message.set)) {
+              done();
+            }
+          })
+          .attachToRoot();
       }));
   });
 
@@ -122,9 +134,11 @@ describe(`Variable`, () => {
       new Promise<void>(done => {
         let persistentVariable = new Variable<boolean>();
         persistentVariable.set(true);
-        persistentVariable.subscribe(() => {
-          done();
-        });
+        persistentVariable
+          .subscribe(() => {
+            done();
+          })
+          .attachToRoot();
       }));
   });
 
@@ -133,9 +147,11 @@ describe(`Variable`, () => {
       let variable = new Variable<boolean>({ notifyOnChange: true });
 
       let triggerCount = 0;
-      variable.subscribe(() => {
-        triggerCount++;
-      });
+      variable
+        .subscribe(() => {
+          triggerCount++;
+        })
+        .attachToRoot();
 
       variable.set(true);
       variable.set(true);
@@ -150,9 +166,11 @@ describe(`Variable`, () => {
       let variable = new Variable<boolean>();
 
       let triggerCount = 0;
-      variable.subscribe(() => {
-        triggerCount++;
-      });
+      variable
+        .subscribe(() => {
+          triggerCount++;
+        })
+        .attachToRoot();
 
       variable.set(true);
       variable.set(true);
@@ -178,9 +196,11 @@ describe(`Variable`, () => {
 
     test('should be set before notification', () => {
       let variable = new Variable<number>();
-      variable.subscribe(() => {
-        expect(variable.value).toEqual(2);
-      });
+      variable
+        .subscribe(() => {
+          expect(variable.value).toEqual(2);
+        })
+        .attachToRoot();
       variable.set(2);
     });
   });
@@ -196,7 +216,7 @@ describe(`Variable`, () => {
       setTimeout(() => {
         variable.set({ testData: 'sample' });
       }, 1);
-      let nextNotification = await variable.waitUntilNext();
+      let nextNotification = await variable.waitUntilNextPromise();
       expect(nextNotification).toEqual({ testData: 'sample' });
     });
 
@@ -205,7 +225,7 @@ describe(`Variable`, () => {
         variable.set({ testData: 'sample' });
         variable.set({ testData: 'expected' });
       }, 1);
-      let nextNotification = await variable.waitUntil({ testData: 'expected' });
+      let nextNotification = await variable.waitUntilPromise({ testData: 'expected' });
       expect(nextNotification).toEqual({ testData: 'expected' });
     });
 
@@ -214,18 +234,7 @@ describe(`Variable`, () => {
         variable.set({ testData: 'sample' });
         variable.set(undefined);
       }, 1);
-      let nextNotification = await variable.waitUntil(undefined);
-      expect(nextNotification).toBeUndefined();
-    });
-
-    test('wait until spesific data should trigger immidiately if current data is equal', async () => {
-      variable.set({ testData: 'expected' });
-      let nextNotification = await variable.waitUntil({ testData: 'expected' });
-      expect(nextNotification).toEqual({ testData: 'expected' });
-    });
-
-    test('wait until undefined should trigger immidiately if current data is equal', async () => {
-      let nextNotification = await variable.waitUntil(undefined);
+      let nextNotification = await variable.waitUntilPromise(undefined);
       expect(nextNotification).toBeUndefined();
     });
   });

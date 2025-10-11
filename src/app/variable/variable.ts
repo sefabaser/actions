@@ -2,6 +2,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
 import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
+import { DestroyablePromise } from '../destroyable-promise/destroyable-promise';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
 
@@ -19,10 +20,10 @@ export interface IVariable<T> {
   listenerCount: number;
   set(data: T): this;
   subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription;
-  waitUntilNextCallback(callback: (data: T) => void): void;
-  waitUntilNext(): Promise<T>;
-  waitUntilCallback(data: T, callback: (data: T) => void): void;
-  waitUntil(data: T): Promise<T>;
+  waitUntilNext(callback: (data: T) => void): void;
+  waitUntil(data: T, callback: (data: T) => void): void;
+  waitUntilNextPromise(): DestroyablePromise<T>;
+  waitUntilPromise(data: T): DestroyablePromise<T>;
 }
 
 export class Variable<T> implements IVariable<T> {
@@ -105,31 +106,35 @@ export class Variable<T> implements IVariable<T> {
     return this.notificationHandler.subscribe(callback);
   }
 
-  waitUntilNextCallback(callback: (data: T) => void): void {
+  waitUntilNext(callback: (data: T) => void): ActionSubscription {
     this.nextListeners.add(callback);
-  }
-
-  async waitUntilNext(): Promise<T> {
-    return new Promise(resolve => {
-      this.waitUntilNextCallback(resolve);
+    return new ActionSubscription(() => {
+      this.nextListeners.delete(callback);
     });
   }
 
-  waitUntilCallback(data: T, callback: (data: T) => void): void {
-    if (Comparator.isEqual(this.value, data)) {
-      try {
-        callback(data);
-      } catch (e) {
-        console.error('Notifier callback function error: ', e);
-      }
-    } else {
-      this.untilListeners.add({ expected: data, callback });
-    }
+  waitUntil(data: T, callback: (data: T) => void): ActionSubscription {
+    let item = { expected: data, callback: callback };
+    this.untilListeners.add(item);
+    return new ActionSubscription(() => {
+      this.untilListeners.delete(item);
+    });
   }
 
-  async waitUntil(data: T): Promise<T> {
-    return new Promise(resolve => {
-      this.waitUntilCallback(data, resolve);
+  waitUntilNextPromise(): DestroyablePromise<T> {
+    return new DestroyablePromise(resolve => {
+      this.nextListeners.add(data => {
+        resolve(data);
+      });
+      return () => this.nextListeners.delete(resolve);
+    });
+  }
+
+  waitUntilPromise(data: T): DestroyablePromise<T> {
+    return new DestroyablePromise<T>(resolve => {
+      let item = { expected: data, callback: resolve };
+      this.untilListeners.add(item);
+      return () => this.untilListeners.delete(item);
     });
   }
 }
