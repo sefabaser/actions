@@ -3,7 +3,6 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { ActionLibDefaults } from '../../config';
 import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { DestroyablePromise } from '../destroyable-promise/destroyable-promise';
 
 export interface ReducerOptions {
   clone?: boolean;
@@ -263,18 +262,6 @@ export class Reducer<EffectType, ResponseType> {
       this.untilListeners.add(item);
       return new ActionSubscription(() => {
         this.untilListeners.delete(item);
-      });
-    }
-  }
-
-  waitUntilPromise(data: ResponseType): DestroyablePromise<ResponseType> {
-    if (Comparator.isEqual(this.previousBroadcast, data)) {
-      return new DestroyablePromise<ResponseType>(resolve => resolve(data));
-    } else {
-      return new DestroyablePromise<ResponseType>(resolve => {
-        let item = { expected: data, callback: resolve };
-        this.untilListeners.add(item);
-        return () => this.untilListeners.delete(item);
       });
     }
   }

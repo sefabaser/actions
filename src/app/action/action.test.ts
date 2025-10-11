@@ -1,4 +1,4 @@
-import { Comparator, Wait } from 'helpers-lib';
+import { Comparator } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from './action';
@@ -181,63 +181,6 @@ describe(`Action`, () => {
       expect(resolved).toBe(true);
     });
 
-    test('wait until promise any change', async () => {
-      let resolvedWith: SampleModel | undefined;
-
-      let promise = action.waitUntilNextPromise();
-      promise.then(state => {
-        resolvedWith = state;
-      });
-
-      expect(resolvedWith).toBeUndefined();
-      action.trigger({ testData: 'sample' });
-      await Wait();
-      expect(resolvedWith).toEqual({ testData: 'sample' });
-    });
-
-    test('wait until promise spesific data', async () => {
-      let resolvedWith: SampleModel | undefined;
-
-      let promise = action.waitUntilPromise({ testData: 'expected' }).attachToRoot();
-      promise.then(state => {
-        resolvedWith = state;
-      });
-
-      expect(resolvedWith).toBeUndefined();
-
-      action.trigger({ testData: 'sample' });
-      await Wait();
-      expect(resolvedWith).toBeUndefined();
-
-      action.trigger({ testData: 'expected' });
-      await Wait();
-      expect(resolvedWith).toEqual({ testData: 'expected' });
-    });
-
-    test('wait until promise undefined', async () => {
-      let resolvedWith: SampleModel | undefined;
-      let resolved = false;
-
-      let promise = action.waitUntilPromise(undefined).attachToRoot().catch();
-      promise.then(state => {
-        resolvedWith = state;
-        resolved = true;
-      });
-
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-
-      action.trigger({ testData: 'sample' });
-      await Wait();
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-
-      action.trigger(undefined);
-      await Wait();
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(true);
-    });
-
     test('wait until next should not be triggered if action subscription is destroyed', async () => {
       let resolvedWith: SampleModel | undefined;
       let resolved = false;
@@ -273,26 +216,6 @@ describe(`Action`, () => {
 
       action.trigger(undefined);
 
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-    });
-
-    test('wait until next promise should not be triggered if action subscription is destroyed', async () => {
-      let resolvedWith: SampleModel | undefined;
-      let resolved = false;
-
-      let promise = action.waitUntilNextPromise().attachToRoot();
-      promise
-        .then(data => {
-          resolvedWith = data;
-          resolved = true;
-        })
-        .catch(() => {});
-
-      promise.destroy();
-      expect(action['nextListeners'].size).toBe(0);
-
-      action.trigger({ testData: 'sample' });
       expect(resolvedWith).toBeUndefined();
       expect(resolved).toBe(false);
     });

@@ -1,3 +1,4 @@
+import { ActionSubscription } from '../../../helpers/notification-handler';
 import { ObservableMap } from '../observable-map/observable-map';
 
 export class ObservableSet<KeyType extends number | string> {
@@ -34,25 +35,11 @@ export class ObservableSet<KeyType extends number | string> {
     return this;
   }
 
-  waitUntilAddedSync(value: KeyType, callback: (value: KeyType) => void): void {
-    this.observableMap.waitUntilAddedSync(value, () => {
-      try {
-        callback(value);
-      } catch (e) {
-        console.error('Observable set callback function error: ', e);
-      }
-    });
+  waitUntilAdded(value: KeyType, callback: () => void): ActionSubscription {
+    return this.observableMap.waitUntilAdded(value, callback);
   }
 
-  async waitUntilAdded(value: KeyType): Promise<void> {
-    return this.observableMap.waitUntilAdded(value);
-  }
-
-  waitUntilRemovedSync(value: KeyType, callback: () => void): void {
-    this.observableMap.waitUntilRemovedSync(value, callback);
-  }
-
-  async waitUntilRemoved(value: KeyType): Promise<void> {
-    return this.observableMap.waitUntilRemoved(value);
+  waitUntilRemoved(value: KeyType, callback: () => void): ActionSubscription {
+    return this.observableMap.waitUntilRemoved(value, callback);
   }
 }

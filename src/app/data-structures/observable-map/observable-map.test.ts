@@ -1,4 +1,3 @@
-import { Wait } from 'helpers-lib';
 import { describe, expect, test } from 'vitest';
 
 import { ObservableMap } from './observable-map';
@@ -38,7 +37,7 @@ describe('ObservableMap', () => {
     let set = new ObservableMap<number, string>();
     set.set(1, 'test');
     let called = false;
-    set.waitUntilAddedSync(1, () => {
+    set.waitUntilAdded(1, () => {
       called = true;
     });
     expect(called).toEqual(true);
@@ -47,34 +46,19 @@ describe('ObservableMap', () => {
   test('should return waitUntilAddedSync if item is not set yet', () => {
     let set = new ObservableMap<number, string>();
     let called = false;
-    set.waitUntilAddedSync(1, () => {
-      called = true;
-    });
+    set
+      .waitUntilAdded(1, () => {
+        called = true;
+      })
+      .attachToRoot();
     set.set(1, 'test');
-    expect(called).toEqual(true);
-  });
-
-  test('should return waitUntilAdded if item is already set', async () => {
-    let set = new ObservableMap<number, string>();
-    set.set(1, 'test');
-    expect(await set.waitUntilAdded(1)).toEqual('test');
-  });
-
-  test('should return waitUntilAdded if item is not set yet', async () => {
-    let set = new ObservableMap<number, string>();
-    let called = false;
-    set.waitUntilAdded(1).then(() => {
-      called = true;
-    });
-    set.set(1, 'test');
-    await Wait();
     expect(called).toEqual(true);
   });
 
   test('should return waitUntilRemovedSync if item is not set', async () => {
     let set = new ObservableMap<number, string>();
     let called = false;
-    set.waitUntilRemovedSync(1, () => {
+    set.waitUntilRemoved(1, () => {
       called = true;
     });
     expect(called).toEqual(true);
@@ -85,26 +69,9 @@ describe('ObservableMap', () => {
     let called = false;
     set.set(1, 'test');
     set.delete(1);
-    set.waitUntilRemovedSync(1, () => {
+    set.waitUntilRemoved(1, () => {
       called = true;
     });
-    expect(called).toEqual(true);
-  });
-
-  test('should return waitUntilRemoved if item is not set', async () => {
-    let set = new ObservableMap<number, string>();
-    expect(await set.waitUntilRemoved(1)).toBeUndefined();
-  });
-
-  test('should return waitUntilRemoved if item is already deleted', async () => {
-    let set = new ObservableMap<number, string>();
-    let called = false;
-    set.set(1, 'test');
-    set.waitUntilRemoved(1).then(() => {
-      called = true;
-    });
-    set.delete(1);
-    await Wait();
     expect(called).toEqual(true);
   });
 

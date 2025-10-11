@@ -1,3 +1,5 @@
+import { ActionSubscription } from '../../../helpers/notification-handler';
+
 export class ObservableMap<KeyType extends number | string, ValueType> {
   private map: Map<KeyType, ValueType>;
 
@@ -54,57 +56,54 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
     return this;
   }
 
-  waitUntilAddedSync(value: KeyType, callback: (item: ValueType) => void): void {
-    if (this.map.has(value)) {
+  waitUntilAdded(value: KeyType, callback: (item: ValueType) => void): ActionSubscription {
+    let triggerCallback = () => {
       try {
         callback(this.map.get(value) as ValueType);
       } catch (e) {
         console.error('Observable map callback function error: ', e);
       }
+    };
+
+    if (this.map.has(value)) {
+      triggerCallback();
+      return ActionSubscription.destroyed;
     } else {
       if (!this.untilAddedListeners.has(value)) {
         this.untilAddedListeners.set(value, new Set());
       }
-      this.untilAddedListeners.get(value)?.add(() => {
-        try {
-          callback(this.map.get(value) as ValueType);
-        } catch (e) {
-          console.error('Observable map callback function error: ', e);
-        }
+
+      this.untilAddedListeners.get(value)!.add(triggerCallback);
+      return new ActionSubscription(() => {
+        this.untilAddedListeners.get(value)?.delete(triggerCallback);
       });
     }
   }
 
-  async waitUntilAdded(value: KeyType): Promise<ValueType> {
-    return new Promise<ValueType>(resolve => {
-      this.waitUntilAddedSync(value, item => resolve(item));
-    });
-  }
-
-  waitUntilRemovedSync(value: KeyType, callback: () => void): void {
+  waitUntilRemoved(value: KeyType, callback: () => void): ActionSubscription {
     if (!this.map.has(value)) {
       try {
         callback();
       } catch (e) {
         console.error('Observable map callback function error: ', e);
       }
+      return ActionSubscription.destroyed;
     } else {
       if (!this.untilRemovedListeners.has(value)) {
         this.untilRemovedListeners.set(value, new Set());
       }
-      this.untilRemovedListeners.get(value)?.add(() => {
+
+      let item = () => {
         try {
           callback();
         } catch (e) {
           console.error('Observable map callback function error: ', e);
         }
+      };
+      this.untilRemovedListeners.get(value)?.add(item);
+      return new ActionSubscription(() => {
+        this.untilRemovedListeners.get(value)?.delete(item);
       });
     }
-  }
-
-  async waitUntilRemoved(value: KeyType): Promise<void> {
-    return new Promise<void>(resolve => {
-      this.waitUntilRemovedSync(value, () => resolve());
-    });
   }
 }

@@ -2,7 +2,6 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
 import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
-import { DestroyablePromise } from '../destroyable-promise/destroyable-promise';
 
 export type ActionListenerCallbackFunction<T> = (data: T) => void;
 
@@ -78,25 +77,5 @@ export class Action<T> {
     return new ActionSubscription(() => {
       this.untilListeners.delete(item);
     });
-  }
-
-  waitUntilNextPromise(): DestroyablePromise<T> {
-    return new DestroyablePromise(resolve => {
-      this.nextListeners.add(resolve);
-      return () => this.nextListeners.delete(resolve);
-    });
-  }
-
-  waitUntilPromise(data: T): DestroyablePromise<T> {
-    return new DestroyablePromise<T>(resolve => {
-      let item = { expected: data, callback: resolve };
-      this.untilListeners.add(item);
-      return () => this.untilListeners.delete(item);
-    });
-  }
-
-  /** @internal */
-  getAllListeners(): ((data: T) => any)[] {
-    return this.notificationHandler.getAllListeners();
   }
 }

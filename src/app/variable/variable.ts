@@ -3,7 +3,6 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { ActionLibDefaults } from '../../config';
 import { ActionSubscription } from '../../helpers/notification-handler';
 import { Action } from '../action/action';
-import { DestroyablePromise } from '../destroyable-promise/destroyable-promise';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
 
@@ -23,8 +22,6 @@ export interface IVariable<T> {
   subscribe(callback: VariableListenerCallbackFunction<T>): ActionSubscription;
   waitUntilNext(callback: (data: T) => void): void;
   waitUntil(data: T, callback: (data: T) => void): void;
-  waitUntilNextPromise(): DestroyablePromise<T>;
-  waitUntilPromise(data: T): DestroyablePromise<T>;
 }
 
 export class Variable<T> implements IVariable<T> {
@@ -84,13 +81,5 @@ export class Variable<T> implements IVariable<T> {
 
   waitUntil(data: T, callback: (data: T) => void): ActionSubscription {
     return this.action.waitUntil(data, callback);
-  }
-
-  waitUntilNextPromise(): DestroyablePromise<T> {
-    return this.action.waitUntilNextPromise();
-  }
-
-  waitUntilPromise(data: T): DestroyablePromise<T> {
-    return this.action.waitUntilPromise(data);
   }
 }

@@ -1,4 +1,3 @@
-import { Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Reducer } from './reducer';
@@ -123,20 +122,24 @@ describe(`Reducer`, () => {
 
     test('subscribing without any effecter should return base value', () =>
       new Promise<void>(done => {
-        reducer.subscribe(response => {
-          if (response === false) {
-            done();
-          }
-        });
+        reducer
+          .subscribe(response => {
+            if (response === false) {
+              done();
+            }
+          })
+          .attachToRoot();
       }));
 
     test('should always notify listeners only on change', () => {
       let blocked = false;
       let triggerCount = 0;
-      reducer.subscribe(response => {
-        blocked = response;
-        triggerCount++;
-      });
+      reducer
+        .subscribe(response => {
+          blocked = response;
+          triggerCount++;
+        })
+        .attachToRoot();
 
       expect(blocked).toEqual(false);
       expect(triggerCount).toEqual(1);
@@ -163,12 +166,14 @@ describe(`Reducer`, () => {
     });
 
     test('should always be persistent, always gives the last broadcasted value to new listeners', () => {
-      reducer.effect();
+      reducer.effect().attachToRoot();
       let blocked = false;
 
-      reducer.subscribe(response => {
-        blocked = response;
-      });
+      reducer
+        .subscribe(response => {
+          blocked = response;
+        })
+        .attachToRoot();
 
       expect(blocked).toEqual(true);
     });
@@ -192,7 +197,7 @@ describe(`Reducer`, () => {
           }
         });
 
-        reducer.effect(true);
+        reducer.effect(true).attachToRoot();
       }));
 
     test('should trigger update call', () =>
@@ -203,7 +208,7 @@ describe(`Reducer`, () => {
           }
         });
 
-        let effect = reducer.effect(true);
+        let effect = reducer.effect(true).attachToRoot();
         effect.update(false);
       }));
 
@@ -215,7 +220,7 @@ describe(`Reducer`, () => {
           }
         });
 
-        let effect = reducer.effect(true);
+        let effect = reducer.effect(true).attachToRoot();
         effect.destroy();
       }));
 
@@ -233,8 +238,8 @@ describe(`Reducer`, () => {
         }
       });
 
-      reducer.effect(true);
-      reducer.effect(true);
+      reducer.effect(true).attachToRoot();
+      reducer.effect(true).attachToRoot();
 
       expect(firstId).toBeDefined();
       expect(secondId).toBeDefined();
@@ -255,7 +260,7 @@ describe(`Reducer`, () => {
         }
       });
 
-      let effect = reducer.effect(true);
+      let effect = reducer.effect(true).attachToRoot();
       effect.update(false);
       effect.update(true);
       effect.destroy();
@@ -288,7 +293,7 @@ describe(`Reducer`, () => {
         return !!change.current;
       });
 
-      let effect = reducer.effect(true);
+      let effect = reducer.effect(true).attachToRoot();
       effect.update(false);
       effect.destroy();
 
@@ -301,7 +306,7 @@ describe(`Reducer`, () => {
         triggerCount++;
       });
 
-      let effect = reducer.effect();
+      let effect = reducer.effect().attachToRoot();
       expect(triggerCount).toEqual(2); // one initial and one after effect
 
       effect.destroy();
@@ -317,42 +322,48 @@ describe(`Reducer`, () => {
         new Promise<void>(done => {
           let existanceChecker = Reducer.createExistenceChecker();
 
-          existanceChecker.subscribe(result => {
-            if (result === false) {
-              done();
-            }
-          });
+          existanceChecker
+            .subscribe(result => {
+              if (result === false) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return false all effects are destroyd', () =>
         new Promise<void>(done => {
           let existanceChecker = Reducer.createExistenceChecker();
 
-          let firstEffect = existanceChecker.effect();
-          let secondEffect = existanceChecker.effect();
+          let firstEffect = existanceChecker.effect().attachToRoot();
+          let secondEffect = existanceChecker.effect().attachToRoot();
           firstEffect.destroy();
           secondEffect.destroy();
 
-          existanceChecker.subscribe(result => {
-            if (result === false) {
-              done();
-            }
-          });
+          existanceChecker
+            .subscribe(result => {
+              if (result === false) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return true if there is at least one effect', () =>
         new Promise<void>(done => {
           let existanceChecker = Reducer.createExistenceChecker();
 
-          let firstEffect = existanceChecker.effect();
-          existanceChecker.effect();
+          let firstEffect = existanceChecker.effect().attachToRoot();
+          existanceChecker.effect().attachToRoot();
           firstEffect.destroy();
 
-          existanceChecker.subscribe(result => {
-            if (result === true) {
-              done();
-            }
-          });
+          existanceChecker
+            .subscribe(result => {
+              if (result === true) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
     });
 
@@ -361,39 +372,45 @@ describe(`Reducer`, () => {
         new Promise<void>(done => {
           let isEverybodyAgrees = Reducer.createAnd();
 
-          isEverybodyAgrees.subscribe(result => {
-            if (result === true) {
-              done();
-            }
-          });
+          isEverybodyAgrees
+            .subscribe(result => {
+              if (result === true) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return false if there is at least one effect with true', () =>
         new Promise<void>(done => {
           let isEverybodyAgrees = Reducer.createAnd();
 
-          isEverybodyAgrees.effect(true);
-          isEverybodyAgrees.effect(false);
+          isEverybodyAgrees.effect(true).attachToRoot();
+          isEverybodyAgrees.effect(false).attachToRoot();
 
-          isEverybodyAgrees.subscribe(result => {
-            if (result === false) {
-              done();
-            }
-          });
+          isEverybodyAgrees
+            .subscribe(result => {
+              if (result === false) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return true if all effects are true', () =>
         new Promise<void>(done => {
           let isEverybodyAgrees = Reducer.createAnd();
 
-          isEverybodyAgrees.effect(true);
-          isEverybodyAgrees.effect(true);
+          isEverybodyAgrees.effect(true).attachToRoot();
+          isEverybodyAgrees.effect(true).attachToRoot();
 
-          isEverybodyAgrees.subscribe(result => {
-            if (result === true) {
-              done();
-            }
-          });
+          isEverybodyAgrees
+            .subscribe(result => {
+              if (result === true) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
     });
 
@@ -402,39 +419,45 @@ describe(`Reducer`, () => {
         new Promise<void>(done => {
           let isThereAnyone = Reducer.createOr();
 
-          isThereAnyone.subscribe(result => {
-            if (result === false) {
-              done();
-            }
-          });
+          isThereAnyone
+            .subscribe(result => {
+              if (result === false) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return false if there is no effect with true', () =>
         new Promise<void>(done => {
           let isThereAnyone = Reducer.createOr();
 
-          isThereAnyone.effect(false);
-          isThereAnyone.effect(false);
+          isThereAnyone.effect(false).attachToRoot();
+          isThereAnyone.effect(false).attachToRoot();
 
-          isThereAnyone.subscribe(result => {
-            if (result === false) {
-              done();
-            }
-          });
+          isThereAnyone
+            .subscribe(result => {
+              if (result === false) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return true if is at least one effect with true', () =>
         new Promise<void>(done => {
           let isThereAnyone = Reducer.createOr();
 
-          isThereAnyone.effect(false);
-          isThereAnyone.effect(true);
+          isThereAnyone.effect(false).attachToRoot();
+          isThereAnyone.effect(true).attachToRoot();
 
-          isThereAnyone.subscribe(result => {
-            if (result === true) {
-              done();
-            }
-          });
+          isThereAnyone
+            .subscribe(result => {
+              if (result === true) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
     });
 
@@ -443,28 +466,32 @@ describe(`Reducer`, () => {
         new Promise<void>(done => {
           let sumReducer = Reducer.createSum();
 
-          sumReducer.subscribe(sum => {
-            if (sum === 0) {
-              done();
-            }
-          });
+          sumReducer
+            .subscribe(sum => {
+              if (sum === 0) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should return sum of the effects', () =>
         new Promise<void>(done => {
           let sumReducer = Reducer.createSum();
 
-          sumReducer.effect(5);
+          sumReducer.effect(5).attachToRoot();
           let temporaryEffect = sumReducer.effect(3);
-          sumReducer.effect(2);
+          sumReducer.effect(2).attachToRoot();
           temporaryEffect.destroy();
-          sumReducer.effect(-4);
+          sumReducer.effect(-4).attachToRoot();
 
-          sumReducer.subscribe(sum => {
-            if (sum === 3) {
-              done();
-            }
-          });
+          sumReducer
+            .subscribe(sum => {
+              if (sum === 3) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
     });
 
@@ -473,28 +500,32 @@ describe(`Reducer`, () => {
         new Promise<void>(done => {
           let collector = Reducer.createCollector();
 
-          collector.subscribe(result => {
-            if (Array.isArray(result) && result.length === 0) {
-              done();
-            }
-          });
+          collector
+            .subscribe(result => {
+              if (Array.isArray(result) && result.length === 0) {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test(`should return array of the listener's responses`, () =>
         new Promise<void>(done => {
           let collector = Reducer.createCollector<string>();
 
-          collector.effect('a');
-          collector.effect('b');
-          collector.effect('c');
+          collector.effect('a').attachToRoot();
+          collector.effect('b').attachToRoot();
+          collector.effect('c').attachToRoot();
 
-          collector.subscribe(result => {
-            if (Array.isArray(result) && result.length === 3) {
-              if (result.indexOf('a') >= 0 && result.indexOf('b') >= 0 && result.indexOf('c') >= 0) {
-                done();
+          collector
+            .subscribe(result => {
+              if (Array.isArray(result) && result.length === 3) {
+                if (result.indexOf('a') >= 0 && result.indexOf('b') >= 0 && result.indexOf('c') >= 0) {
+                  done();
+                }
               }
-            }
-          });
+            })
+            .attachToRoot();
         }));
     });
 
@@ -503,23 +534,27 @@ describe(`Reducer`, () => {
         new Promise<void>(done => {
           let collector = Reducer.createObjectCreator<{ value: string }>({ initial: { value: 'a' } });
 
-          collector.subscribe(result => {
-            if (result && result.value === 'a') {
-              done();
-            }
-          });
+          collector
+            .subscribe(result => {
+              if (result && result.value === 'a') {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should update final value if there is an effect', () =>
         new Promise<void>(done => {
           let collector = Reducer.createObjectCreator<{ value: string }>({ initial: { value: 'a' } });
-          collector.effect({ key: 'value', value: 'b' });
+          collector.effect({ key: 'value', value: 'b' }).attachToRoot();
 
-          collector.subscribe(result => {
-            if (result && result.value === 'b') {
-              done();
-            }
-          });
+          collector
+            .subscribe(result => {
+              if (result && result.value === 'b') {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
 
       test('should not update final value if there is another effect already exist', () =>
@@ -528,14 +563,16 @@ describe(`Reducer`, () => {
           let spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
           let collector = Reducer.createObjectCreator<{ value: string }>({ initial: { value: 'a' } });
-          collector.effect({ key: 'value', value: 'b' });
-          collector.effect({ key: 'value', value: 'c' });
+          collector.effect({ key: 'value', value: 'b' }).attachToRoot();
+          collector.effect({ key: 'value', value: 'c' }).attachToRoot();
 
-          collector.subscribe(result => {
-            if (result && result.value === 'b') {
-              done();
-            }
-          });
+          collector
+            .subscribe(result => {
+              if (result && result.value === 'b') {
+                done();
+              }
+            })
+            .attachToRoot();
           spy.mockRestore();
         }));
 
@@ -548,14 +585,16 @@ describe(`Reducer`, () => {
               v3: 'initial'
             }
           });
-          collector.effect({ key: 'v1', value: '2' });
-          collector.effect({ key: 'v2', value: 'b' });
+          collector.effect({ key: 'v1', value: '2' }).attachToRoot();
+          collector.effect({ key: 'v2', value: 'b' }).attachToRoot();
 
-          collector.subscribe(result => {
-            if (result && result.v1 === '2' && result.v2 === 'b' && result.v3 === 'initial') {
-              done();
-            }
-          });
+          collector
+            .subscribe(result => {
+              if (result && result.v1 === '2' && result.v2 === 'b' && result.v3 === 'initial') {
+                done();
+              }
+            })
+            .attachToRoot();
         }));
     });
   });
@@ -568,10 +607,10 @@ describe(`Reducer`, () => {
 
     test('after multiple operations', () => {
       let reducer = Reducer.createSum();
-      let effect = reducer.effect(2);
-      reducer.effect(3);
+      let effect = reducer.effect(2).attachToRoot();
+      reducer.effect(3).attachToRoot();
       effect.destroy();
-      reducer.effect(4);
+      reducer.effect(4).attachToRoot();
       expect(reducer.value).toEqual(7);
     });
   });
@@ -616,35 +655,6 @@ describe(`Reducer`, () => {
 
       expect(consoleErrorSpy).toBeCalled();
       consoleErrorSpy.mockRestore();
-    });
-
-    test('wait until promise spesific data', async () => {
-      let resolvedWith: boolean | undefined;
-      reducer
-        .waitUntilPromise(true)
-        .attachToRoot()
-        .then(data => {
-          resolvedWith = data;
-        });
-
-      let effectChannel = reducer.effect(false).attachToRoot();
-      await Wait();
-      expect(resolvedWith).toEqual(undefined);
-
-      effectChannel.update(true);
-      await Wait();
-      expect(resolvedWith).toEqual(true);
-    });
-
-    test('wait until promise spesific data should trigger immidiately if current data is equal', async () => {
-      reducer.effect(true).attachToRoot();
-      let nextNotification = await reducer.waitUntilPromise(true);
-      expect(nextNotification).toEqual(true);
-    });
-
-    test('wait until promise undefined should trigger immidiately if current data is equal', async () => {
-      let nextNotification = await reducer.waitUntilPromise(false);
-      expect(nextNotification).toEqual(false);
     });
   });
 });

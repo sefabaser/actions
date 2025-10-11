@@ -1,7 +1,11 @@
 import { Attachable, IAttachable } from './attachable';
 
 export class LightweightAttachable implements IAttachable {
-  private attachedParent: Attachable | undefined;
+  private _attachedParent: Attachable | undefined;
+  /** @internal */
+  get attachedParent(): Attachable | undefined {
+    return this._attachedParent;
+  }
 
   private _attachIsCalled = false;
   private _destroyed = false;
@@ -19,8 +23,8 @@ export class LightweightAttachable implements IAttachable {
 
   destroy(): void {
     if (!this._destroyed) {
-      this.attachedParent?.removeAttachment(this);
-      this.attachedParent = undefined;
+      this._attachedParent?.removeAttachment(this);
+      this._attachedParent = undefined;
       this._destroyed = true;
     }
   }
@@ -33,7 +37,7 @@ export class LightweightAttachable implements IAttachable {
     this._attachIsCalled = true;
     if (!this._destroyed) {
       let parentEntity = Attachable.attach(parent, this);
-      this.attachedParent = parentEntity;
+      this._attachedParent = parentEntity;
     }
     return this;
   }
