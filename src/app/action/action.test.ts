@@ -1,4 +1,4 @@
-import { Comparator } from 'helpers-lib';
+import { Comparator, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from './action';
@@ -89,11 +89,13 @@ describe(`Action`, () => {
     test('should support type: Set', () =>
       new Promise<void>(done => {
         let action = new Action<{ set: Set<string> }>();
-        action.subscribe(message => {
-          if (message && message.set && Comparator.isSet(message.set)) {
-            done();
-          }
-        });
+        action
+          .subscribe(message => {
+            if (message && message.set && Comparator.isSet(message.set)) {
+              done();
+            }
+          })
+          .attachToRoot();
         action.trigger({
           set: new Set<string>()
         });
@@ -105,9 +107,11 @@ describe(`Action`, () => {
         normalAction.trigger();
 
         let triggered = false;
-        normalAction.subscribe(() => {
-          triggered = true;
-        });
+        normalAction
+          .subscribe(() => {
+            triggered = true;
+          })
+          .attachToRoot();
 
         setTimeout(() => {
           if (!triggered) {
@@ -187,21 +191,26 @@ describe(`Action`, () => {
 
       expect(resolvedWith).toBeUndefined();
       action.trigger({ testData: 'sample' });
+      await Wait();
       expect(resolvedWith).toEqual({ testData: 'sample' });
     });
 
     test('wait until promise spesific data', async () => {
       let resolvedWith: SampleModel | undefined;
 
-      let promise = action.waitUntilPromise({ testData: 'expected' });
+      let promise = action.waitUntilPromise({ testData: 'expected' }).attachToRoot();
       promise.then(state => {
         resolvedWith = state;
       });
 
       expect(resolvedWith).toBeUndefined();
+
       action.trigger({ testData: 'sample' });
+      await Wait();
       expect(resolvedWith).toBeUndefined();
+
       action.trigger({ testData: 'expected' });
+      await Wait();
       expect(resolvedWith).toEqual({ testData: 'expected' });
     });
 
@@ -209,7 +218,7 @@ describe(`Action`, () => {
       let resolvedWith: SampleModel | undefined;
       let resolved = false;
 
-      let promise = action.waitUntilPromise(undefined);
+      let promise = action.waitUntilPromise(undefined).attachToRoot();
       promise.then(state => {
         resolvedWith = state;
         resolved = true;
@@ -219,10 +228,12 @@ describe(`Action`, () => {
       expect(resolved).toBe(false);
 
       action.trigger({ testData: 'sample' });
+      await Wait();
       expect(resolvedWith).toBeUndefined();
       expect(resolved).toBe(false);
 
       action.trigger(undefined);
+      await Wait();
       expect(resolvedWith).toBeUndefined();
       expect(resolved).toBe(true);
     });

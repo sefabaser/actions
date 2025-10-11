@@ -767,12 +767,38 @@ describe('DestroyablePromise', () => {
       let resolvedWith: number | undefined;
       let rejectedWith: any | undefined;
 
-      promise.catch(e => {
+      let promiseWithCatch = promise.catch(e => {
         rejectedWith = e;
       });
 
       parent.destroy();
-      await promise;
+      await promiseWithCatch;
+      await Wait(20);
+
+      expect(resolvedWith).toBeUndefined();
+      expect(rejectedWith).toBeInstanceOf(PromiseIsDestroyedError);
+    });
+
+    test('using a failing destroyable promise in try catch', async () => {
+      let parent = new Attachable().attachToRoot();
+      let promise = new DestroyablePromise<number>(resolve => {
+        setTimeout(() => {
+          resolve(42);
+        }, 10);
+      }).attach(parent);
+
+      let resolvedWith: number | undefined;
+      let rejectedWith: any | undefined;
+
+      (async () => {
+        try {
+          resolvedWith = await promise;
+        } catch (e) {
+          rejectedWith = e;
+        }
+      })();
+
+      parent.destroy();
       await Wait(20);
 
       expect(resolvedWith).toBeUndefined();
