@@ -26,7 +26,7 @@ class LoadingIndicator {
     Blockers.subscribe(blockerExist => {
       this.screenIsBlocked = blockerExist;
       this.triggerCount++;
-    });
+    }).attachToRoot();
   }
 }
 
@@ -36,7 +36,7 @@ class LoadingIndicator {
  */
 class SomeAsyncService {
   asyncOperation(): void {
-    let blocker = Blockers.effect();
+    let blocker = Blockers.effect().attachToRoot();
     setTimeout(() => {
       // after an async operation
       blocker.destroy();

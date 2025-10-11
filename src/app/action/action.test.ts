@@ -128,7 +128,7 @@ describe(`Action`, () => {
       action = new Action<SampleModel | undefined>();
     });
 
-    test('wait until any change', async () => {
+    test('wait until next', async () => {
       let resolvedWith: SampleModel | undefined;
 
       action
@@ -218,7 +218,7 @@ describe(`Action`, () => {
       let resolvedWith: SampleModel | undefined;
       let resolved = false;
 
-      let promise = action.waitUntilPromise(undefined).attachToRoot();
+      let promise = action.waitUntilPromise(undefined).attachToRoot().catch();
       promise.then(state => {
         resolvedWith = state;
         resolved = true;
@@ -236,6 +236,65 @@ describe(`Action`, () => {
       await Wait();
       expect(resolvedWith).toBeUndefined();
       expect(resolved).toBe(true);
+    });
+
+    test('wait until next should not be triggered if action subscription is destroyed', async () => {
+      let resolvedWith: SampleModel | undefined;
+      let resolved = false;
+
+      let subscription = action
+        .waitUntilNext(state => {
+          resolvedWith = state;
+          resolved = true;
+        })
+        .attachToRoot();
+
+      subscription.destroy();
+      expect(action['nextListeners'].size).toBe(0);
+
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
+    });
+
+    test('wait until spesific data should not be triggered if action subscription is destroyed', async () => {
+      let resolvedWith: SampleModel | undefined;
+      let resolved = false;
+
+      let subscription = action
+        .waitUntil(undefined, state => {
+          resolvedWith = state;
+          resolved = true;
+        })
+        .attachToRoot();
+
+      subscription.destroy();
+      expect(action['untilListeners'].size).toBe(0);
+
+      action.trigger(undefined);
+
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
+    });
+
+    test('wait until next promise should not be triggered if action subscription is destroyed', async () => {
+      let resolvedWith: SampleModel | undefined;
+      let resolved = false;
+
+      let promise = action.waitUntilNextPromise().attachToRoot();
+      promise
+        .then(data => {
+          resolvedWith = data;
+          resolved = true;
+        })
+        .catch(() => {});
+
+      promise.destroy();
+      expect(action['nextListeners'].size).toBe(0);
+
+      action.trigger({ testData: 'sample' });
+      expect(resolvedWith).toBeUndefined();
+      expect(resolved).toBe(false);
     });
   });
 });

@@ -2,6 +2,8 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
 import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
+import { DestroyablePromise } from '../destroyable-promise/destroyable-promise';
 
 export interface ReducerOptions {
   clone?: boolean;
@@ -18,12 +20,11 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   type: 'initial' | 'effect' | 'update' | 'destroy';
 }) => ResponseType;
 
-export class ReducerEffectChannel<EffectType, ResponseType> {
+export class ReducerEffectChannel<EffectType, ResponseType> extends LightweightAttachable {
   private static nextAvailableId = 1;
 
   private id: number;
   private reducer: Reducer<EffectType, ResponseType>;
-  private destroyed = false;
 
   private effectValue: EffectType;
   get value(): EffectType {
@@ -34,6 +35,8 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
   }
 
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
+    super();
+
     this.id = ReducerEffectChannel.nextAvailableId++;
     this.reducer = reducer;
 
@@ -74,7 +77,8 @@ export class ReducerEffectChannel<EffectType, ResponseType> {
       this.reducer['broadcast'](reducerResponse);
 
       this.reducer['effects'].delete(this);
-      this.destroyed = true;
+
+      super.destroy();
     }
   }
 }
@@ -245,22 +249,34 @@ export class Reducer<EffectType, ResponseType> {
     return this.notificationHandler.subscribe(callback);
   }
 
-  waitUntilCallback(data: ResponseType, callback: (data: ResponseType) => void): void {
+  waitUntil(data: ResponseType, callback: (data: ResponseType) => void): ActionSubscription {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
       try {
         callback(data);
       } catch (e) {
         console.error('Reducer callback function error: ', e);
       }
+
+      return ActionSubscription.destroyed;
     } else {
-      this.untilListeners.add({ expected: data, callback });
+      let item = { expected: data, callback };
+      this.untilListeners.add(item);
+      return new ActionSubscription(() => {
+        this.untilListeners.delete(item);
+      });
     }
   }
 
-  async waitUntil(data: ResponseType): Promise<ResponseType> {
-    return new Promise(resolve => {
-      this.waitUntilCallback(data, resolve);
-    });
+  waitUntilPromise(data: ResponseType): DestroyablePromise<ResponseType> {
+    if (Comparator.isEqual(this.previousBroadcast, data)) {
+      return new DestroyablePromise<ResponseType>(resolve => resolve(data));
+    } else {
+      return new DestroyablePromise<ResponseType>(resolve => {
+        let item = { expected: data, callback: resolve };
+        this.untilListeners.add(item);
+        return () => this.untilListeners.delete(item);
+      });
+    }
   }
 
   private broadcast(value: ResponseType): void {

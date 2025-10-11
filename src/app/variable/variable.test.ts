@@ -21,13 +21,13 @@ describe(`Variable`, () => {
 
     test('should be subscribable', () => {
       variable.subscribe(_ => {}).attachToRoot();
-      expect(variable['notificationHandler']['listenersMap'].size).toEqual(1);
+      expect(variable['action']['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
-    test('should be unsubscribable', () => {
+    test('should be destroyable', () => {
       let subscription = variable.subscribe(_ => {}).attachToRoot();
       subscription.destroy();
-      expect(variable['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(variable['action']['notificationHandler']['listenersMap'].size).toEqual(0);
     });
 
     test('triggerring without listeners', () =>
@@ -84,7 +84,7 @@ describe(`Variable`, () => {
       expect(triggered).toEqual(true);
     });
 
-    test('should not notify unsubscribed listeners', async () => {
+    test('should not notify destroyed listeners', async () => {
       let triggered = false;
       let subscription = variable
         .subscribe(_ => {
@@ -202,40 +202,6 @@ describe(`Variable`, () => {
         })
         .attachToRoot();
       variable.set(2);
-    });
-  });
-
-  describe(`Wait Until`, () => {
-    let variable: Variable<SampleModel | undefined>;
-
-    beforeEach(() => {
-      variable = new Variable<SampleModel | undefined>();
-    });
-
-    test('wait until any change', async () => {
-      setTimeout(() => {
-        variable.set({ testData: 'sample' });
-      }, 1);
-      let nextNotification = await variable.waitUntilNextPromise();
-      expect(nextNotification).toEqual({ testData: 'sample' });
-    });
-
-    test('wait until spesific data', async () => {
-      setTimeout(() => {
-        variable.set({ testData: 'sample' });
-        variable.set({ testData: 'expected' });
-      }, 1);
-      let nextNotification = await variable.waitUntilPromise({ testData: 'expected' });
-      expect(nextNotification).toEqual({ testData: 'expected' });
-    });
-
-    test('wait until undefined', async () => {
-      setTimeout(() => {
-        variable.set({ testData: 'sample' });
-        variable.set(undefined);
-      }, 1);
-      let nextNotification = await variable.waitUntilPromise(undefined);
-      expect(nextNotification).toBeUndefined();
     });
   });
 });

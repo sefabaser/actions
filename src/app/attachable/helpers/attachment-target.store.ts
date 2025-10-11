@@ -2,6 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { Attachable } from '../attachable';
 
+/** @internal */
 export class AttachmentTargetStore {
   private static nextAvailableIds = new WeakMap<typeof Attachable, number>();
 
@@ -48,7 +49,6 @@ export class AttachmentTargetStore {
 
   /**
    * Required to be called before or after each unit test to reset the store
-   * @internal
    */
   static hardReset(): void {
     this.nextAvailableIds = new WeakMap<typeof Attachable, number>();

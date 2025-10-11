@@ -1,3 +1,4 @@
+import { Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Reducer } from './reducer';
@@ -23,73 +24,79 @@ describe(`Reducer`, () => {
     });
 
     test('should be subscribable', () => {
-      reducer.subscribe(() => {});
+      reducer.subscribe(() => {}).attachToRoot();
       expect(reducer['notificationHandler']['listenersMap'].size).toEqual(1);
     });
 
     test('should be able to use subscribe only new changes', () => {
       let triggered = false;
-      reducer.subscribe(
-        () => {
-          triggered = true;
-        },
-        { listenOnlyNewChanges: true }
-      );
+      reducer
+        .subscribe(
+          () => {
+            triggered = true;
+          },
+          { listenOnlyNewChanges: true }
+        )
+        .attachToRoot();
 
       expect(triggered).toEqual(false);
-      reducer.effect();
+      reducer.effect().attachToRoot();
       expect(triggered).toEqual(true);
     });
 
-    test('should be unsubscribable', () => {
+    test('should be destroyable', () => {
       let subscription = reducer.subscribe(() => {});
-      subscription.unsubscribe();
+      subscription.destroy();
       expect(reducer['notificationHandler']['listenersMap'].size).toEqual(0);
     });
 
-    test('triggerring without listeners', () =>
-      new Promise<void>(done => {
-        reducer.effect();
-        done();
-      }));
+    test('triggerring without listeners', () => {
+      expect(() => reducer.effect().attachToRoot()).not.toThrow();
+    });
 
     test('should notify listeners', () =>
       new Promise<void>(done => {
         let listener1 = false;
         let listener2 = false;
 
-        reducer.subscribe(response => {
-          if (response) {
-            listener1 = true;
-            if (listener2) {
-              done();
+        reducer
+          .subscribe(response => {
+            if (response) {
+              listener1 = true;
+              if (listener2) {
+                done();
+              }
             }
-          }
-        });
+          })
+          .attachToRoot();
 
-        reducer.subscribe(response => {
-          if (response) {
-            listener2 = true;
-            if (listener1) {
-              done();
+        reducer
+          .subscribe(response => {
+            if (response) {
+              listener2 = true;
+              if (listener1) {
+                done();
+              }
             }
-          }
-        });
+          })
+          .attachToRoot();
 
-        reducer.effect();
+        reducer.effect().attachToRoot();
       }));
 
-    test('should not notify unsubscribed listeners', () =>
+    test('should not notify destroyed listeners', () =>
       new Promise<void>(done => {
         let triggered: boolean;
-        let subscription = reducer.subscribe(_ => {
-          triggered = true;
-        });
+        let subscription = reducer
+          .subscribe(_ => {
+            triggered = true;
+          })
+          .attachToRoot();
         triggered = false; // destroy initial trigger after subscription
 
-        subscription.unsubscribe();
+        subscription.destroy();
 
-        reducer.effect();
+        reducer.effect().attachToRoot();
 
         setTimeout(() => {
           if (!triggered) {
@@ -577,21 +584,66 @@ describe(`Reducer`, () => {
     });
 
     test('wait until spesific data', async () => {
-      setTimeout(() => {
-        reducer.effect(true);
-      }, 1);
-      let nextNotification = await reducer.waitUntil(true);
+      let resolvedWith: boolean | undefined;
+
+      reducer
+        .waitUntil(true, data => {
+          resolvedWith = data;
+        })
+        .attachToRoot();
+
+      let effectChannel = reducer.effect(false).attachToRoot();
+      expect(resolvedWith).toEqual(undefined);
+      expect(reducer['untilListeners'].size).toEqual(1);
+
+      effectChannel.update(true);
+      expect(resolvedWith).toEqual(true);
+      expect(reducer['untilListeners'].size).toEqual(0);
+    });
+
+    test('wait until callback throws error', () => {
+      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      reducer.effect(true).attachToRoot();
+
+      expect(() =>
+        reducer
+          .waitUntil(true, () => {
+            throw new Error('test error');
+          })
+          .attachToRoot()
+      ).not.toThrow();
+
+      expect(consoleErrorSpy).toBeCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('wait until promise spesific data', async () => {
+      let resolvedWith: boolean | undefined;
+      reducer
+        .waitUntilPromise(true)
+        .attachToRoot()
+        .then(data => {
+          resolvedWith = data;
+        });
+
+      let effectChannel = reducer.effect(false).attachToRoot();
+      await Wait();
+      expect(resolvedWith).toEqual(undefined);
+
+      effectChannel.update(true);
+      await Wait();
+      expect(resolvedWith).toEqual(true);
+    });
+
+    test('wait until promise spesific data should trigger immidiately if current data is equal', async () => {
+      reducer.effect(true).attachToRoot();
+      let nextNotification = await reducer.waitUntilPromise(true);
       expect(nextNotification).toEqual(true);
     });
 
-    test('wait until spesific data should trigger immidiately if current data is equal', async () => {
-      reducer.effect(true);
-      let nextNotification = await reducer.waitUntil(true);
-      expect(nextNotification).toEqual(true);
-    });
-
-    test('wait until undefined should trigger immidiately if current data is equal', async () => {
-      let nextNotification = await reducer.waitUntil(false);
+    test('wait until promise undefined should trigger immidiately if current data is equal', async () => {
+      let nextNotification = await reducer.waitUntilPromise(false);
       expect(nextNotification).toEqual(false);
     });
   });
