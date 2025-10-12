@@ -15,6 +15,7 @@ export {
   ReducerReduceFunction,
   ReducerSubscriptionOptions
 } from './app/reducer/reducer';
+export { Reference } from './app/reference/reference';
 export {
   IVariable,
   Variable,
