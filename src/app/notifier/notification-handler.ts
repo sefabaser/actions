@@ -1,5 +1,7 @@
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 
+export type NotifierCallbackFunction<T> = (data: T) => void;
+
 export class ActionSubscription extends LightweightAttachable {
   static get destroyed(): ActionSubscription {
     let destroyedSubscription = new LightweightAttachable();
@@ -32,26 +34,29 @@ export class ActionSubscription extends LightweightAttachable {
 }
 
 export class NotificationHandler<T> {
-  private listenersMap = new Map<number, (data: T) => any>();
+  /** @internal */
+  static notify<T>(data: T, callback: NotifierCallbackFunction<T>): void {
+    try {
+      callback(data);
+    } catch (e) {
+      console.error('Notifier callback function error: ', e);
+    }
+  }
+
+  private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
   private nextAvailableSubscriptionId = 1;
 
   get listenerCount(): number {
     return this.listenersMap.size;
   }
 
-  forEach(callback: (listenerCallbackFunction: (data: T) => any) => void): NotificationHandler<T> {
-    let newMap = new Map<number, (data: T) => any>(this.listenersMap);
-    newMap.forEach(data => {
-      try {
-        callback(data);
-      } catch (e) {
-        console.error('Observable map callback function error: ', e);
-      }
-    });
+  forEach(callback: (listenerCallbackFunction: NotifierCallbackFunction<T>) => void): NotificationHandler<T> {
+    let newMap = new Map<number, NotifierCallbackFunction<T>>(this.listenersMap);
+    newMap.forEach(data => NotificationHandler.notify(data, callback));
     return this;
   }
 
-  subscribe(callback: (data: T) => any): ActionSubscription {
+  subscribe(callback: NotifierCallbackFunction<T>): ActionSubscription {
     let subscriptionId = this.nextAvailableSubscriptionId;
     this.listenersMap.set(subscriptionId, callback);
     this.nextAvailableSubscriptionId++;
@@ -61,5 +66,10 @@ export class NotificationHandler<T> {
     });
 
     return subscription;
+  }
+
+  /** @internal */
+  get listeners(): NotifierCallbackFunction<T>[] {
+    return [...this.listenersMap.values()];
   }
 }

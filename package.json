@@ -23,7 +23,7 @@
     "clean-install": "cls && rm -rf node_modules && rm -rf package-lock.json && npm run i",
     "i": "npm cache clean --force && npm install",
     "pretest": "clear",
-    "test": "vitest",
+    "test": "vitest run",
     "start": "npm run build && node dist",
     "build": "tsc",
     "lint": "biome check . --write --max-diagnostics=1",

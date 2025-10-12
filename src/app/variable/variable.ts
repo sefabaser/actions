@@ -1,7 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
-import { ActionSubscription } from '../notifier/notification-handler';
+import { ActionSubscription, NotificationHandler } from '../notifier/notification-handler';
 import { Notifier } from '../notifier/notifier';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
@@ -51,7 +51,7 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     this.currentValue = this.options.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
 
     if (!this.options.notifyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.notificationHandler.forEach(callback => this.notify(data, callback));
+      this.notificationHandler.forEach(callback => NotificationHandler.notify(data, callback));
     }
 
     return this;
@@ -59,14 +59,14 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
 
   subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): ActionSubscription {
     if (!options?.listenOnlyNewChanges) {
-      this.notify(this.currentValue, callback);
+      NotificationHandler.notify(this.currentValue, callback);
     }
     return super.subscribe(callback);
   }
 
   waitUntil(expectedData: T, callback: (data: T) => void): ActionSubscription {
     if (Comparator.isEqual(this.currentValue, expectedData)) {
-      this.notify(expectedData, callback);
+      NotificationHandler.notify(expectedData, callback);
       return ActionSubscription.destroyed;
     } else {
       return super.waitUntil(expectedData, callback);

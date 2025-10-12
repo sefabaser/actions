@@ -1,8 +1,6 @@
 import { Comparator } from 'helpers-lib';
 
-import { ActionSubscription, NotificationHandler } from './notification-handler';
-
-export type NotifierCallbackFunction<T> = (data: T) => void;
+import { ActionSubscription, NotificationHandler, NotifierCallbackFunction } from './notification-handler';
 
 export class Notifier<T> {
   get listenerCount(): number {
@@ -25,7 +23,7 @@ export class Notifier<T> {
 
   waitUntilNext(callback: NotifierCallbackFunction<T>): ActionSubscription {
     let subscription = this.notificationHandler.subscribe(data => {
-      this.notify(data, callback);
+      NotificationHandler.notify(data, callback);
       subscription.destroy();
     });
     return subscription;
@@ -34,18 +32,15 @@ export class Notifier<T> {
   waitUntil(expectedData: T, callback: NotifierCallbackFunction<T>): ActionSubscription {
     let subscription = this.notificationHandler.subscribe(data => {
       if (Comparator.isEqual(data, expectedData)) {
-        this.notify(data, callback);
+        NotificationHandler.notify(data, callback);
         subscription.destroy();
       }
     });
     return subscription;
   }
 
-  protected notify(data: T, callback: NotifierCallbackFunction<T>): void {
-    try {
-      callback(data);
-    } catch (e) {
-      console.error('Notifier callback function error: ', e);
-    }
+  /** @internal */
+  get listeners(): NotifierCallbackFunction<T>[] {
+    return this.notificationHandler.listeners;
   }
 }

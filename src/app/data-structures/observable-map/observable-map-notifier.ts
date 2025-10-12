@@ -1,5 +1,4 @@
-import { ActionSubscription } from '../../notifier/notification-handler';
-import { NotifierCallbackFunction } from '../../notifier/notifier';
+import { ActionSubscription, NotificationHandler } from '../../notifier/notification-handler';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
@@ -52,7 +51,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
 
   waitUntilAdded(value: KeyType, callback: (item: ValueType) => void): ActionSubscription {
     let triggerCallback = () => {
-      this.notify(this.map.get(value), callback);
+      NotificationHandler.notify(this.map.get(value), callback);
     };
 
     if (this.map.has(value)) {
@@ -74,7 +73,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
 
   waitUntilRemoved(value: KeyType, callback: () => void): ActionSubscription {
     if (!this.map.has(value)) {
-      this.notify(undefined, callback);
+      NotificationHandler.notify(undefined, callback);
       return ActionSubscription.destroyed;
     } else {
       let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
@@ -84,20 +83,12 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
       }
 
       let item = () => {
-        this.notify(undefined, callback);
+        NotificationHandler.notify(undefined, callback);
       };
       untilRemovedListenerSet.add(item);
       return new ActionSubscription(() => {
         this._untilRemovedListeners?.get(value)?.delete(item);
       });
-    }
-  }
-
-  protected notify<T>(data: T, callback: NotifierCallbackFunction<T>): void {
-    try {
-      callback(data);
-    } catch (e) {
-      console.error('Notifier callback function error: ', e);
     }
   }
 }

@@ -130,13 +130,148 @@ describe('Attachable', () => {
         sample1.attach(sample2);
       }).toThrow('Circular attachment detected!');
     });
+  });
+
+  describe('onDestroyed', () => {
+    test('callback is invoked when attachable is destroyed', () => {
+      let callbackInvoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      sample
+        .onDestroyed(() => {
+          callbackInvoked = true;
+        })
+        .attachToRoot();
+
+      sample.destroy();
+      expect(callbackInvoked).toBeTruthy();
+    });
+
+    test('callback is invoked immediately if attachable is already destroyed', () => {
+      let callbackInvoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      sample.destroy();
+
+      sample
+        .onDestroyed(() => {
+          callbackInvoked = true;
+        })
+        .attachToRoot();
+
+      expect(callbackInvoked).toBeTruthy();
+    });
+
+    test('multiple callbacks can be subscribed and all are invoked', () => {
+      let callback1Invoked = false;
+      let callback2Invoked = false;
+      let callback3Invoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      sample
+        .onDestroyed(() => {
+          callback1Invoked = true;
+        })
+        .attachToRoot();
+      sample
+        .onDestroyed(() => {
+          callback2Invoked = true;
+        })
+        .attachToRoot();
+      sample
+        .onDestroyed(() => {
+          callback3Invoked = true;
+        })
+        .attachToRoot();
+
+      sample.destroy();
+
+      expect([callback1Invoked, callback2Invoked, callback3Invoked]).toEqual([true, true, true]);
+    });
+
+    test('subscription can be unsubscribed', () => {
+      let callbackInvoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      let subscription = sample
+        .onDestroyed(() => {
+          callbackInvoked = true;
+        })
+        .attachToRoot();
+
+      subscription.destroy();
+      sample.destroy();
+
+      expect(callbackInvoked).toBeFalsy();
+    });
+
+    test('error in callback is caught and logged when attachable is already destroyed', () => {
+      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      let sample = new Attachable().attachToRoot();
+
+      sample.destroy();
+
+      let error = new Error('Test error');
+      sample
+        .onDestroyed(() => {
+          throw error;
+        })
+        .attachToRoot();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', error);
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('callback is not invoked after unsubscribe even if other callbacks exist', () => {
+      let callback1Invoked = false;
+      let callback2Invoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      let subscription1 = sample
+        .onDestroyed(() => {
+          callback1Invoked = true;
+        })
+        .attachToRoot();
+      sample
+        .onDestroyed(() => {
+          callback2Invoked = true;
+        })
+        .attachToRoot();
+
+      subscription1.destroy();
+      sample.destroy();
+
+      expect([callback1Invoked, callback2Invoked]).toEqual([false, true]);
+    });
 
     test('triggereding destroy multiple times should not take effect multiply', () => {
-      // TODO
+      let triggerCount = 0;
+      let sample = new Attachable().attachToRoot();
+
+      sample
+        .onDestroyed(() => {
+          triggerCount++;
+        })
+        .attachToRoot();
+
+      sample.destroy();
+      sample.destroy();
+
+      expect(triggerCount).toBe(1);
     });
 
     test('onDestroy should be triggered when destroy listener is attached to the attachable that owns the onDestroy', () => {
-      // TODO
+      let callbackInvoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      sample
+        .onDestroyed(() => {
+          callbackInvoked = true;
+        })
+        .attach(sample);
+
+      sample.destroy();
+      expect(callbackInvoked).toBeTruthy();
     });
   });
 });

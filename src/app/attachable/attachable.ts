@@ -1,3 +1,5 @@
+import { Action } from '../action/action';
+import { ActionSubscription, NotificationHandler } from '../notifier/notification-handler';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
 
@@ -15,6 +17,19 @@ export class Attachable extends ClassId {
   private _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;
+  }
+
+  private _onDestroyed: Action<void> | undefined;
+  onDestroyed(callback: () => void): ActionSubscription {
+    if (this._destroyed) {
+      NotificationHandler.notify(undefined, callback);
+      return ActionSubscription.destroyed;
+    } else {
+      if (!this._onDestroyed) {
+        this._onDestroyed = new Action<void>();
+      }
+      return this._onDestroyed.subscribe(callback);
+    }
   }
 
   /** @internal */
@@ -48,10 +63,14 @@ export class Attachable extends ClassId {
       this.attachedParent = undefined;
       AttachmentTargetStore.unregisterAttachmentTarget(this);
 
+      let onDestroyListeners = this._onDestroyed?.listeners ?? [];
+
       let attachedEntities = [...this.attachments];
       attachedEntities.forEach(item => item.destroy());
       this.attachments = [];
       this._destroyed = true;
+
+      onDestroyListeners.forEach(listener => NotificationHandler.notify(undefined, listener));
     }
   }
 
