@@ -1,38 +1,8 @@
-import { ActionSubscription } from '../../notifier/notification-handler';
+import { ObservableMapNotifier } from './observable-map-notifier';
 
-export class ObservableMap<KeyType extends number | string, ValueType> {
-  private map: Map<KeyType, ValueType>;
-
-  private _untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
-  private get untilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
-    if (!this._untilAddedListeners) {
-      this._untilAddedListeners = new Map();
-    }
-    return this._untilAddedListeners;
-  }
-
-  private _untilRemovedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
-  private get untilRemovedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
-    if (!this._untilRemovedListeners) {
-      this._untilRemovedListeners = new Map();
-    }
-    return this._untilRemovedListeners;
-  }
-
-  constructor(map?: Map<KeyType, ValueType> | undefined) {
-    this.map = map ?? new Map<KeyType, ValueType>();
-  }
-
-  convertToMap(): Map<KeyType, ValueType> {
-    return new Map(this.map);
-  }
-
-  get size(): number {
-    return this.map.size;
-  }
-
-  has(value: KeyType): boolean {
-    return this.map.has(value);
+export class ObservableMap<KeyType extends number | string, ValueType> extends ObservableMapNotifier<KeyType, ValueType> {
+  constructor(map: Map<KeyType, ValueType> = new Map<KeyType, ValueType>()) {
+    super(map);
   }
 
   set(key: KeyType, item: ValueType): this {
@@ -56,20 +26,12 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
     return this;
   }
 
-  get(key: KeyType): ValueType | undefined {
-    return this.map.get(key);
-  }
-
   delete(key: KeyType): this {
     this.map.delete(key);
     if (this._untilRemovedListeners) {
       if (this._untilRemovedListeners.has(key)) {
         this._untilRemovedListeners.get(key)?.forEach(callback => {
-          try {
-            callback(key);
-          } catch (e) {
-            console.error('Observable map callback function error: ', e);
-          }
+          this.notify(undefined, callback);
         });
         this._untilRemovedListeners.delete(key);
 
@@ -79,60 +41,5 @@ export class ObservableMap<KeyType extends number | string, ValueType> {
       }
     }
     return this;
-  }
-
-  waitUntilAdded(value: KeyType, callback: (item: ValueType) => void): ActionSubscription {
-    let triggerCallback = () => {
-      try {
-        callback(this.map.get(value) as ValueType);
-      } catch (e) {
-        console.error('Observable map callback function error: ', e);
-      }
-    };
-
-    if (this.map.has(value)) {
-      triggerCallback();
-      return ActionSubscription.destroyed;
-    } else {
-      let untilAddedListenerSet = this.untilAddedListeners.get(value);
-      if (!untilAddedListenerSet) {
-        untilAddedListenerSet = new Set();
-        this.untilAddedListeners.set(value, untilAddedListenerSet);
-      }
-
-      untilAddedListenerSet.add(triggerCallback);
-      return new ActionSubscription(() => {
-        this._untilAddedListeners?.get(value)?.delete(triggerCallback);
-      });
-    }
-  }
-
-  waitUntilRemoved(value: KeyType, callback: () => void): ActionSubscription {
-    if (!this.map.has(value)) {
-      try {
-        callback();
-      } catch (e) {
-        console.error('Observable map callback function error: ', e);
-      }
-      return ActionSubscription.destroyed;
-    } else {
-      let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
-      if (!untilRemovedListenerSet) {
-        untilRemovedListenerSet = new Set();
-        this.untilRemovedListeners.set(value, untilRemovedListenerSet);
-      }
-
-      let item = () => {
-        try {
-          callback();
-        } catch (e) {
-          console.error('Observable map callback function error: ', e);
-        }
-      };
-      untilRemovedListenerSet.add(item);
-      return new ActionSubscription(() => {
-        this._untilRemovedListeners?.get(value)?.delete(item);
-      });
-    }
   }
 }

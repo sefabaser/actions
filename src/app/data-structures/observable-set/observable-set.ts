@@ -26,10 +26,6 @@ export class ObservableSet<KeyType extends number | string> {
     return this;
   }
 
-  get(key: KeyType): void {
-    this.observableMap.get(key);
-  }
-
   delete(key: KeyType): this {
     this.observableMap.delete(key);
     return this;
