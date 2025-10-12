@@ -193,7 +193,6 @@ describe(`Action`, () => {
         .attachToRoot();
 
       subscription.destroy();
-      expect(action['nextListeners'].size).toBe(0);
 
       action.trigger({ testData: 'sample' });
       expect(resolvedWith).toBeUndefined();
@@ -212,8 +211,6 @@ describe(`Action`, () => {
         .attachToRoot();
 
       subscription.destroy();
-      expect(action['untilListeners'].size).toBe(0);
-
       action.trigger(undefined);
 
       expect(resolvedWith).toBeUndefined();

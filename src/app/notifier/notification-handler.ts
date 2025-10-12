@@ -1,4 +1,4 @@
-import { LightweightAttachable } from '../app/attachable/lightweight-attachable';
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
 
 export class ActionSubscription extends LightweightAttachable {
   private static destroyedSubscription: ActionSubscription;

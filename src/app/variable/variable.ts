@@ -1,18 +1,18 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
-import { ActionSubscription } from '../../helpers/notification-handler';
-import { Action } from '../action/action';
+import { ActionSubscription } from '../notifier/notification-handler';
+import { Notifier } from '../notifier/notifier';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
 
 export interface VariableOptions {
-  clone?: boolean;
-  notifyOnChange?: boolean;
+  readonly clone: boolean;
+  readonly notifyOnChange: boolean;
 }
 
 export interface VariableSubscriptionOptions {
-  listneOnlyNewChanges?: boolean;
+  readonly listenOnlyNewChanges: boolean;
 }
 
 export interface IVariable<T> {
@@ -24,7 +24,7 @@ export interface IVariable<T> {
   waitUntil(data: T, callback: (data: T) => void): void;
 }
 
-export class Variable<T> implements IVariable<T> {
+export class Variable<T> extends Notifier<T> implements IVariable<T> {
   get value(): T {
     return this.currentValue;
   }
@@ -32,31 +32,26 @@ export class Variable<T> implements IVariable<T> {
     this.set(value);
   }
 
-  get listenerCount(): number {
-    return this.action.listenerCount;
-  }
+  private options: VariableOptions;
 
-  private notifyOnlyOnChange: boolean;
-  private clone: boolean;
-
-  private action: Action<T>;
   private currentValue!: T;
   private firstTriggerHappened = false;
 
-  constructor(options: VariableOptions = {}) {
-    this.notifyOnlyOnChange =
-      options.notifyOnChange !== undefined ? options.notifyOnChange : ActionLibDefaults.variable.notifyOnChange;
-    this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.variable.cloneBeforeNotification;
-
-    this.action = new Action<T>({ clone: this.clone });
+  constructor(options?: Partial<VariableOptions>) {
+    super();
+    this.options = {
+      notifyOnChange: ActionLibDefaults.variable.notifyOnChange,
+      clone: ActionLibDefaults.variable.cloneBeforeNotification,
+      ...options
+    };
   }
 
   set(data: T): this {
     let previousData = this.currentValue;
-    this.currentValue = this.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
+    this.currentValue = this.options.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
 
-    if (!this.notifyOnlyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.action.trigger(data);
+    if (!this.options.notifyOnChange || !Comparator.isEqual(previousData, data)) {
+      this.notificationHandler.forEach(callback => this.notify(data, callback));
     }
 
     this.firstTriggerHappened = true;
@@ -64,22 +59,11 @@ export class Variable<T> implements IVariable<T> {
   }
 
   subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): ActionSubscription {
-    if (this.firstTriggerHappened && !options?.listneOnlyNewChanges) {
-      try {
-        callback(this.currentValue);
-      } catch (e) {
-        console.error('Notifier callback function error: ', e);
-      }
+    if (this.firstTriggerHappened && !options?.listenOnlyNewChanges) {
+      this.notify(this.currentValue, callback);
+      return ActionSubscription.destroyed;
+    } else {
+      return super.subscribe(callback);
     }
-
-    return this.action.subscribe(callback);
-  }
-
-  waitUntilNext(callback: (data: T) => void): ActionSubscription {
-    return this.action.waitUntilNext(callback);
-  }
-
-  waitUntil(data: T, callback: (data: T) => void): ActionSubscription {
-    return this.action.waitUntil(data, callback);
   }
 }

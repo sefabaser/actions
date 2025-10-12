@@ -1,8 +1,8 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
-import { ActionSubscription, NotificationHandler } from '../../helpers/notification-handler';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
+import { ActionSubscription, NotificationHandler } from '../notifier/notification-handler';
 
 export interface ReducerOptions {
   clone?: boolean;

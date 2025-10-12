@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Attachable } from '../app/attachable/attachable';
+import { Attachable } from '../attachable/attachable';
 import { ActionSubscription, NotificationHandler } from './notification-handler';
 
 describe(`Notification Handler`, () => {

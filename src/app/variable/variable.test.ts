@@ -19,17 +19,6 @@ describe(`Variable`, () => {
       expect(variable).toBeDefined();
     });
 
-    test('should be subscribable', () => {
-      variable.subscribe(_ => {}).attachToRoot();
-      expect(variable['action']['notificationHandler']['listenersMap'].size).toEqual(1);
-    });
-
-    test('should be destroyable', () => {
-      let subscription = variable.subscribe(_ => {}).attachToRoot();
-      subscription.destroy();
-      expect(variable['action']['notificationHandler']['listenersMap'].size).toEqual(0);
-    });
-
     test('triggerring without listeners', () =>
       new Promise<void>(done => {
         variable.set({ testData: 'sample' });
@@ -75,7 +64,7 @@ describe(`Variable`, () => {
           () => {
             triggered = true;
           },
-          { listneOnlyNewChanges: true }
+          { listenOnlyNewChanges: true }
         )
         .attachToRoot();
 

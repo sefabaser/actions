@@ -1,4 +1,4 @@
-import { ActionSubscription } from '../../../helpers/notification-handler';
+import { ActionSubscription } from '../../notifier/notification-handler';
 
 export class ObservableMap<KeyType extends number | string, ValueType> {
   private map: Map<KeyType, ValueType>;
