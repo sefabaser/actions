@@ -1,7 +1,8 @@
 import { Comparator } from 'helpers-lib';
 
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { ActionSubscription, NotificationHandler, NotifierCallbackFunction } from './notification-handler';
+import { ActionSubscription } from './action-subscription';
+import { NotificationHandler, NotifierCallbackFunction } from './notification-handler';
 
 export class Notifier<T> {
   get listenerCount(): number {

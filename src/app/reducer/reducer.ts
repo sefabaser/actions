@@ -3,22 +3,22 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { ActionLibDefaults } from '../../config';
 import { NotificationHelper } from '../../helpers/notification.helper';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { ActionSubscription } from '../notifier/notification-handler';
+import { ActionSubscription } from '../notifier/action-subscription';
 import { Notifier } from '../notifier/notifier';
 
 export interface ReducerOptions {
-  clone?: boolean;
+  readonly clone: boolean;
 }
 
 export interface ReducerSubscriptionOptions {
-  listenOnlyNewChanges?: boolean;
+  readonly listenOnlyNewChanges: boolean;
 }
 
 export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
-  id: number;
-  current?: EffectType;
-  previous?: EffectType;
-  type: 'initial' | 'effect' | 'update' | 'destroy';
+  readonly id: number;
+  readonly current?: EffectType;
+  readonly previous?: EffectType;
+  readonly type: 'initial' | 'effect' | 'update' | 'destroy';
 }) => ResponseType;
 
 export class ReducerEffectChannel<EffectType, ResponseType> extends LightweightAttachable {
@@ -88,66 +88,78 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   static createExistenceChecker(): Reducer<void, boolean> {
     let set = new Set<number>();
 
-    return new Reducer(change => {
-      if (change.type === 'effect' || change.type === 'update') {
-        set.add(change.id);
-      } else if (change.type === 'destroy') {
-        set.delete(change.id);
-      }
-      return set.size > 0;
-    });
+    return new Reducer(
+      change => {
+        if (change.type === 'effect' || change.type === 'update') {
+          set.add(change.id);
+        } else if (change.type === 'destroy') {
+          set.delete(change.id);
+        }
+        return set.size > 0;
+      },
+      { clone: false }
+    );
   }
 
   static createOr(): Reducer<boolean, boolean> {
     let set = new Set<number>();
 
-    return new Reducer(change => {
-      if (change.type === 'effect' || change.type === 'update') {
-        if (change.current) {
-          set.add(change.id);
-        } else {
+    return new Reducer(
+      change => {
+        if (change.type === 'effect' || change.type === 'update') {
+          if (change.current) {
+            set.add(change.id);
+          } else {
+            set.delete(change.id);
+          }
+        } else if (change.type === 'destroy') {
           set.delete(change.id);
         }
-      } else if (change.type === 'destroy') {
-        set.delete(change.id);
-      }
-      return set.size > 0;
-    });
+        return set.size > 0;
+      },
+      { clone: false }
+    );
   }
 
   static createAnd(): Reducer<boolean, boolean> {
     let set = new Set<number>();
 
-    return new Reducer(change => {
-      if (change.type === 'effect' || change.type === 'update') {
-        if (change.current) {
+    return new Reducer(
+      change => {
+        if (change.type === 'effect' || change.type === 'update') {
+          if (change.current) {
+            set.delete(change.id);
+          } else {
+            set.add(change.id);
+          }
+        } else if (change.type === 'destroy') {
           set.delete(change.id);
-        } else {
-          set.add(change.id);
         }
-      } else if (change.type === 'destroy') {
-        set.delete(change.id);
-      }
-      return set.size === 0;
-    });
+        return set.size === 0;
+      },
+      { clone: false }
+    );
   }
 
   static createSum(): Reducer<number, number> {
     let sum = 0;
-    return new Reducer<number, number>(change => {
-      if ((change.type === 'destroy' || change.type === 'update') && change.previous) {
-        sum -= change.previous;
-      }
+    return new Reducer<number, number>(
+      change => {
+        if ((change.type === 'destroy' || change.type === 'update') && change.previous) {
+          sum -= change.previous;
+        }
 
-      if ((change.type === 'effect' || change.type === 'update') && change.current) {
-        sum += change.current;
-      }
+        if ((change.type === 'effect' || change.type === 'update') && change.current) {
+          sum += change.current;
+        }
 
-      return sum;
-    });
+        return sum;
+      },
+      { clone: false }
+    );
   }
 
-  static createCollector<EffectType>(options: ReducerOptions = {}): Reducer<EffectType, EffectType[]> {
+  static createCollector<EffectType>(options: Partial<ReducerOptions> = {}): Reducer<EffectType, EffectType[]> {
     let collection = new Map<number, EffectType>();
     return new Reducer<EffectType, EffectType[]>(change => {
       if (change.type === 'destroy') {
@@ -172,34 +184,31 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     let collection: any = (options && options.initial) || {};
     let activeEffects = new Set<string>();
 
-    return new Reducer<{ key: string; value: any }, ResultType>(
-      change => {
-        if (change.type === 'destroy') {
-          if (change.previous) {
-            delete collection[change.previous.key];
-            activeEffects.delete(change.previous.key);
-          }
-        } else if (change.type === 'update') {
-          if (change.current) {
-            collection[change.current.key] = change.current.value;
-          }
-        } else if (change.type === 'effect') {
-          if (change.current) {
-            if (activeEffects.has(change.current.key)) {
-              console.error(`There is another effect for '${change.current.key}' already exist!`);
-            } else {
-              activeEffects.add(change.current.key);
-              if (!options || !options.doNotUpdateValueAtEffectCreation) {
-                collection[change.current.key] = change.current.value;
-              }
+    return new Reducer<{ key: string; value: any }, ResultType>(change => {
+      if (change.type === 'destroy') {
+        if (change.previous) {
+          delete collection[change.previous.key];
+          activeEffects.delete(change.previous.key);
+        }
+      } else if (change.type === 'update') {
+        if (change.current) {
+          collection[change.current.key] = change.current.value;
+        }
+      } else if (change.type === 'effect') {
+        if (change.current) {
+          if (activeEffects.has(change.current.key)) {
+            console.error(`There is another effect for '${change.current.key}' already exist!`);
+          } else {
+            activeEffects.add(change.current.key);
+            if (!options || !options.doNotUpdateValueAtEffectCreation) {
+              collection[change.current.key] = change.current.value;
             }
           }
         }
+      }
 
-        return <ResultType>collection;
-      },
-      { clone: options && options.clone }
-    );
+      return <ResultType>collection;
+    }, options);
   }
 
   get value(): ResponseType {
@@ -211,15 +220,19 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   }
 
   private previousBroadcast: ResponseType;
-  private clone = false;
+  private options: ReducerOptions;
 
   private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
   private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
-  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
+  constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, partialOptions: Partial<ReducerOptions> = {}) {
     super();
+    this.options = {
+      clone: ActionLibDefaults.reducer.cloneBeforeNotification,
+      ...partialOptions
+    };
+
     this.reduceFunction = reduceFunction;
-    this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.reducer.cloneBeforeNotification;
 
     let reducerResponse = this.reduceFunction({
       id: 0,
@@ -256,7 +269,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
 
   private broadcast(value: ResponseType): void {
     if (!Comparator.isEqual(this.previousBroadcast, value)) {
-      if (this.clone && Comparator.isObject(value)) {
+      if (this.options.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);
       }
 

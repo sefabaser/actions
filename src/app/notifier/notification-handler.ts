@@ -2,8 +2,8 @@ import { NotificationHelper } from '../../helpers/notification.helper';
 import { ActionSubscription } from './action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
-export { ActionSubscription };
 
+/** @internal */
 export class NotificationHandler<T> {
   private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
   private nextAvailableSubscriptionId = 1;

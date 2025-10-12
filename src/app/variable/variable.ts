@@ -2,7 +2,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { ActionSubscription } from '../notifier/notification-handler';
+import { ActionSubscription } from '../notifier/action-subscription';
 import { Notifier } from '../notifier/notifier';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
