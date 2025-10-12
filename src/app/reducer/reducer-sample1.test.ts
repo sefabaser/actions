@@ -1,4 +1,4 @@
-import { describe, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Reducer } from './reducer';
 
@@ -45,50 +45,41 @@ class SomeAsyncService {
 }
 
 describe(`Reducer Sample Scenario`, () => {
-  test('notify everyone if loading indicater state changes', () =>
-    new Promise<void>(done => {
-      let loadingIndicator = new LoadingIndicator();
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
 
-      let async1 = new SomeAsyncService();
-      let async2 = new SomeAsyncService();
+  test('notify everyone if loading indicater state changes', () => {
+    let loadingIndicator = new LoadingIndicator();
 
-      let successful = true;
+    let async1 = new SomeAsyncService();
+    let async2 = new SomeAsyncService();
 
-      async1.asyncOperation();
-      if (!(loadingIndicator.screenIsBlocked === true && loadingIndicator.triggerCount === 2)) {
-        successful = false;
-        console.error('Reducer Sample Scenario: first operation error!');
-      }
+    async1.asyncOperation();
+    expect(loadingIndicator.screenIsBlocked).toBe(true);
+    expect(loadingIndicator.triggerCount).toBe(2);
 
-      setTimeout(() => {
-        // during first call still happening
-        async2.asyncOperation();
-        // in here still we expect to see no trigger
-        if (!(loadingIndicator.screenIsBlocked === true && loadingIndicator.triggerCount === 2)) {
-          successful = false;
-          console.error('Reducer Sample Scenario: second operation error 1!');
-        }
+    vi.advanceTimersByTime(1);
 
-        setTimeout(() => {
-          // after first call is completed but still in second call
-          // in here still we expect to see no trigger because second operation is still happening
-          if (!(loadingIndicator.screenIsBlocked === true && loadingIndicator.triggerCount === 2)) {
-            successful = false;
-            console.error('Reducer Sample Scenario: second operation error 2!');
-          }
+    // during first call still happening
+    async2.asyncOperation();
+    // in here still we expect to see no trigger
+    expect(loadingIndicator.screenIsBlocked).toBe(true);
+    expect(loadingIndicator.triggerCount).toBe(2);
 
-          setTimeout(() => {
-            // after both calls are completed
-            if (!(loadingIndicator.screenIsBlocked === false && loadingIndicator.triggerCount === 3)) {
-              successful = false;
-              console.error('Reducer Sample Scenario: after operations error!');
-            }
+    vi.advanceTimersByTime(1);
 
-            if (successful) {
-              done();
-            }
-          }, 7);
-        }, 1);
-      }, 1);
-    }));
+    // after first call is completed but still in second call
+    // in here still we expect to see no trigger because second operation is still happening
+    expect(loadingIndicator.screenIsBlocked).toBe(true);
+    expect(loadingIndicator.triggerCount).toBe(2);
+
+    vi.advanceTimersByTime(7);
+
+    // after both calls are completed
+    expect(loadingIndicator.screenIsBlocked).toBe(false);
+    expect(loadingIndicator.triggerCount).toBe(3);
+
+    vi.useRealTimers();
+  });
 });
