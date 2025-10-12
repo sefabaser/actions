@@ -56,6 +56,27 @@ describe('Reference', () => {
       }).not.toThrow('Attachable: The object is not attached to anything!');
       vi.useRealTimers();
     });
+
+    test('destroyed reference returns undefined for value', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+      expect(refVar.value).toBe(target.id);
+
+      refVar.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('destroyed reference returns 0 for listenerCount', () => {
+      let refVar = new Reference().attach(parent);
+      refVar.subscribe(() => {}).attachToRoot();
+
+      expect(refVar.listenerCount).toBe(1);
+
+      refVar.destroy();
+      expect(refVar.listenerCount).toBe(0);
+    });
   });
 
   describe('Reference behavior', () => {
@@ -386,9 +407,7 @@ describe('Reference', () => {
 
       parent.destroy();
       expect(refVar.destroyed).toBe(true);
-
-      target.destroy();
-      expect(refVar.value).toBe(target.id);
+      expect(refVar.value).toBeUndefined();
     });
 
     test('onDestroyed subscription uses attachToRoot when reference uses attachToRoot', () => {
@@ -415,6 +434,123 @@ describe('Reference', () => {
       expect(refVar.value).toBe(target2.id);
 
       target2.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+  });
+
+  describe('Destroyed state behavior', () => {
+    test('cannot set value on destroyed reference', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.destroy();
+
+      expect(() => {
+        refVar.value = target.id;
+      }).toThrow('Reference: This reference is destroyed cannot be set!');
+    });
+
+    test('cannot subscribe to destroyed reference', () => {
+      let refVar = new Reference().attach(parent);
+
+      refVar.destroy();
+
+      expect(() => {
+        refVar.subscribe(() => {});
+      }).toThrow('Reference: This reference is destroyed cannot be subscribed to!');
+    });
+
+    test('cannot waitUntilNext on destroyed reference', () => {
+      let refVar = new Reference().attach(parent);
+
+      refVar.destroy();
+
+      expect(() => {
+        refVar.waitUntilNext(() => {});
+      }).toThrow('Reference: This reference is destroyed cannot be waited until next!');
+    });
+
+    test('cannot waitUntil on destroyed reference', () => {
+      let refVar = new Reference().attach(parent);
+
+      refVar.destroy();
+
+      expect(() => {
+        refVar.waitUntil('some-id', () => {});
+      }).toThrow('Reference: This reference is destroyed cannot be waited until!');
+    });
+
+    test('destroy cleans up internal destroy subscription', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+      expect(refVar['destroySubscription']).toBeDefined();
+
+      let destroySubscription = refVar['destroySubscription'];
+      refVar.destroy();
+
+      expect(destroySubscription?.destroyed).toBe(true);
+      expect(refVar['destroySubscription']).toBeUndefined();
+    });
+
+    test('destroy can be called multiple times safely', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+
+      expect(() => {
+        refVar.destroy();
+        refVar.destroy();
+      }).not.toThrow();
+
+      expect(refVar.destroyed).toBe(true);
+    });
+
+    test('destroying reference with value does not affect target attachable', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+      refVar.destroy();
+
+      expect(target.destroyed).toBe(false);
+    });
+
+    test('getting value after destroy does not throw', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+      refVar.destroy();
+
+      expect(() => {
+        let value = refVar.value;
+        expect(value).toBeUndefined();
+      }).not.toThrow();
+    });
+
+    test('getting listenerCount after destroy does not throw', () => {
+      let refVar = new Reference().attach(parent);
+      refVar.subscribe(() => {}).attachToRoot();
+
+      refVar.destroy();
+
+      expect(() => {
+        let count = refVar.listenerCount;
+        expect(count).toBe(0);
+      }).not.toThrow();
+    });
+
+    test('destroyed reference with no value cleans up properly', () => {
+      let refVar = new Reference().attach(parent);
+
+      expect(refVar['destroySubscription']).toBeUndefined();
+
+      refVar.destroy();
+
+      expect(refVar.destroyed).toBe(true);
       expect(refVar.value).toBeUndefined();
     });
   });

@@ -6,6 +6,10 @@ import { IVariable, Variable, VariableListenerCallbackFunction } from '../variab
 
 export class Reference extends LightweightAttachable implements IVariable<string | undefined> {
   get value(): string | undefined {
+    if (this.destroyed) {
+      return undefined;
+    }
+
     return this.variable.value;
   }
   set value(value: string | undefined) {
@@ -13,6 +17,10 @@ export class Reference extends LightweightAttachable implements IVariable<string
   }
 
   get listenerCount(): number {
+    if (this.destroyed) {
+      return 0;
+    }
+
     return this.variable.listenerCount;
   }
 
@@ -25,6 +33,10 @@ export class Reference extends LightweightAttachable implements IVariable<string
   }
 
   set(data: string | undefined): this {
+    if (this.destroyed) {
+      throw new Error(`Reference: This reference is destroyed cannot be set!`);
+    }
+
     if (data !== this.variable.value) {
       this.destroySubscription?.destroy();
       this.destroySubscription = undefined;
@@ -49,14 +61,26 @@ export class Reference extends LightweightAttachable implements IVariable<string
   }
 
   subscribe(callback: VariableListenerCallbackFunction<string | undefined>): ActionSubscription {
+    if (this.destroyed) {
+      throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
+    }
+
     return this.variable.subscribe(callback);
   }
 
   waitUntilNext(callback: (data: string | undefined) => void): ActionSubscription {
+    if (this.destroyed) {
+      throw new Error(`Reference: This reference is destroyed cannot be waited until next!`);
+    }
+
     return this.variable.waitUntilNext(callback);
   }
 
   waitUntil(data: string | undefined, callback: (data: string | undefined) => void): ActionSubscription {
+    if (this.destroyed) {
+      throw new Error(`Reference: This reference is destroyed cannot be waited until!`);
+    }
+
     return this.variable.waitUntil(data, callback);
   }
 
@@ -70,5 +94,12 @@ export class Reference extends LightweightAttachable implements IVariable<string
     super.attachToRoot();
     this.destroySubscription?.attachToRoot();
     return this;
+  }
+
+  destroy(): void {
+    this.destroySubscription?.destroy();
+    this.destroySubscription = undefined;
+    this.variable = undefined as any;
+    super.destroy();
   }
 }
