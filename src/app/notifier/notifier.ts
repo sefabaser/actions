@@ -24,7 +24,7 @@ export class Notifier<T> {
   }
 
   waitUntilNext(callback: NotifierCallbackFunction<T>): ActionSubscription {
-    let subscription = this.subscribe(data => {
+    let subscription = this.notificationHandler.subscribe(data => {
       this.notify(data, callback);
       subscription.destroy();
     });
@@ -32,9 +32,8 @@ export class Notifier<T> {
   }
 
   waitUntil(expectedData: T, callback: NotifierCallbackFunction<T>): ActionSubscription {
-    let subscription = this.subscribe(data => {
+    let subscription = this.notificationHandler.subscribe(data => {
       if (Comparator.isEqual(data, expectedData)) {
-        console.log('before notify', data, callback);
         this.notify(data, callback);
         subscription.destroy();
       }

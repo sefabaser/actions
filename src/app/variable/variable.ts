@@ -65,27 +65,12 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     return super.subscribe(callback);
   }
 
-  waitUntilNext(callback: (data: T) => void): ActionSubscription {
-    let subscription = super.subscribe(data => {
-      this.notify(data, callback);
-      subscription.destroy();
-    });
-    return subscription;
-  }
-
   waitUntil(expectedData: T, callback: (data: T) => void): ActionSubscription {
     if (Comparator.isEqual(this.currentValue, expectedData)) {
       this.notify(expectedData, callback);
       return ActionSubscription.destroyed;
     } else {
-      let subscription = super.subscribe(data => {
-        if (Comparator.isEqual(data, expectedData)) {
-          console.log('before notify', data, callback);
-          this.notify(data, callback);
-          subscription.destroy();
-        }
-      });
-      return subscription;
+      return super.waitUntil(expectedData, callback);
     }
   }
 }
