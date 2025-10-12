@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
@@ -49,9 +49,12 @@ describe('Reference', () => {
     });
 
     test('can use attachToRoot', () => {
-      let refVar = new Reference().attachToRoot();
-      expect(refVar).toBeDefined();
-      expect(refVar.value).toBeUndefined();
+      vi.useFakeTimers();
+      expect(() => {
+        new Reference().attachToRoot();
+        vi.runAllTimers();
+      }).not.toThrow('Attachable: The object is not attached to anything!');
+      vi.useRealTimers();
     });
   });
 
@@ -87,10 +90,13 @@ describe('Reference', () => {
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
-      refVar.value = undefined;
 
-      target.destroy();
-      expect(refVar.value).toBeUndefined();
+      expect(refVar['destroySubscription']).toBeDefined();
+      let previousDestroySubscription = refVar['destroySubscription'];
+
+      refVar.value = undefined;
+      expect(previousDestroySubscription?.destroyed).toBeTruthy();
+      expect(refVar['destroySubscription']).toBeUndefined();
     });
 
     test('setting same value does not create duplicate subscriptions', () => {
@@ -100,6 +106,7 @@ describe('Reference', () => {
       refVar.value = target.id;
       refVar.value = target.id;
 
+      expect(target['_onDestroyed']?.listenerCount).toBe(1);
       target.destroy();
       expect(refVar.value).toBeUndefined();
     });
@@ -293,7 +300,9 @@ describe('Reference', () => {
 
       refVar.value = target.id;
       parent.destroy();
+      expect(refVar.value).toBe(target.id);
 
+      target.destroy();
       expect(refVar.value).toBe(target.id);
     });
 
@@ -377,6 +386,8 @@ describe('Reference', () => {
 
       parent.destroy();
       expect(refVar.destroyed).toBe(true);
+
+      target.destroy();
       expect(refVar.value).toBe(target.id);
     });
 
@@ -385,6 +396,8 @@ describe('Reference', () => {
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
+      expect(refVar['destroySubscription']?.attachIsCalled).toBe(true);
+      expect(refVar['destroySubscription']?.attachedParent).toBe(undefined);
 
       target.destroy();
       expect(refVar.value).toBeUndefined();
