@@ -1,8 +1,9 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
+import { NotificationHelper } from '../../helpers/notification.helper';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { ActionSubscription, NotificationHandler } from '../notifier/notification-handler';
+import { ActionSubscription } from '../notifier/notification-handler';
 import { Notifier } from '../notifier/notifier';
 
 export interface ReducerOptions {
@@ -239,14 +240,14 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
 
   subscribe(callback: (response: ResponseType) => void, options?: ReducerSubscriptionOptions): ActionSubscription {
     if (!options?.listenOnlyNewChanges) {
-      NotificationHandler.notify(this.previousBroadcast, callback);
+      NotificationHelper.notify(this.previousBroadcast, callback);
     }
     return super.subscribe(callback);
   }
 
   waitUntil(data: ResponseType, callback: (data: ResponseType) => void): ActionSubscription {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
-      NotificationHandler.notify(data, callback);
+      NotificationHelper.notify(data, callback);
       return ActionSubscription.destroyed;
     } else {
       return super.waitUntil(data, callback);
@@ -259,7 +260,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.notificationHandler.forEach(callback => NotificationHandler.notify(value, callback));
+      this.notificationHandler.forEach(callback => NotificationHelper.notify(value, callback));
       this.previousBroadcast = value;
     }
   }

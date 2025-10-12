@@ -1,3 +1,4 @@
+import { NotificationHelper } from '../../helpers/notification.helper';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
@@ -34,15 +35,6 @@ export class ActionSubscription extends LightweightAttachable {
 }
 
 export class NotificationHandler<T> {
-  /** @internal */
-  static notify<T>(data: T, callback: NotifierCallbackFunction<T>): void {
-    try {
-      callback(data);
-    } catch (e) {
-      console.error('Notifier callback function error: ', e);
-    }
-  }
-
   private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
   private nextAvailableSubscriptionId = 1;
 
@@ -52,7 +44,7 @@ export class NotificationHandler<T> {
 
   forEach(callback: (listenerCallbackFunction: NotifierCallbackFunction<T>) => void): NotificationHandler<T> {
     let newMap = new Map<number, NotifierCallbackFunction<T>>(this.listenersMap);
-    newMap.forEach(data => NotificationHandler.notify(data, callback));
+    newMap.forEach(data => NotificationHelper.notify(data, callback));
     return this;
   }
 

@@ -1,5 +1,6 @@
+import { NotificationHelper } from '../../helpers/notification.helper';
 import { Action } from '../action/action';
-import { ActionSubscription, NotificationHandler } from '../notifier/notification-handler';
+import { ActionSubscription } from '../notifier/notification-handler';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
 
@@ -22,7 +23,7 @@ export class Attachable extends ClassId {
   private _onDestroyed: Action<void> | undefined;
   onDestroyed(callback: () => void): ActionSubscription {
     if (this._destroyed) {
-      NotificationHandler.notify(undefined, callback);
+      NotificationHelper.notify(undefined, callback);
       return ActionSubscription.destroyed;
     } else {
       if (!this._onDestroyed) {
@@ -70,7 +71,7 @@ export class Attachable extends ClassId {
       this.attachments = [];
       this._destroyed = true;
 
-      onDestroyListeners.forEach(listener => NotificationHandler.notify(undefined, listener));
+      onDestroyListeners.forEach(listener => NotificationHelper.notify(undefined, listener));
     }
   }
 
