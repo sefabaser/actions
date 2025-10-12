@@ -23,8 +23,10 @@ export class LightweightAttachable implements IAttachable {
 
   destroy(): void {
     if (!this._destroyed) {
-      this._attachedParent?.removeAttachment(this);
-      this._attachedParent = undefined;
+      if (this._attachedParent) {
+        this._attachedParent.removeAttachment(this);
+        this._attachedParent = undefined;
+      }
       this._destroyed = true;
     }
   }

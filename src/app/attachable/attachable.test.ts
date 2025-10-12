@@ -135,7 +135,7 @@ describe('Attachable', () => {
       // TODO
     });
 
-    test('onDestroy should be triggered when destroy listener is attached to itself', () => {
+    test('onDestroy should be triggered when destroy listener is attached to the attachable that owns the onDestroy', () => {
       // TODO
     });
   });

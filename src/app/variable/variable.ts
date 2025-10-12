@@ -35,10 +35,10 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
   private options: VariableOptions;
 
   private currentValue!: T;
-  private firstTriggerHappened = false;
 
-  constructor(options?: Partial<VariableOptions>) {
+  constructor(value: T, options?: Partial<VariableOptions>) {
     super();
+    this.currentValue = value;
     this.options = {
       notifyOnChange: ActionLibDefaults.variable.notifyOnChange,
       clone: ActionLibDefaults.variable.cloneBeforeNotification,
@@ -54,14 +54,13 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
       this.notificationHandler.forEach(callback => this.notify(data, callback));
     }
 
-    this.firstTriggerHappened = true;
     return this;
   }
 
   subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): ActionSubscription {
-    if (this.firstTriggerHappened && !options?.listenOnlyNewChanges) {
+    if (!options?.listenOnlyNewChanges) {
       this.notify(this.currentValue, callback);
-      return ActionSubscription.destroyed;
+      return super.subscribe(callback);
     } else {
       return super.subscribe(callback);
     }

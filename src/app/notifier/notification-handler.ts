@@ -1,14 +1,10 @@
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 
 export class ActionSubscription extends LightweightAttachable {
-  private static destroyedSubscription: ActionSubscription;
-
   static get destroyed(): ActionSubscription {
-    if (!this.destroyedSubscription) {
-      this.destroyedSubscription = new ActionSubscription(() => {});
-      this.destroyedSubscription.destroy();
-    }
-    return this.destroyedSubscription;
+    let destroyedSubscription = new LightweightAttachable();
+    destroyedSubscription.destroy();
+    return destroyedSubscription as ActionSubscription;
   }
 
   /**
