@@ -3,8 +3,6 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { ActionLibDefaults } from '../../config';
 import { Notifier } from '../notifier/notifier';
 
-export type ActionListenerCallbackFunction<T> = (data: T) => void;
-
 export interface ActionOptions {
   readonly clone: boolean;
 }
