@@ -2,7 +2,8 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { ActionSubscription, NotificationHandler } from '../notifier/notification-handler';
+import { ActionSubscription } from '../notifier/notification-handler';
+import { Notifier } from '../notifier/notifier';
 
 export interface ReducerOptions {
   clone?: boolean;
@@ -82,7 +83,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends LightweightA
   }
 }
 
-export class Reducer<EffectType, ResponseType> {
+export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   static createExistenceChecker(): Reducer<void, boolean> {
     let set = new Set<number>();
 
@@ -211,19 +212,11 @@ export class Reducer<EffectType, ResponseType> {
   private previousBroadcast: ResponseType;
   private clone = false;
 
-  private notificationHandler = new NotificationHandler<ResponseType>();
   private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
   private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
-  private _untilListeners?: Set<{ expected: ResponseType; callback: (data: ResponseType) => void }>;
-  private get untilListeners(): Set<{ expected: ResponseType; callback: (data: ResponseType) => void }> {
-    if (!this._untilListeners) {
-      this._untilListeners = new Set();
-    }
-    return this._untilListeners;
-  }
-
   constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, options: ReducerOptions = {}) {
+    super();
     this.reduceFunction = reduceFunction;
     this.clone = options.clone !== undefined ? options.clone : ActionLibDefaults.reducer.cloneBeforeNotification;
 
@@ -246,23 +239,14 @@ export class Reducer<EffectType, ResponseType> {
 
   subscribe(callback: (response: ResponseType) => void, options?: ReducerSubscriptionOptions): ActionSubscription {
     if (!options?.listenOnlyNewChanges) {
-      try {
-        callback(this.previousBroadcast);
-      } catch (e) {
-        console.error('Reducer callback function error: ', e);
-      }
+      this.notify(this.previousBroadcast, callback);
     }
-    return this.notificationHandler.subscribe(callback);
+    return super.subscribe(callback);
   }
 
   waitUntil(data: ResponseType, callback: (data: ResponseType) => void): ActionSubscription {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
-      try {
-        callback(data);
-      } catch (e) {
-        console.error('Reducer callback function error: ', e);
-      }
-
+      this.notify(data, callback);
       return ActionSubscription.destroyed;
     } else {
       let item = { expected: data, callback };

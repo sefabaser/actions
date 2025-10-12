@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { UnitTestHelper } from '../../helpers/unit-test.helper';
 import { Variable } from './variable';
 
-class SampleModel {
-  testData = '';
-}
-const SampleData: SampleModel = { testData: 'test' };
-
 describe(`Variable`, () => {
+  class SampleModel {
+    testData = '';
+  }
+  const SampleData: SampleModel = { testData: 'test' };
+
   describe(`Basics`, () => {
     beforeEach(() => {
       UnitTestHelper.hardReset();
@@ -100,6 +100,36 @@ describe(`Variable`, () => {
 
       expect(triggeredWith).toEqual(undefined);
     });
+
+    test('wait until', () => {
+      let variable = new Variable<number>(1);
+
+      let triggeredWith: number | undefined;
+      variable
+        .waitUntil(2, value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(undefined);
+      variable.value = 2;
+      expect(triggeredWith).toEqual(2);
+    });
+
+    test('wait until next', () => {
+      let variable = new Variable<number>(1);
+
+      let triggeredWith: number | undefined;
+      variable
+        .waitUntilNext(value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(undefined);
+      variable.value = 2;
+      expect(triggeredWith).toEqual(2);
+    });
   });
 
   describe(`Current Value`, () => {
@@ -121,7 +151,6 @@ describe(`Variable`, () => {
       let variable = new Variable<number>(1);
       variable
         .subscribe(value => {
-          console.log('value', value);
           heap.push(value);
           heap.push(variable.value);
         })
@@ -130,6 +159,19 @@ describe(`Variable`, () => {
       variable.value = 2;
 
       expect(heap).toEqual([1, 1, 2, 2]);
+    });
+
+    test('if wait until is equal to current value, it should be triggered', () => {
+      let variable = new Variable<number>(1);
+
+      let triggeredWith: number | undefined;
+      variable
+        .waitUntil(1, value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(1);
     });
   });
 });
