@@ -3,22 +3,24 @@ import { Action } from '../action/action';
 import { ActionSubscription } from '../notifier/notification-handler';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
-
-export interface IAttachable {
-  destroy(): void;
-}
+import { IAttachable, LightweightAttachable } from './lightweight-attachable';
 
 export class Attachable extends ClassId {
   readonly id: string = AttachmentTargetStore.registerAttachmentTarget(this);
 
-  private attachedParent: Attachable | undefined;
-  private attachments: IAttachable[] = [];
+  private _attachedParent: Attachable | undefined;
+  /** @internal */
+  get attachedParent(): Attachable | undefined {
+    return this._attachedParent;
+  }
 
   private _attachIsCalled = false;
   private _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;
   }
+
+  private attachments: IAttachable[] = [];
 
   private _onDestroyed: Action<void> | undefined;
   onDestroyed(callback: () => void): ActionSubscription {
@@ -33,22 +35,6 @@ export class Attachable extends ClassId {
     }
   }
 
-  /** @internal */
-  static attach(parent: Attachable | string, child: IAttachable): Attachable {
-    let parentEntity = AttachmentTargetStore.findAttachmentTarget(parent);
-
-    let currentParent: Attachable | undefined = parentEntity;
-    while (currentParent) {
-      if (currentParent === child) {
-        throw new Error(`Circular attachment detected!`);
-      }
-      currentParent = currentParent.attachedParent;
-    }
-
-    parentEntity.setAttachment(child);
-    return parentEntity;
-  }
-
   constructor() {
     super();
     setTimeout(() => {
@@ -60,8 +46,8 @@ export class Attachable extends ClassId {
 
   destroy(): void {
     if (!this._destroyed) {
-      this.attachedParent?.removeAttachment(this);
-      this.attachedParent = undefined;
+      this._attachedParent?.removeAttachment(this);
+      this._attachedParent = undefined;
       AttachmentTargetStore.unregisterAttachmentTarget(this);
 
       let onDestroyListeners = this._onDestroyed?.listeners ?? [];
@@ -82,8 +68,8 @@ export class Attachable extends ClassId {
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      let parentEntity = Attachable.attach(parent, this);
-      this.attachedParent = parentEntity;
+      let parentEntity = LightweightAttachable.attach(parent, this);
+      this._attachedParent = parentEntity;
     }
     return this;
   }

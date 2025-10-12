@@ -1,0 +1,37 @@
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
+
+export interface IDestroyable {
+  destroy(): void;
+  readonly destroyed: boolean;
+}
+
+export class ActionSubscription extends LightweightAttachable {
+  static get destroyed(): ActionSubscription {
+    let destroyedSubscription = new LightweightAttachable();
+    destroyedSubscription.destroy();
+    return destroyedSubscription as ActionSubscription;
+  }
+
+  /**
+   * @param subscriptions the subscriptions to combine
+   * @returns a new ActionSubscription that combines the given subscriptions, when unsubscribed, all given subscriptions will be unsubscribed
+   */
+  static combine(subscriptions: ActionSubscription[]): ActionSubscription {
+    return new ActionSubscription(() => {
+      subscriptions.forEach(subscription => {
+        subscription.destroy();
+      });
+    });
+  }
+
+  constructor(private unsubscribeCallback: () => void) {
+    super();
+  }
+
+  destroy(): void {
+    if (!this.destroyed) {
+      this.unsubscribeCallback();
+      super.destroy();
+    }
+  }
+}

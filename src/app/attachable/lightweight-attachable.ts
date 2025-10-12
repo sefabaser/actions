@@ -1,6 +1,27 @@
-import { Attachable, IAttachable } from './attachable';
+import { Attachable } from './attachable';
+import { AttachmentTargetStore } from './helpers/attachment-target.store';
+
+export interface IAttachable {
+  destroy(): void;
+}
 
 export class LightweightAttachable implements IAttachable {
+  /** @internal */
+  static attach(parent: Attachable | string, child: IAttachable): Attachable {
+    let parentEntity = AttachmentTargetStore.findAttachmentTarget(parent);
+
+    let currentParent: Attachable | undefined = parentEntity;
+    while (currentParent) {
+      if (currentParent === child) {
+        throw new Error(`Circular attachment detected!`);
+      }
+      currentParent = currentParent.attachedParent;
+    }
+
+    parentEntity.setAttachment(child);
+    return parentEntity;
+  }
+
   private _attachedParent: Attachable | undefined;
   /** @internal */
   get attachedParent(): Attachable | undefined {
@@ -38,7 +59,7 @@ export class LightweightAttachable implements IAttachable {
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      let parentEntity = Attachable.attach(parent, this);
+      let parentEntity = LightweightAttachable.attach(parent, this);
       this._attachedParent = parentEntity;
     }
     return this;
