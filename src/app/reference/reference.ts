@@ -1,9 +1,10 @@
 import { Attachable } from '../attachable/attachable';
 import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { ActionSubscription } from '../notifier/action-subscription';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
-export class Reference implements IVariable<string | undefined> {
+export class Reference extends LightweightAttachable implements IVariable<string | undefined> {
   get value(): string | undefined {
     return this.variable.value;
   }
@@ -18,7 +19,8 @@ export class Reference implements IVariable<string | undefined> {
   private variable: Variable<string | undefined>;
   private destroySubscription: ActionSubscription | undefined;
 
-  constructor(private options: { attachTo: Attachable }) {
+  constructor() {
+    super();
     this.variable = new Variable<string | undefined>(undefined, { notifyOnChange: true });
   }
 
@@ -28,11 +30,17 @@ export class Reference implements IVariable<string | undefined> {
       this.destroySubscription = undefined;
 
       if (data) {
-        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(data)
-          .onDestroyed(() => {
-            this.set(undefined);
-          })
-          .attach(this.options.attachTo);
+        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(data).onDestroyed(() => {
+          this.set(undefined);
+        });
+
+        if (this._attachIsCalled) {
+          if (this.attachedParent) {
+            this.destroySubscription.attach(this.attachedParent);
+          } else {
+            this.destroySubscription.attachToRoot();
+          }
+        }
       }
 
       this.variable.set(data);
@@ -50,5 +58,17 @@ export class Reference implements IVariable<string | undefined> {
 
   waitUntil(data: string | undefined, callback: (data: string | undefined) => void): ActionSubscription {
     return this.variable.waitUntil(data, callback);
+  }
+
+  attach(parent: Attachable | string): this {
+    super.attach(parent);
+    this.destroySubscription?.attach(this.attachedParent!);
+    return this;
+  }
+
+  attachToRoot(): this {
+    super.attachToRoot();
+    this.destroySubscription?.attachToRoot();
+    return this;
   }
 }

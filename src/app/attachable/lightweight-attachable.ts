@@ -28,7 +28,11 @@ export class LightweightAttachable implements IAttachable {
     return this._attachedParent;
   }
 
-  private _attachIsCalled = false;
+  protected _attachIsCalled = false;
+  /** @internal */
+  get attachIsCalled(): boolean {
+    return this._attachIsCalled;
+  }
   private _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;

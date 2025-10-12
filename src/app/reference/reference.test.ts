@@ -14,17 +14,17 @@ describe('Reference', () => {
 
   describe('Basics', () => {
     test('definable', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       expect(refVar).toBeDefined();
     });
 
     test('initial value is undefined', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       expect(refVar.value).toBeUndefined();
     });
 
     test('can set and get value', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -32,7 +32,7 @@ describe('Reference', () => {
     });
 
     test('can set value to undefined', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -41,17 +41,23 @@ describe('Reference', () => {
     });
 
     test('has listener count', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       expect(refVar.listenerCount).toBe(0);
 
       refVar.subscribe(() => {}).attachToRoot();
       expect(refVar.listenerCount).toBe(1);
     });
+
+    test('can use attachToRoot', () => {
+      let refVar = new Reference().attachToRoot();
+      expect(refVar).toBeDefined();
+      expect(refVar.value).toBeUndefined();
+    });
   });
 
   describe('Reference behavior', () => {
     test('when referenced attachable is destroyed, value becomes undefined', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -62,7 +68,7 @@ describe('Reference', () => {
     });
 
     test('changing reference cleans up old subscription', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target1 = new Attachable().attachToRoot();
       let target2 = new Attachable().attachToRoot();
 
@@ -77,7 +83,7 @@ describe('Reference', () => {
     });
 
     test('setting to undefined cleans up subscription', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -88,7 +94,7 @@ describe('Reference', () => {
     });
 
     test('setting same value does not create duplicate subscriptions', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -101,7 +107,7 @@ describe('Reference', () => {
 
   describe('Subscription', () => {
     test('subscribe receives initial value', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -117,7 +123,7 @@ describe('Reference', () => {
     });
 
     test('subscribe notified when value changes', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target1 = new Attachable().attachToRoot();
       let target2 = new Attachable().attachToRoot();
 
@@ -135,7 +141,7 @@ describe('Reference', () => {
     });
 
     test('subscribe notified when referenced attachable is destroyed', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -153,7 +159,7 @@ describe('Reference', () => {
     });
 
     test('multiple subscribers all notified', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       let received1: string | undefined;
@@ -177,7 +183,7 @@ describe('Reference', () => {
     });
 
     test('unsubscribed listeners not notified', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       let callCount = 0;
@@ -196,7 +202,7 @@ describe('Reference', () => {
 
   describe('Wait until', () => {
     test('wait until specific value', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       let triggered = false;
@@ -212,7 +218,7 @@ describe('Reference', () => {
     });
 
     test('wait until undefined', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -230,7 +236,7 @@ describe('Reference', () => {
     });
 
     test('wait until triggered immediately if already at value', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -246,7 +252,7 @@ describe('Reference', () => {
     });
 
     test('wait until next', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       let receivedValue: string | undefined;
@@ -262,7 +268,7 @@ describe('Reference', () => {
     });
 
     test('wait until next only triggers once', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target1 = new Attachable().attachToRoot();
       let target2 = new Attachable().attachToRoot();
 
@@ -282,7 +288,7 @@ describe('Reference', () => {
 
   describe('Edge cases', () => {
     test('destroyed parent cleans up reference subscription', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
@@ -292,7 +298,7 @@ describe('Reference', () => {
     });
 
     test('setting invalid id throws error', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
 
       expect(() => {
         refVar.value = 'invalid-id';
@@ -300,7 +306,7 @@ describe('Reference', () => {
     });
 
     test('notify on change behavior', () => {
-      let refVar = new Reference({ attachTo: parent });
+      let refVar = new Reference().attach(parent);
       let target1 = new Attachable().attachToRoot();
       let target2 = new Attachable().attachToRoot();
 
@@ -322,8 +328,8 @@ describe('Reference', () => {
     });
 
     test('cascading reference destruction', () => {
-      let refVar1 = new Reference({ attachTo: parent });
-      let refVar2 = new Reference({ attachTo: parent });
+      let refVar1 = new Reference().attach(parent);
+      let refVar2 = new Reference().attach(parent);
 
       let target1 = new Attachable().attachToRoot();
       let target2 = new Attachable().attach(target1);
@@ -335,6 +341,68 @@ describe('Reference', () => {
 
       expect(refVar1.value).toBeUndefined();
       expect(refVar2.value).toBeUndefined();
+    });
+  });
+
+  describe('Attachment behavior', () => {
+    test('reference is destroyed when parent is destroyed', () => {
+      let refVar = new Reference().attach(parent);
+      expect(refVar.destroyed).toBe(false);
+
+      parent.destroy();
+      expect(refVar.destroyed).toBe(true);
+    });
+
+    test('cannot attach twice', () => {
+      let refVar = new Reference().attach(parent);
+
+      expect(() => {
+        refVar.attach(parent);
+      }).toThrow('LightweightAttachable: The object is already attached to something!');
+    });
+
+    test('cannot call attachToRoot after attach', () => {
+      let refVar = new Reference().attach(parent);
+
+      expect(() => {
+        refVar.attachToRoot();
+      }).toThrow('LightweightAttachable: The object is already attached to something!');
+    });
+
+    test('onDestroyed subscription inherits attachment from Reference', () => {
+      let refVar = new Reference().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+
+      parent.destroy();
+      expect(refVar.destroyed).toBe(true);
+      expect(refVar.value).toBe(target.id);
+    });
+
+    test('onDestroyed subscription uses attachToRoot when reference uses attachToRoot', () => {
+      let refVar = new Reference().attachToRoot();
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = target.id;
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('changing value after reference attached properly reattaches onDestroyed subscription', () => {
+      let refVar = new Reference().attach(parent);
+      let target1 = new Attachable().attachToRoot();
+      let target2 = new Attachable().attachToRoot();
+
+      refVar.value = target1.id;
+      refVar.value = target2.id;
+
+      target1.destroy();
+      expect(refVar.value).toBe(target2.id);
+
+      target2.destroy();
+      expect(refVar.value).toBeUndefined();
     });
   });
 });
