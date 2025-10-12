@@ -249,11 +249,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
       this.notify(data, callback);
       return ActionSubscription.destroyed;
     } else {
-      let item = { expected: data, callback };
-      this.untilListeners.add(item);
-      return new ActionSubscription(() => {
-        this.untilListeners.delete(item);
-      });
+      return super.waitUntil(data, callback);
     }
   }
 
@@ -263,32 +259,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.notificationHandler.forEach(callback => {
-        try {
-          callback(value);
-        } catch (e) {
-          console.error('Reducer callback function error: ', e);
-        }
-      });
-
-      if (this._untilListeners) {
-        let allItems = Array.from(this._untilListeners.values());
-        allItems.forEach(item => {
-          if (Comparator.isEqual(item.expected, value)) {
-            try {
-              item.callback(value);
-            } catch (e) {
-              console.error('Reducer callback function error: ', e);
-            }
-            this._untilListeners!.delete(item);
-          }
-        });
-
-        if (this._untilListeners.size === 0) {
-          this._untilListeners = undefined;
-        }
-      }
-
+      this.notificationHandler.forEach(callback => this.notify(value, callback));
       this.previousBroadcast = value;
     }
   }

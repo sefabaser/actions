@@ -54,7 +54,6 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
       this.notificationHandler.forEach(callback => this.notify(data, callback));
     }
 
-    console.log('set', data);
     return this;
   }
 

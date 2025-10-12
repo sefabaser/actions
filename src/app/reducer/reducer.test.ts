@@ -633,11 +633,9 @@ describe(`Reducer`, () => {
 
       let effectChannel = reducer.effect(false).attachToRoot();
       expect(resolvedWith).toEqual(undefined);
-      expect(reducer['untilListeners'].size).toEqual(1);
 
       effectChannel.update(true);
       expect(resolvedWith).toEqual(true);
-      expect(reducer['untilListeners'].size).toEqual(0);
     });
 
     test('wait until callback throws error', () => {
