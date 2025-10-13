@@ -42,7 +42,7 @@ export class Reference extends LightweightAttachable implements IVariable<string
       this.destroySubscription = undefined;
 
       if (data) {
-        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(data).onDestroyed(() => {
+        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(data).onDestroy(() => {
           this.set(undefined);
         });
 

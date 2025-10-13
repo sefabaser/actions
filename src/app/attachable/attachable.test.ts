@@ -132,13 +132,13 @@ describe('Attachable', () => {
     });
   });
 
-  describe('onDestroyed', () => {
+  describe('onDestroy', () => {
     test('callback is invoked when attachable is destroyed', () => {
       let callbackInvoked = false;
       let sample = new Attachable().attachToRoot();
 
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
@@ -154,7 +154,7 @@ describe('Attachable', () => {
       sample.destroy();
 
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
@@ -169,17 +169,17 @@ describe('Attachable', () => {
       let sample = new Attachable().attachToRoot();
 
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callback1Invoked = true;
         })
         .attachToRoot();
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callback2Invoked = true;
         })
         .attachToRoot();
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callback3Invoked = true;
         })
         .attachToRoot();
@@ -194,7 +194,7 @@ describe('Attachable', () => {
       let sample = new Attachable().attachToRoot();
 
       let subscription = sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
@@ -213,7 +213,7 @@ describe('Attachable', () => {
 
       let error = new Error('Test error');
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           throw error;
         })
         .attachToRoot();
@@ -228,12 +228,12 @@ describe('Attachable', () => {
       let sample = new Attachable().attachToRoot();
 
       let subscription1 = sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callback1Invoked = true;
         })
         .attachToRoot();
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callback2Invoked = true;
         })
         .attachToRoot();
@@ -249,7 +249,7 @@ describe('Attachable', () => {
       let sample = new Attachable().attachToRoot();
 
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           triggerCount++;
         })
         .attachToRoot();
@@ -265,7 +265,7 @@ describe('Attachable', () => {
       let sample = new Attachable().attachToRoot();
 
       sample
-        .onDestroyed(() => {
+        .onDestroy(() => {
           callbackInvoked = true;
         })
         .attach(sample);

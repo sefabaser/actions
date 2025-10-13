@@ -127,7 +127,7 @@ describe('Reference', () => {
       refVar.value = target.id;
       refVar.value = target.id;
 
-      expect(target['_onDestroyed']?.listenerCount).toBe(1);
+      expect(target['_onDestroy']?.listenerCount).toBe(1);
       target.destroy();
       expect(refVar.value).toBeUndefined();
     });
@@ -320,11 +320,11 @@ describe('Reference', () => {
       let target = new Attachable().attachToRoot();
 
       refVar.value = target.id;
-      parent.destroy();
-      expect(refVar.value).toBe(target.id);
+      expect(target['_onDestroy']?.listenerCount).toBe(1);
 
-      target.destroy();
-      expect(refVar.value).toBe(target.id);
+      parent.destroy();
+      expect(refVar.value).toBe(undefined);
+      expect(target['_onDestroy']?.listenerCount).toBe(0);
     });
 
     test('setting invalid id throws error', () => {
