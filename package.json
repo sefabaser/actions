@@ -2,12 +2,15 @@
   "name": "actions-lib",
   "version": "2.0.0",
   "description": "Typescript Helpers Library",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts"
   ],
+  "publishConfig": {
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sefabaser/actions.git"
@@ -27,7 +30,9 @@
     "start": "npm run build && node dist",
     "build": "tsc",
     "lint": "biome check . --write --max-diagnostics=1",
-    "deploy": "vitest run && npm run build && npm publish"
+    "deploy": "vitest run && npm run build && npm publish",
+    "prepack": "cp package.json package.json.bak && ts-node scripts/prepare-package-json.ts",
+    "postpack": "mv package.json.bak package.json"
   },
   "peerDependencies": {
     "helpers-lib": "^1.13.10"
