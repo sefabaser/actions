@@ -438,6 +438,232 @@ describe('Reference', () => {
     });
   });
 
+  describe('Reference path', () => {
+    test('can use path to extract id from object', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = { id: target.id };
+      expect(refVar.value).toEqual({ id: target.id });
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('can use nested path to extract id from object', () => {
+      let refVar = new Reference<{ user: { profile: { id: string } } }>({ path: 'user.profile.id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = {
+        user: {
+          profile: {
+            id: target.id
+          }
+        }
+      };
+
+      expect(refVar.value).toEqual({
+        user: {
+          profile: {
+            id: target.id
+          }
+        }
+      });
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('initial value with path works correctly', () => {
+      let target = new Attachable().attachToRoot();
+      let refVar = new Reference<{ id: string }>({
+        path: 'id',
+        initialValue: { id: target.id }
+      }).attach(parent);
+
+      expect(refVar.value).toEqual({ id: target.id });
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('can change from one object to another', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target1 = new Attachable().attachToRoot();
+      let target2 = new Attachable().attachToRoot();
+
+      refVar.value = { id: target1.id };
+      refVar.value = { id: target2.id };
+
+      target1.destroy();
+      expect(refVar.value).toEqual({ id: target2.id });
+
+      target2.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('throws error when using object without path', () => {
+      let refVar = new Reference<{ id: string }>().attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      expect(() => {
+        refVar.value = { id: target.id };
+      }).toThrow('Reference: the value and the path is not matching. Value type: "object, path: "undefined"');
+    });
+
+    test('throws error when using string with path', () => {
+      let refVar = new Reference<string>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      expect(() => {
+        refVar.value = target.id;
+      }).toThrow('Reference: the value and the path is not matching. Value type: "string, path: "id"');
+    });
+
+    test('subscribers notified when object reference destroyed', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      let heap: ({ id: string } | undefined)[] = [];
+      refVar
+        .subscribe(value => {
+          heap.push(value);
+        })
+        .attachToRoot();
+
+      refVar.value = { id: target.id };
+      target.destroy();
+
+      expect(heap).toEqual([undefined, { id: target.id }, undefined]);
+    });
+
+    test('path with additional object properties preserved', () => {
+      interface UserData {
+        id: string;
+        name: string;
+        age: number;
+      }
+
+      let refVar = new Reference<UserData>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      let userData: UserData = {
+        id: target.id,
+        name: 'John Doe',
+        age: 30
+      };
+
+      refVar.value = userData;
+      expect(refVar.value).toEqual(userData);
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('can set to undefined to clear object reference', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.value = { id: target.id };
+      expect(refVar.value).toEqual({ id: target.id });
+
+      refVar.value = undefined;
+      expect(refVar.value).toBeUndefined();
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('waitUntil works with object values', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      let triggered = false;
+      let targetValue = { id: target.id };
+
+      refVar
+        .waitUntil(targetValue, () => {
+          triggered = true;
+        })
+        .attachToRoot();
+
+      expect(triggered).toBe(false);
+      refVar.value = targetValue;
+      expect(triggered).toBe(true);
+    });
+
+    test('waitUntilNext works with object values', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      let receivedValue: { id: string } | undefined;
+      refVar
+        .waitUntilNext(value => {
+          receivedValue = value;
+        })
+        .attachToRoot();
+
+      expect(receivedValue).toBeUndefined();
+      refVar.value = { id: target.id };
+      expect(receivedValue).toEqual({ id: target.id });
+    });
+
+    test('setting same object value does not create duplicate subscriptions', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      let obj = { id: target.id };
+      refVar.value = obj;
+      refVar.value = obj;
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('object reference with array in path', () => {
+      interface DataWithArray {
+        items: Array<{ id: string }>;
+        selectedIndex: number;
+      }
+
+      let refVar = new Reference<DataWithArray>({ path: 'items.0.id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      let data: DataWithArray = {
+        items: [{ id: target.id }, { id: 'other-id' }],
+        selectedIndex: 0
+      };
+
+      refVar.value = data;
+      expect(refVar.value).toEqual(data);
+
+      target.destroy();
+      expect(refVar.value).toBeUndefined();
+    });
+
+    test('destroyed reference with path cannot be set', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let target = new Attachable().attachToRoot();
+
+      refVar.destroy();
+
+      expect(() => {
+        refVar.value = { id: target.id };
+      }).toThrow('Reference: This reference is destroyed cannot be set!');
+    });
+
+    test('listenerCount works with object references', () => {
+      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      expect(refVar.listenerCount).toBe(0);
+
+      refVar.subscribe(() => {}).attachToRoot();
+      expect(refVar.listenerCount).toBe(1);
+
+      refVar.subscribe(() => {}).attachToRoot();
+      expect(refVar.listenerCount).toBe(2);
+    });
+  });
+
   describe('Destroyed state behavior', () => {
     test('cannot set value on destroyed reference', () => {
       let refVar = new Reference().attach(parent);
@@ -555,12 +781,14 @@ describe('Reference', () => {
     });
 
     test('circular referencing', () => {
+      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
       let base = new Attachable().attachToRoot();
       let componentOfTheBase = new Attachable().attach(base);
 
       // They hold each other's reference
-      let ref1 = new Reference(componentOfTheBase.id).attach(base);
-      let ref2 = new Reference(base.id).attach(componentOfTheBase);
+      let ref1 = new Reference({ initialValue: componentOfTheBase.id }).attach(base);
+      let ref2 = new Reference({ initialValue: base.id }).attach(componentOfTheBase);
 
       expect(ref1.value).toBe(componentOfTheBase.id);
       expect(ref2.value).toBe(base.id);
@@ -569,6 +797,9 @@ describe('Reference', () => {
 
       expect(ref1.value).toBeUndefined();
       expect(ref2.value).toBeUndefined();
+
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
   });
 });

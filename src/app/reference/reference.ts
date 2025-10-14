@@ -1,18 +1,25 @@
+import { Comparator, JsonHelper } from 'helpers-lib';
+
 import { Attachable } from '../attachable/attachable';
 import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { ActionSubscription } from '../notifier/action-subscription';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
-export class Reference extends LightweightAttachable implements IVariable<string | undefined> {
-  get value(): string | undefined {
+export interface ReferenceOptions<T> {
+  readonly initialValue: T | undefined;
+  readonly path: string | undefined;
+}
+
+export class Reference<T = string> extends LightweightAttachable implements IVariable<T | undefined> {
+  get value(): T | undefined {
     if (this.destroyed) {
       return undefined;
     }
 
     return this.variable.value;
   }
-  set value(value: string | undefined) {
+  set value(value: T | undefined) {
     this.set(value);
   }
 
@@ -24,15 +31,24 @@ export class Reference extends LightweightAttachable implements IVariable<string
     return this.variable.listenerCount;
   }
 
-  private variable: Variable<string | undefined>;
+  private variable: Variable<T | undefined>;
   private destroySubscription: ActionSubscription | undefined;
+  private options: ReferenceOptions<T>;
 
-  constructor(reference?: string) {
+  constructor(partialOptions?: Partial<ReferenceOptions<T>>) {
     super();
-    this.variable = new Variable<string | undefined>(reference, { notifyOnChange: true });
+
+    this.options = {
+      initialValue: undefined,
+      path: undefined,
+      ...partialOptions
+    };
+
+    this.variable = new Variable<T | undefined>(undefined, { notifyOnChange: true });
+    this.set(this.options.initialValue);
   }
 
-  set(data: string | undefined): this {
+  set(data: T | undefined): this {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be set!`);
     }
@@ -42,8 +58,9 @@ export class Reference extends LightweightAttachable implements IVariable<string
       this.destroySubscription = undefined;
 
       if (data) {
-        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(data).onDestroy(() => {
-          this.set(undefined);
+        let referenceId = this.getReferenceId(data, this.options.path);
+        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceId).onDestroy(() => {
+          !this.destroyed && this.set(undefined);
         });
 
         if (this._attachIsCalled) {
@@ -60,7 +77,7 @@ export class Reference extends LightweightAttachable implements IVariable<string
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<string | undefined>): ActionSubscription {
+  subscribe(callback: VariableListenerCallbackFunction<T | undefined>): ActionSubscription {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
     }
@@ -68,7 +85,7 @@ export class Reference extends LightweightAttachable implements IVariable<string
     return this.variable.subscribe(callback);
   }
 
-  waitUntilNext(callback: (data: string | undefined) => void): ActionSubscription {
+  waitUntilNext(callback: (data: T | undefined) => void): ActionSubscription {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be waited until next!`);
     }
@@ -76,7 +93,7 @@ export class Reference extends LightweightAttachable implements IVariable<string
     return this.variable.waitUntilNext(callback);
   }
 
-  waitUntil(data: string | undefined, callback: (data: string | undefined) => void): ActionSubscription {
+  waitUntil(data: T | undefined, callback: (data: T | undefined) => void): ActionSubscription {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be waited until!`);
     }
@@ -101,5 +118,15 @@ export class Reference extends LightweightAttachable implements IVariable<string
     this.destroySubscription = undefined;
     this.variable = undefined as any;
     super.destroy();
+  }
+
+  private getReferenceId(value: T, path: string | undefined): string {
+    if (Comparator.isString(value) && path === undefined) {
+      return value;
+    } else if (Comparator.isObject(value) && path !== undefined) {
+      return JsonHelper.deepFind(value, path);
+    } else {
+      throw new Error(`Reference: the value and the path is not matching. Value type: "${typeof value}, path: "${path}"`);
+    }
   }
 }
