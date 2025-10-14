@@ -6,6 +6,10 @@ import { ClassId } from './helpers/class-id';
 import { IAttachable, LightweightAttachable } from './lightweight-attachable';
 
 export class Attachable extends ClassId {
+  static validateId(this: typeof Attachable, id: string): boolean {
+    return AttachmentTargetStore.validateIdForClass(id, this);
+  }
+
   readonly id: string = AttachmentTargetStore.registerAttachmentTarget(this);
 
   private _attachedParent: Attachable | undefined;

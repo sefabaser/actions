@@ -553,5 +553,22 @@ describe('Reference', () => {
       expect(refVar.destroyed).toBe(true);
       expect(refVar.value).toBeUndefined();
     });
+
+    test('circular referencing', () => {
+      let base = new Attachable().attachToRoot();
+      let componentOfTheBase = new Attachable().attach(base);
+
+      // They hold each other's reference
+      let ref1 = new Reference(componentOfTheBase.id).attach(base);
+      let ref2 = new Reference(base.id).attach(componentOfTheBase);
+
+      expect(ref1.value).toBe(componentOfTheBase.id);
+      expect(ref2.value).toBe(base.id);
+
+      base.destroy();
+
+      expect(ref1.value).toBeUndefined();
+      expect(ref2.value).toBeUndefined();
+    });
   });
 });

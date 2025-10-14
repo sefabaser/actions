@@ -274,4 +274,26 @@ describe('Attachable', () => {
       expect(callbackInvoked).toBeTruthy();
     });
   });
+
+  describe('validateId', () => {
+    test('valid target valid id', () => {
+      class Child extends Attachable {}
+      let child = new Child().attachToRoot();
+      expect(Child.validateId(child.id)).toBe(true);
+    });
+
+    test('invalid target valid id', () => {
+      class Child1 extends Attachable {}
+      class Child2 extends Attachable {}
+
+      let child1 = new Child1().attachToRoot();
+
+      expect(Child2.validateId(child1.id)).toBe(false);
+    });
+
+    test('invalid id', () => {
+      class Child extends Attachable {}
+      expect(Child.validateId('invalidId')).toBe(false);
+    });
+  });
 });

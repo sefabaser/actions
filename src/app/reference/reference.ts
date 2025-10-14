@@ -27,9 +27,9 @@ export class Reference extends LightweightAttachable implements IVariable<string
   private variable: Variable<string | undefined>;
   private destroySubscription: ActionSubscription | undefined;
 
-  constructor() {
+  constructor(reference?: string) {
     super();
-    this.variable = new Variable<string | undefined>(undefined, { notifyOnChange: true });
+    this.variable = new Variable<string | undefined>(reference, { notifyOnChange: true });
   }
 
   set(data: string | undefined): this {
