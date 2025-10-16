@@ -503,7 +503,7 @@ describe('Reference', () => {
     });
 
     test('throws error when using object without path', () => {
-      let refVar = new Reference<{ id: string }>().attach(parent);
+      let refVar = new Reference<{ id: string }>(undefined as any).attach(parent);
       let target = new Attachable().attachToRoot();
 
       expect(() => {
@@ -512,7 +512,7 @@ describe('Reference', () => {
     });
 
     test('throws error when using string with path', () => {
-      let refVar = new Reference<string>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<string>({ path: 'id' } as any).attach(parent);
       let target = new Attachable().attachToRoot();
 
       expect(() => {

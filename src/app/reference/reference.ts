@@ -6,9 +6,13 @@ import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { ActionSubscription } from '../notifier/action-subscription';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
-export interface ReferenceOptions<T> {
-  readonly initialValue: T | undefined;
-  readonly path: string | undefined;
+export interface ObjectReferenceOptions<T> {
+  readonly initialValue?: T;
+  readonly path: string;
+}
+
+export interface StringReferenceOptions<T> {
+  readonly initialValue?: T;
 }
 
 export class Reference<T = string> extends LightweightAttachable implements IVariable<T | undefined> {
@@ -33,15 +37,16 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
 
   private variable: Variable<T | undefined>;
   private destroySubscription: ActionSubscription | undefined;
-  private options: ReferenceOptions<T>;
+  private options: { initialValue: T | undefined; path: string | undefined };
 
-  constructor(partialOptions?: Partial<ReferenceOptions<T>>) {
+  constructor(
+    ...args: T extends string ? [options?: StringReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]
+  ) {
     super();
-
     this.options = {
       initialValue: undefined,
       path: undefined,
-      ...partialOptions
+      ...args[0]
     };
 
     this.variable = new Variable<T | undefined>(undefined, { notifyOnChange: true });
