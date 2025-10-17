@@ -1,8 +1,8 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { ActionLibDefaults } from '../config';
-import { NotificationHelper } from '../helpers/notification.helper';
-import { LightweightAttachable } from '../attachable/lightweight-attachable';
+import { ActionLibDefaults } from '../../config';
+import { NotificationHelper } from '../../helpers/notification.helper';
+import { LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { ActionSubscription } from '../notifier/action-subscription';
 import { Notifier } from '../notifier/notifier';
 

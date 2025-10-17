@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { UnitTestHelper } from '../helpers/unit-test.helper';
+import { UnitTestHelper } from '../../helpers/unit-test.helper';
 import { Variable } from './variable';
 
 describe(`Variable`, () => {

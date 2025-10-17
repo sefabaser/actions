@@ -1,6 +1,6 @@
 import { Comparator } from 'helpers-lib';
 
-import { NotificationHelper } from '../helpers/notification.helper';
+import { NotificationHelper } from '../../helpers/notification.helper';
 import { ActionSubscription } from './action-subscription';
 import { NotificationHandler, NotifierCallbackFunction } from './notification-handler';
 

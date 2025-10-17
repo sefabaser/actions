@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
 import { ActionSubscription } from './action-subscription';
 import { NotificationHandler } from './notification-handler';
 

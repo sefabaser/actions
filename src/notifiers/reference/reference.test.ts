@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
-import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
+import { Attachable } from '../../attachable/attachable';
+import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { Reference } from './reference';
 
 describe('Reference', () => {

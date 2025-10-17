@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { NotificationHelper } from '../helpers/notification.helper';
+import { NotificationHelper } from '../../helpers/notification.helper';
 import { Notifier } from './notifier';
 
 class SampleModel {
