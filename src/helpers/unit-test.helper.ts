@@ -1,5 +1,5 @@
-import { AttachmentTargetStore } from '../app/attachable/helpers/attachment-target.store';
-import { ClassId } from '../app/attachable/helpers/class-id';
+import { ClassId } from "..";
+import { AttachmentTargetStore } from "../attachable/helpers/attachment-target.store";
 
 export class UnitTestHelper {
   static hardReset(): void {

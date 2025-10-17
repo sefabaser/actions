@@ -1,4 +1,4 @@
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { NotificationHelper } from '../helpers/notification.helper';
 import { ActionSubscription } from './action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;

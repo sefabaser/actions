@@ -2,7 +2,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../config';
 import { NotificationHelper } from '../helpers/notification.helper';
-import { Notifier } from '../app/notifier/notifier';
+import { Notifier } from '../notifier/notifier';
 
 export interface ActionOptions {
   readonly clone: boolean;

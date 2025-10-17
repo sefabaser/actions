@@ -1,4 +1,4 @@
-import { NotificationHelper } from '../../../helpers/notification.helper';
+import { NotificationHelper } from '../../helpers/notification.helper';
 import { ActionSubscription } from '../../notifier/action-subscription';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
