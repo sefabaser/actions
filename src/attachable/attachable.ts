@@ -1,5 +1,5 @@
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { Action } from '../action/action';
+import { Action } from '../../action/action';
 import { ActionSubscription } from '../notifier/action-subscription';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';

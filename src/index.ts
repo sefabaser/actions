@@ -1,4 +1,4 @@
-export { Action, ActionOptions } from './app/action/action';
+export { Action, ActionOptions } from './action/action';
 export { Attachable } from './app/attachable/attachable';
 export { ClassId } from './app/attachable/helpers/class-id';
 export { IAttachable, LightweightAttachable } from './app/attachable/lightweight-attachable';
