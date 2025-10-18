@@ -12,17 +12,14 @@ describe('Wait For All', () => {
   test('sample', () => {
     let triggered = false;
     // -------------------------------------------------------------
-    let all = Reducer.createExistenceChecker();
-
     let obj1 = new Attachable().attachToRoot();
-    all.effect().attach(obj1);
-
     let obj2 = new Attachable().attachToRoot();
-    all.effect().attach(obj2);
-
     let obj3 = new Attachable().attachToRoot();
-    all.effect().attach(obj3);
 
+    let all = Reducer.createExistenceChecker();
+    all.effect().attach(obj1);
+    all.effect().attach(obj2);
+    all.effect().attach(obj3);
     all
       .waitUntil(false, () => {
         triggered = true;
@@ -42,20 +39,17 @@ describe('Wait For All', () => {
   test('irregular', () => {
     let triggered = false;
     // -------------------------------------------------------------
-    let all = Reducer.createExistenceChecker();
 
     let obj1 = new Attachable().attachToRoot();
     obj1.destroy();
-    all.effect().attach(obj1);
-
     let obj2 = new Attachable().attachToRoot();
-    all.effect().attach(obj2);
-
     let obj3 = new Attachable().attachToRoot();
-    all.effect().attach(obj3);
 
+    let all = Reducer.createExistenceChecker();
+    all.effect().attach(obj1);
+    all.effect().attach(obj2);
     obj2.destroy();
-
+    all.effect().attach(obj3);
     all
       .waitUntil(false, () => {
         triggered = true;
