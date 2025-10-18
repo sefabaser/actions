@@ -1,9 +1,15 @@
 import { NotificationHelper } from '../helpers/notification.helper';
-import { ActionSubscription } from '../observables/_notifier/action-subscription';
 import { Action } from '../observables/action/action';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
-import { IAttachable, LightweightAttachable } from './lightweight-attachable';
+import { LightweightAttachable } from './lightweight-attachable';
+
+export interface IAttachable {
+  destroyed: boolean;
+  destroy(): void;
+  attach(parent: Attachable | string): this;
+  attachToRoot(): this;
+}
 
 export class Attachable extends ClassId {
   static validateId(this: typeof Attachable, id: string): boolean {
@@ -27,10 +33,10 @@ export class Attachable extends ClassId {
   }
 
   private _onDestroy: Action<void> | undefined;
-  onDestroy(callback: () => void): ActionSubscription {
+  onDestroy(callback: () => void): IAttachable {
     if (this._destroyed) {
       NotificationHelper.notify(undefined, callback);
-      return ActionSubscription.destroyed;
+      return LightweightAttachable.getDestroyed();
     } else {
       if (!this._onDestroy) {
         this._onDestroy = new Action<void>();

@@ -1,5 +1,4 @@
-import { Attachable } from '../attachable/attachable';
-import { IAttachable } from '../attachable/lightweight-attachable';
+import { Attachable, IAttachable } from '../attachable/attachable';
 import { Reducer } from '../observables/reducer/reducer';
 
 class DestroyOnResolve<T> extends Attachable {

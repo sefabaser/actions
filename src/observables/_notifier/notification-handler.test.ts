@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Attachable } from '../../attachable/attachable';
-import { ActionSubscription } from './action-subscription';
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { NotificationHandler } from './notification-handler';
 
 describe(`Notification Handler`, () => {
@@ -32,13 +31,6 @@ describe(`Notification Handler`, () => {
     expect(subscription.destroyed).toEqual(false);
     parent.destroy();
     expect(subscription.destroyed).toEqual(true);
-  });
-
-  test('should be combinable', () => {
-    let subscription1 = notifier.subscribe(_ => {}).attachToRoot();
-    let subscription2 = notifier.subscribe(_ => {}).attachToRoot();
-    ActionSubscription.combine([subscription1, subscription2]).attachToRoot().destroy();
-    expect(notifier['listenersMap'].size).toEqual(0);
   });
 
   test('should iterate without listeners', () =>
@@ -95,8 +87,8 @@ describe(`Notification Handler`, () => {
     let listener1 = false;
     let listener2 = false;
 
-    let subscription1: ActionSubscription;
-    let subscription2: ActionSubscription;
+    let subscription1: IAttachable;
+    let subscription2: IAttachable;
 
     subscription1 = notifier
       .subscribe(_ => {

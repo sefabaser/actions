@@ -1,7 +1,7 @@
 import { Comparator } from 'helpers-lib';
 
+import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { ActionSubscription } from './action-subscription';
 import { NotificationHandler, NotifierCallbackFunction } from './notification-handler';
 
 export class Notifier<T> {
@@ -19,11 +19,11 @@ export class Notifier<T> {
     this.notificationHandler = notificationHandler;
   }
 
-  subscribe(callback: NotifierCallbackFunction<T>): ActionSubscription {
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
     return this.notificationHandler.subscribe(callback);
   }
 
-  waitUntilNext(callback: NotifierCallbackFunction<T>): ActionSubscription {
+  waitUntilNext(callback: NotifierCallbackFunction<T>): IAttachable {
     let subscription = this.notificationHandler.subscribe(data => {
       NotificationHelper.notify(data, callback);
       subscription.destroy();
@@ -31,7 +31,7 @@ export class Notifier<T> {
     return subscription;
   }
 
-  waitUntil(expectedData: T, callback: NotifierCallbackFunction<T>): ActionSubscription {
+  waitUntil(expectedData: T, callback: NotifierCallbackFunction<T>): IAttachable {
     let subscription = this.notificationHandler.subscribe(data => {
       if (Comparator.isEqual(data, expectedData)) {
         NotificationHelper.notify(data, callback);

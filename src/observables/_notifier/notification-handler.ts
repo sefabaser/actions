@@ -1,3 +1,4 @@
+import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
 import { ActionSubscription } from './action-subscription';
 
@@ -18,7 +19,7 @@ export class NotificationHandler<T> {
     return this;
   }
 
-  subscribe(callback: NotifierCallbackFunction<T>): ActionSubscription {
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
     let subscriptionId = this.nextAvailableSubscriptionId;
     this.listenersMap.set(subscriptionId, callback);
     this.nextAvailableSubscriptionId++;

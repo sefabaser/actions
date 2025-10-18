@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
+import { Attachable, IAttachable } from '../attachable/attachable';
 import { UnitTestHelper } from '../helpers/unit-test.helper';
-import { ActionSubscription } from '../observables/_notifier/action-subscription';
 import { Reducer } from '../observables/reducer/reducer';
 
 class CallbackUtilities {
-  static untilAllDestroyed(attachables: Attachable[], callback: () => void): ActionSubscription {
+  static untilAllDestroyed(attachables: Attachable[], callback: () => void): IAttachable {
     let all = Reducer.createExistenceChecker();
     attachables.forEach(attachable => all.effect().attach(attachable));
     return all.waitUntil(false, callback);
@@ -18,7 +17,7 @@ describe('Wait For All', () => {
     UnitTestHelper.hardReset();
   });
 
-  describe('With UntilAllDestroyed', () => {
+  describe('UntilAllDestroyed', () => {
     test('sample', () => {
       // -------------------------------------------------------------
       let obj1 = new Attachable().attachToRoot();

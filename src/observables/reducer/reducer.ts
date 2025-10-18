@@ -1,9 +1,9 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
+import { IAttachable } from '../../attachable/attachable';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { ActionLibDefaults } from '../../config';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { ActionSubscription } from '../_notifier/action-subscription';
 import { NotifierCallbackFunction } from '../_notifier/notification-handler';
 import { Notifier } from '../_notifier/notifier';
 
@@ -252,17 +252,17 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     return effect;
   }
 
-  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): ActionSubscription {
+  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachable {
     if (!options?.listenOnlyNewChanges) {
       NotificationHelper.notify(this.previousBroadcast, callback);
     }
     return super.subscribe(callback);
   }
 
-  waitUntil(data: ResponseType, callback: NotifierCallbackFunction<ResponseType>): ActionSubscription {
+  waitUntil(data: ResponseType, callback: NotifierCallbackFunction<ResponseType>): IAttachable {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
       NotificationHelper.notify(data, callback);
-      return ActionSubscription.destroyed;
+      return LightweightAttachable.getDestroyed();
     } else {
       return super.waitUntil(data, callback);
     }

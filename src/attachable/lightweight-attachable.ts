@@ -1,11 +1,16 @@
-import { Attachable } from './attachable';
+import { Attachable, IAttachable } from './attachable';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 
-export interface IAttachable {
-  destroy(): void;
-}
-
 export class LightweightAttachable implements IAttachable {
+  /**
+   * @returns IAttachable that is already destroyed
+   */
+  static getDestroyed(): IAttachable {
+    let destroyedSubscription = new LightweightAttachable();
+    destroyedSubscription.destroy();
+    return destroyedSubscription;
+  }
+
   /** @internal */
   static attach(parent: Attachable | string, child: IAttachable): Attachable {
     let parentEntity = AttachmentTargetStore.findAttachmentTarget(parent);

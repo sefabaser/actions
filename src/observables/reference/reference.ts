@@ -1,9 +1,8 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable } from '../../attachable/attachable';
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
-import { ActionSubscription } from '../_notifier/action-subscription';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T> {
@@ -36,12 +35,10 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
   }
 
   private variable: Variable<T | undefined>;
-  private destroySubscription: ActionSubscription | undefined;
+  private destroySubscription: IAttachable | undefined;
   private options: { initialValue: T | undefined; path: string | undefined };
 
-  constructor(
-    ...args: T extends string ? [options?: StringReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]
-  ) {
+  constructor(...args: T extends string ? [options?: StringReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]) {
     super();
     this.options = {
       initialValue: undefined,
@@ -82,7 +79,7 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T | undefined>): ActionSubscription {
+  subscribe(callback: VariableListenerCallbackFunction<T | undefined>): IAttachable {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
     }
@@ -90,7 +87,7 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
     return this.variable.subscribe(callback);
   }
 
-  waitUntilNext(callback: (data: T | undefined) => void): ActionSubscription {
+  waitUntilNext(callback: (data: T | undefined) => void): IAttachable {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be waited until next!`);
     }
@@ -98,7 +95,7 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
     return this.variable.waitUntilNext(callback);
   }
 
-  waitUntil(data: T | undefined, callback: (data: T | undefined) => void): ActionSubscription {
+  waitUntil(data: T | undefined, callback: (data: T | undefined) => void): IAttachable {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be waited until!`);
     }
