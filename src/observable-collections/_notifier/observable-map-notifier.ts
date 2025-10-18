@@ -1,5 +1,6 @@
-import { NotificationHelper } from '../../../helpers/notification.helper';
-import { ActionSubscription } from '../../../notifiers/notifier/action-subscription';
+import { NotificationHelper } from '../../helpers/notification.helper';
+import { ActionSubscription } from '../../observables/_notifier/action-subscription';
+import { NotifierCallbackFunction } from '../../observables/_notifier/notification-handler';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
@@ -50,7 +51,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     return this.map.get(key);
   }
 
-  waitUntilAdded(value: KeyType, callback: (item: ValueType) => void): ActionSubscription {
+  waitUntilAdded(value: KeyType, callback: NotifierCallbackFunction<ValueType>): ActionSubscription {
     let triggerCallback = () => {
       NotificationHelper.notify(this.map.get(value), callback);
     };
@@ -72,7 +73,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     }
   }
 
-  waitUntilRemoved(value: KeyType, callback: () => void): ActionSubscription {
+  waitUntilRemoved(value: KeyType, callback: NotifierCallbackFunction<void>): ActionSubscription {
     if (!this.map.has(value)) {
       NotificationHelper.notify(undefined, callback);
       return ActionSubscription.destroyed;

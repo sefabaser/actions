@@ -1,5 +1,5 @@
-import { NotificationHelper } from '../../../helpers/notification.helper';
-import { ObservableMapNotifier } from './observable-map-notifier';
+import { NotificationHelper } from '../../helpers/notification.helper';
+import { ObservableMapNotifier } from '../_notifier/observable-map-notifier';
 
 export class ObservableMap<KeyType extends number | string, ValueType> extends ObservableMapNotifier<KeyType, ValueType> {
   constructor(map: Map<KeyType, ValueType> = new Map<KeyType, ValueType>()) {

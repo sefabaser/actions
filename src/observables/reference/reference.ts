@@ -3,7 +3,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { Attachable } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
-import { ActionSubscription } from '../notifier/action-subscription';
+import { ActionSubscription } from '../_notifier/action-subscription';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T> {

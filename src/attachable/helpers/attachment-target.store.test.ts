@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { Attachable } from '../attachable';
 import { AttachmentTargetStore } from './attachment-target.store';
 import { ClassId } from './class-id';
+import { UnitTestHelper } from '../../helpers/unit-test.helper';
 
 describe('AttachmentTargetStore', () => {
   beforeEach(() => {
-    ClassId.hardReset();
-    AttachmentTargetStore.hardReset();
+    UnitTestHelper.hardReset();
   });
 
   describe('registerAttachmentTarget', () => {

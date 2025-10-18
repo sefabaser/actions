@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from './attachable';
-import { AttachmentTargetStore } from './helpers/attachment-target.store';
+import { UnitTestHelper } from '..';
 
 describe('Attachable', () => {
   beforeEach(() => {
-    AttachmentTargetStore.hardReset();
+    UnitTestHelper.hardReset();
   });
 
   describe('basic', () => {
