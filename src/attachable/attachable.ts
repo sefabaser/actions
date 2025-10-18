@@ -1,6 +1,6 @@
 import { NotificationHelper } from '../helpers/notification.helper';
-import { Action } from '../observables/action/action';
 import { ActionSubscription } from '../observables/_notifier/action-subscription';
+import { Action } from '../observables/action/action';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
 import { IAttachable, LightweightAttachable } from './lightweight-attachable';

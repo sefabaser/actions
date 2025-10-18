@@ -14,7 +14,7 @@ export class ActionSubscription extends LightweightAttachable {
 
   /**
    * @param subscriptions the subscriptions to combine
-   * @returns a new ActionSubscription that combines the given subscriptions, when unsubscribed, all given subscriptions will be unsubscribed
+   * @returns a new ActionSubscription. When destroyed, all given subscriptions will be destroyed as well.
    */
   static combine(subscriptions: ActionSubscription[]): ActionSubscription {
     return new ActionSubscription(() => {
@@ -24,13 +24,13 @@ export class ActionSubscription extends LightweightAttachable {
     });
   }
 
-  constructor(private unsubscribeCallback: () => void) {
+  constructor(private destroyCallback: () => void) {
     super();
   }
 
   destroy(): void {
     if (!this.destroyed) {
-      this.unsubscribeCallback();
+      this.destroyCallback();
       super.destroy();
     }
   }
