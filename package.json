@@ -1,13 +1,16 @@
 {
   "name": "actions-lib",
-  "version": "1.9.0",
+  "version": "2.0.0",
   "description": "Typescript Helpers Library",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts"
   ],
+  "publishConfig": {
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sefabaser/actions.git"
@@ -22,17 +25,20 @@
     "clean-install": "cls && rm -rf node_modules && rm -rf package-lock.json && npm run i",
     "i": "npm cache clean --force && npm install",
     "pretest": "clear",
-    "test": "vitest",
+    "test": "vitest run",
     "start": "npm run build && node dist",
     "build": "tsc",
     "lint": "biome check . --write --max-diagnostics=1",
-    "deploy": "vitest run && npm run build && npm publish"
+    "deploy": "vitest run && npm run build && npm publish",
+    "prepack": "cp package.json package.json.bak && ts-node scripts/prepare-package-json.ts",
+    "postpack": "mv package.json.bak package.json"
   },
-  "dependencies": {
-    "helpers-lib": "1.13.10"
+  "peerDependencies": {
+    "helpers-lib": "^1.13.10"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
+    "@types/node": "20.12.11",
     "typescript": "5.3.3",
     "vitest": "3.2.4"
   }

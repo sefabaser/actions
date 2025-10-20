@@ -1,5 +1,6 @@
 {
   "include": ["src"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"],
   "compilerOptions": {
     "target": "ESNext",
     "module": "commonjs",
@@ -17,8 +18,9 @@
     "strictFunctionTypes": false,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "declaration": true,
     "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "declaration": true,
+    "stripInternal": true
   }
 }
