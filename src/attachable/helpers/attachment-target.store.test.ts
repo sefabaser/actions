@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
+import { ActionLibUnitTestHelper } from '../../helpers/unit-test.helper';
 import { Attachable } from '../attachable';
 import { AttachmentTargetStore } from './attachment-target.store';
 import { ClassId } from './class-id';
-import { UnitTestHelper } from '../../helpers/unit-test.helper';
 
 describe('AttachmentTargetStore', () => {
   beforeEach(() => {
-    UnitTestHelper.hardReset();
+    ActionLibUnitTestHelper.hardReset();
   });
 
   describe('registerAttachmentTarget', () => {

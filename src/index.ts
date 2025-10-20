@@ -1,8 +1,9 @@
-export { Attachable } from './attachable/attachable';
+export { Attachable, IAttachable } from './attachable/attachable';
 export { ClassId } from './attachable/helpers/class-id';
 export { LightweightAttachable } from './attachable/lightweight-attachable';
+export { CallbackUtilities } from './callback-utilities/callback-utilities';
 export { ActionLibDefaults } from './config';
-export { UnitTestHelper } from './helpers/unit-test.helper';
+export { ActionLibUnitTestHelper } from './helpers/unit-test.helper';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';
 export { ObservableMap } from './observable-collections/observable-map/observable-map';
 export { ObservableSet } from './observable-collections/observable-set/observable-set';

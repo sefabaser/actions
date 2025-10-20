@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { UnitTestHelper } from '../../helpers/unit-test.helper';
+import { ActionLibUnitTestHelper } from '../..';
 import { Variable } from './variable';
 
 describe(`Variable`, () => {
@@ -11,7 +11,7 @@ describe(`Variable`, () => {
 
   describe(`Basics`, () => {
     beforeEach(() => {
-      UnitTestHelper.hardReset();
+      ActionLibUnitTestHelper.hardReset();
     });
 
     test('should be definable', () => {
@@ -166,6 +166,32 @@ describe(`Variable`, () => {
 
       let triggeredWith: number | undefined;
       variable
+        .waitUntil(1, value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(1);
+    });
+
+    test('notifier subscribe should trigger right away like variable does', () => {
+      let variable = new Variable<number>(1);
+
+      let triggeredWith: number | undefined;
+      variable.notifier
+        .subscribe(value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(1);
+    });
+
+    test('notifier wait until should trigger right away like variable does', () => {
+      let variable = new Variable<number>(1);
+
+      let triggeredWith: number | undefined;
+      variable.notifier
         .waitUntil(1, value => {
           triggeredWith = value;
         })

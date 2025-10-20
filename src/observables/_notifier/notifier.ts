@@ -10,7 +10,11 @@ export class Notifier<T> {
   }
 
   get notifier(): Notifier<T> {
-    return new Notifier<T>(this.notificationHandler);
+    let wrapper = new Notifier<T>(this.notificationHandler);
+    wrapper.subscribe = callback => this.subscribe(callback);
+    wrapper.waitUntil = (expectedData, callback) => this.waitUntil(expectedData, callback);
+    wrapper.waitUntilNext = callback => this.waitUntilNext(callback);
+    return wrapper;
   }
 
   protected notificationHandler: NotificationHandler<T>;

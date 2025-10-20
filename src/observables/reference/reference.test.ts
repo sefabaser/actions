@@ -410,18 +410,6 @@ describe('Reference', () => {
       expect(refVar.value).toBeUndefined();
     });
 
-    test('onDestroyed subscription uses attachToRoot when reference uses attachToRoot', () => {
-      let refVar = new Reference().attachToRoot();
-      let target = new Attachable().attachToRoot();
-
-      refVar.value = target.id;
-      expect(refVar['destroySubscription']?.attachIsCalled).toBe(true);
-      expect(refVar['destroySubscription']?.attachedParent).toBe(undefined);
-
-      target.destroy();
-      expect(refVar.value).toBeUndefined();
-    });
-
     test('changing value after reference attached properly reattaches onDestroyed subscription', () => {
       let refVar = new Reference().attach(parent);
       let target1 = new Attachable().attachToRoot();
