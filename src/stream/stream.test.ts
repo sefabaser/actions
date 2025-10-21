@@ -14,18 +14,25 @@ class Stream<T> {
     });
   }
 
-  tap<K>(callback: (data: T) => K): Stream<K> {
+  tap<K>(callback: (data: T) => K | Stream<K>): Stream<K> {
     return new Stream<K>(resolve => {
-      if (this.data) {
-        let result = callback(this.data);
-        resolve(result);
-      } else {
-        this.listener = data => {
-          let result = callback(data);
+      this.getData(data => {
+        let result = callback(data);
+        if (result instanceof Stream) {
+          result.getData(resolve);
+        } else {
           resolve(result);
-        };
-      }
+        }
+      });
     });
+  }
+
+  private getData<K>(callback: (data: T) => K | Stream<K>): void {
+    if (this.data) {
+      callback(this.data);
+    } else {
+      this.listener = data => callback(data);
+    }
   }
 }
 
@@ -41,6 +48,28 @@ describe('Stream', () => {
       })
       .tap(data => {
         expect(data).toEqual(undefined);
+      });
+  });
+
+  test('async resolve data chaining', () => {
+    new Stream<string>(resolve => setTimeout(() => resolve('a'), 100))
+      .tap(data => {
+        expect(data).toEqual('a');
+        return 1;
+      })
+      .tap(data => {
+        expect(data).toEqual(1);
+      });
+  });
+
+  test('tap returning another stream', () => {
+    new Stream<string>(resolve => resolve('a'))
+      .tap(data => {
+        expect(data).toEqual('a');
+        return new Stream<number>(resolve => resolve(1));
+      })
+      .tap(data => {
+        expect(data).toEqual(1);
       });
   });
 });
