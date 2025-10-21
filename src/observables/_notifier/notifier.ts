@@ -2,7 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { Stream } from '../../stream/stream';
+import { Stream, StreamTouchFunction } from '../../stream/stream';
 import { NotificationHandler, NotifierCallbackFunction } from './notification-handler';
 
 export class Notifier<T> {
@@ -48,6 +48,10 @@ export class Notifier<T> {
 
   toStream(): Stream<T> {
     return this.notificationHandler.toStream();
+  }
+
+  tap<K>(callback: StreamTouchFunction<T, K>): Stream<K> {
+    return this.notificationHandler.tap(callback);
   }
 
   /** @internal */

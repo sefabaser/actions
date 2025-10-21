@@ -162,7 +162,6 @@ describe('Stream', () => {
 
       let heap: any[] = [];
       let stream = action
-        .toStream()
         .tap(data => {
           heap.push(data);
           return data + '1';
