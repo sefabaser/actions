@@ -1,61 +1,88 @@
-export class Stream<T> {
-  private resolvedBeforeTapBy: T | undefined;
-  private listener: ((data: T) => void) | undefined;
-  private destroyed = false;
+import { Attachable, IAttachable } from '../attachable/attachable';
+
+export class Stream<T> implements IAttachable {
+  private _destroyed = false;
+  get destroyed(): boolean {
+    return this._destroyed;
+  }
 
   constructor(
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
   ) {
-    executor(data => {
-      if (!this.destroyed) {
-        if (this.listener) {
-          this.listener(data);
-        } else {
-          this.resolvedBeforeTapBy = data;
-        }
-      }
-    });
+    executor(data => this.takeDataPackage(data));
   }
 
   tap<K>(callback: (data: T) => K | Stream<K>): Stream<K> {
-    return new Stream<K>(
-      resolve => {
-        this.getData(data => {
-          let tapReturn = callback(data);
-          if (tapReturn instanceof Stream) {
-            let tapReturnStream: Stream<K> = tapReturn;
-            tapReturnStream.getData(innerData => {
-              resolve(innerData);
-              tapReturnStream.destroy();
-            });
-          } else {
-            resolve(tapReturn);
-          }
-        });
-      },
+    let nextInLine = new Stream<K>(
+      () => {},
       () => this.destroy()
     );
+    this.registerNextInLine(callback, nextInLine);
+    return nextInLine;
   }
 
   destroy(): void {
     this.listener = undefined;
-    this.resolvedBeforeTapBy = undefined;
-    this.destroyed = true;
+    this.resolvedBeforeListenerBy = undefined;
+    this._destroyed = true;
     this.onDestroy?.();
   }
 
+  attach(parent: Attachable | string): this {
+    return this;
+  }
+
+  attachToRoot(): this {
+    return this;
+  }
+
+  private resolvedBeforeListenerBy: T | undefined;
+  private listener: ((data: T) => void) | undefined;
+  private takeDataPackage(data: T): void {
+    if (!this._destroyed) {
+      if (this.listener) {
+        this.listener(data);
+      } else {
+        this.resolvedBeforeListenerBy = data;
+      }
+    }
+  }
+
+  private registerNextInLine<K>(executionCallback: (data: T) => K | Stream<K>, nextInLine: Stream<K>): void {
+    if (!this._destroyed) {
+      this.getData(data => {
+        this.getExecutionReturn(data, executionCallback, executionReturn => {
+          nextInLine.takeDataPackage(executionReturn);
+        });
+      });
+    }
+  }
+
+  private getExecutionReturn<K>(data: T, executionCallback: (data: T) => K | Stream<K>, callback: (data: K) => void): void {
+    let executionReturn = executionCallback(data);
+    if (executionReturn instanceof Stream) {
+      let executionStream: Stream<K> = executionReturn;
+      executionStream.getData(innerData => {
+        executionStream.destroy();
+        callback(innerData);
+      });
+    } else {
+      callback(executionReturn);
+    }
+  }
+
   private getData<K>(callback: (data: T) => K | Stream<K>): void {
-    if (this.destroyed) {
+    if (this._destroyed) {
       throw new Error('Stream is destroyed');
     }
     if (this.listener) {
       throw new Error('Stream is already being listened to');
     }
 
-    if (this.resolvedBeforeTapBy) {
-      callback(this.resolvedBeforeTapBy);
-      this.resolvedBeforeTapBy = undefined;
+    if (this.resolvedBeforeListenerBy) {
+      callback(this.resolvedBeforeListenerBy);
+      this.resolvedBeforeListenerBy = undefined;
     }
     this.listener = data => callback(data);
   }
