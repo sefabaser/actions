@@ -24,7 +24,7 @@ export class Action<T> extends Notifier<T> {
       data = JsonHelper.deepCopy(data);
     }
 
-    this.notificationHandler.forEach(callback => NotificationHelper.notify(data, callback));
+    this.forEach(callback => NotificationHelper.notify(data, callback));
     return this;
   }
 }

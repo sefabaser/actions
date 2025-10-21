@@ -4,8 +4,7 @@ import { IAttachable } from '../../attachable/attachable';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { ActionLibDefaults } from '../../config';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { NotifierCallbackFunction } from '../_notifier/notification-handler';
-import { Notifier } from '../_notifier/notifier';
+import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
 
 export interface ReducerOptions {
   readonly clone: boolean;
@@ -274,7 +273,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.notificationHandler.forEach(callback => NotificationHelper.notify(value, callback));
+      this.forEach(callback => NotificationHelper.notify(value, callback));
       this.previousBroadcast = value;
     }
   }

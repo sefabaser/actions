@@ -8,8 +8,7 @@ export { ObservableMapNotifier } from './observable-collections/_notifier/observ
 export { ObservableMap } from './observable-collections/observable-map/observable-map';
 export { ObservableSet } from './observable-collections/observable-set/observable-set';
 export { ActionSubscription, IDestroyable } from './observables/_notifier/action-subscription';
-export { NotifierCallbackFunction } from './observables/_notifier/notification-handler';
-export { Notifier } from './observables/_notifier/notifier';
+export { Notifier, NotifierCallbackFunction } from './observables/_notifier/notifier';
 export { Action, ActionOptions } from './observables/action/action';
 export {
   Reducer,

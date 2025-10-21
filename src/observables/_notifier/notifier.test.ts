@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { Attachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
 import { Notifier } from './notifier';
 
@@ -25,13 +26,13 @@ describe('Notifier', () => {
 
     test('subscribable', () => {
       notifier.subscribe(_ => {}).attachToRoot();
-      expect(notifier['notificationHandler']['listenersMap'].size).toEqual(1);
+      expect(notifier['listenersMap'].size).toEqual(1);
     });
 
     test('subscription destroyable', () => {
       let subscription = notifier.subscribe(_ => {}).attachToRoot();
       subscription.destroy();
-      expect(notifier['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(notifier['listenersMap'].size).toEqual(0);
     });
 
     test('loop through listeners', () => {
@@ -200,7 +201,7 @@ describe('Notifier', () => {
         .attachToRoot();
 
       subscription.destroy();
-      notifier['notificationHandler']['forEach'](listener => listener(undefined));
+      notifier.forEach(listener => listener(undefined));
 
       expect(resolvedWith).toBeUndefined();
       expect(resolved).toBe(false);
@@ -216,11 +217,11 @@ describe('Notifier', () => {
         .attachToRoot();
 
       expect(notifier.listenerCount).toBe(1);
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'first' }));
+      notifier.forEach(listener => listener({ testData: 'first' }));
       expect(callCount).toBe(1);
       expect(notifier.listenerCount).toBe(0);
 
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'second' }));
+      notifier.forEach(listener => listener({ testData: 'second' }));
       expect(callCount).toBe(1);
     });
 
@@ -234,15 +235,15 @@ describe('Notifier', () => {
         .attachToRoot();
 
       expect(notifier.listenerCount).toBe(1);
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'wrong' }));
+      notifier.forEach(listener => listener({ testData: 'wrong' }));
       expect(callCount).toBe(0);
       expect(notifier.listenerCount).toBe(1);
 
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'expected' }));
+      notifier.forEach(listener => listener({ testData: 'expected' }));
       expect(callCount).toBe(1);
       expect(notifier.listenerCount).toBe(0);
 
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'expected' }));
+      notifier.forEach(listener => listener({ testData: 'expected' }));
       expect(callCount).toBe(1);
     });
 
@@ -271,7 +272,7 @@ describe('Notifier', () => {
         })
         .attachToRoot();
 
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'expected' }));
+      notifier.forEach(listener => listener({ testData: 'expected' }));
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', expect.any(Error));
 
@@ -286,7 +287,7 @@ describe('Notifier', () => {
 
       expect(notifier2).toBeInstanceOf(Notifier);
       expect(notifier2).not.toBe(notifier);
-      expect(notifier2['notificationHandler']).toBe(notifier['notificationHandler']);
+      expect(notifier2['listenersMap']).toBe(notifier['listenersMap']);
     });
 
     test('subscriptions are shared between notifiers', () => {
@@ -336,6 +337,104 @@ describe('Notifier', () => {
       triggerNotifierWith({ testData: 'sample' }, notifier);
 
       expect(called).toBe(false);
+    });
+  });
+
+  describe('forEach', () => {
+    let notifier: Notifier<string>;
+
+    beforeEach(() => {
+      notifier = new Notifier<string>();
+    });
+
+    test('iterate without listeners', () =>
+      new Promise<void>(done => {
+        notifier.forEach(() => {});
+        done();
+      }));
+
+    test('iterate through listeners', () => {
+      notifier.subscribe(() => {}).attachToRoot();
+      notifier.subscribe(() => {}).attachToRoot();
+
+      let count = 0;
+      notifier.forEach(_ => {
+        count++;
+      });
+
+      expect(count).toEqual(2);
+    });
+
+    test('notify listeners', () =>
+      new Promise<void>(done => {
+        let listener1 = false;
+        let listener2 = false;
+
+        notifier
+          .subscribe(message => {
+            if (message === 'sample') {
+              listener1 = true;
+              if (listener2) {
+                done();
+              }
+            }
+          })
+          .attachToRoot();
+
+        notifier
+          .subscribe(message => {
+            if (message === 'sample') {
+              listener2 = true;
+              if (listener1) {
+                done();
+              }
+            }
+          })
+          .attachToRoot();
+
+        notifier.forEach(listenerCallback => {
+          listenerCallback('sample');
+        });
+      }));
+
+    test('destroy should not take affect until all subscribers being notified', () => {
+      let listener1 = false;
+      let listener2 = false;
+
+      let subscription1: any;
+      let subscription2: any;
+
+      subscription1 = notifier
+        .subscribe(_ => {
+          listener1 = true;
+          subscription2.destroy();
+        })
+        .attachToRoot();
+
+      subscription2 = notifier
+        .subscribe(_ => {
+          listener2 = true;
+          subscription1.destroy();
+        })
+        .attachToRoot();
+
+      notifier.forEach(listenerCallback => {
+        listenerCallback('sample');
+      });
+
+      expect(listener1).toEqual(true);
+      expect(listener2).toEqual(true);
+    });
+  });
+
+  describe('attached parent', () => {
+    test('should destroy the subscription when it is destroyed', () => {
+      let notifier = new Notifier<string>();
+      let parent = new Attachable().attachToRoot();
+      let subscription = notifier.subscribe(_ => {}).attach(parent);
+      expect(subscription.destroyed).toEqual(false);
+      parent.destroy();
+      expect(subscription.destroyed).toEqual(true);
     });
   });
 });

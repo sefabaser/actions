@@ -24,7 +24,7 @@ describe(`Reducer`, () => {
 
     test('should be subscribable', () => {
       reducer.subscribe(() => {}).attachToRoot();
-      expect(reducer['notificationHandler']['listenersMap'].size).toEqual(1);
+      expect(reducer['listenersMap'].size).toEqual(1);
     });
 
     test('should be able to use subscribe only new changes', () => {
@@ -46,7 +46,7 @@ describe(`Reducer`, () => {
     test('should be destroyable', () => {
       let subscription = reducer.subscribe(() => {});
       subscription.destroy();
-      expect(reducer['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(reducer['listenersMap'].size).toEqual(0);
     });
 
     test('triggerring without listeners', () => {
