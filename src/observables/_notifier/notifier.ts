@@ -2,6 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
+import { Stream } from '../../stream/stream';
 import { NotificationHandler, NotifierCallbackFunction } from './notification-handler';
 
 export class Notifier<T> {
@@ -43,6 +44,10 @@ export class Notifier<T> {
       }
     });
     return subscription;
+  }
+
+  toStream(): Stream<T> {
+    return this.notificationHandler.toStream();
   }
 
   /** @internal */

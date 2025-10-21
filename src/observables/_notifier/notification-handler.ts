@@ -1,5 +1,6 @@
 import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
+import { Stream } from '../../stream/stream';
 import { ActionSubscription } from './action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
@@ -20,17 +21,32 @@ export class NotificationHandler<T> {
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
-    let subscriptionId = this.nextAvailableSubscriptionId;
+    let subscriptionId = this.getNextAvailableSubscriptionId();
     this.listenersMap.set(subscriptionId, callback);
-    this.nextAvailableSubscriptionId++;
 
     return new ActionSubscription(() => {
       this.listenersMap.delete(subscriptionId);
     });
   }
 
+  toStream(): Stream<T> {
+    let subscriptionId = this.getNextAvailableSubscriptionId();
+    return new Stream<T>(
+      resolve => {
+        this.listenersMap.set(subscriptionId, resolve);
+      },
+      () => {
+        this.listenersMap.delete(subscriptionId);
+      }
+    );
+  }
+
   /** @internal */
   get listeners(): NotifierCallbackFunction<T>[] {
     return [...this.listenersMap.values()];
+  }
+
+  private getNextAvailableSubscriptionId(): number {
+    return this.nextAvailableSubscriptionId++;
   }
 }
