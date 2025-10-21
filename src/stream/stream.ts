@@ -10,7 +10,7 @@ export class Stream<T> implements IAttachable {
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
   ) {
-    executor(data => this.dataReceived(data));
+    executor(data => this.trigger(data));
   }
 
   tap<K>(callback: (data: T) => K | Stream<K>): Stream<K> {
@@ -18,7 +18,13 @@ export class Stream<T> implements IAttachable {
       () => {},
       () => this.destroy()
     );
-    this.registerNextInLine(callback, nextInLine);
+
+    this.subscribe(data => {
+      this.waitUntilExecution(data, callback, executionReturn => {
+        nextInLine.trigger(executionReturn);
+      });
+    });
+
     return nextInLine;
   }
 
@@ -37,26 +43,6 @@ export class Stream<T> implements IAttachable {
     return this;
   }
 
-  private resolvedBeforeListenerBy: T | undefined;
-  private listener: ((data: T) => void) | undefined;
-  private dataReceived(data: T): void {
-    if (!this._destroyed) {
-      if (this.listener) {
-        this.listener(data);
-      } else {
-        this.resolvedBeforeListenerBy = data;
-      }
-    }
-  }
-
-  private registerNextInLine<K>(executionCallback: (data: T) => K | Stream<K>, nextInLine: Stream<K>): void {
-    this.subscribe(data => {
-      this.waitUntilExecution(data, executionCallback, executionReturn => {
-        nextInLine.dataReceived(executionReturn);
-      });
-    });
-  }
-
   private waitUntilExecution<K>(data: T, executionCallback: (data: T) => K | Stream<K>, callback: (data: K) => void): void {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Stream) {
@@ -67,6 +53,18 @@ export class Stream<T> implements IAttachable {
       });
     } else {
       callback(executionReturn);
+    }
+  }
+
+  private resolvedBeforeListenerBy: T | undefined;
+  private listener: ((data: T) => void) | undefined;
+  private trigger(data: T): void {
+    if (!this._destroyed) {
+      if (this.listener) {
+        this.listener(data);
+      } else {
+        this.resolvedBeforeListenerBy = data;
+      }
     }
   }
 
