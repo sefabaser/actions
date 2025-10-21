@@ -1,5 +1,7 @@
 import { Attachable, IAttachable } from '../attachable/attachable';
 
+export type StreamTouchFunction<T, K> = (data: T) => K | Stream<K>;
+
 export class Stream<T> implements IAttachable {
   private _destroyed = false;
   get destroyed(): boolean {
@@ -13,7 +15,7 @@ export class Stream<T> implements IAttachable {
     executor(data => this.trigger(data));
   }
 
-  tap<K>(callback: (data: T) => K | Stream<K>): Stream<K> {
+  tap<K>(callback: StreamTouchFunction<T, K>): Stream<K> {
     let nextInLine = new Stream<K>(
       () => {},
       () => this.destroy()
@@ -43,7 +45,7 @@ export class Stream<T> implements IAttachable {
     return this;
   }
 
-  private waitUntilExecution<K>(data: T, executionCallback: (data: T) => K | Stream<K>, callback: (data: K) => void): void {
+  private waitUntilExecution<K>(data: T, executionCallback: StreamTouchFunction<T, K>, callback: (data: K) => void): void {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Stream) {
       let executionStream: Stream<K> = executionReturn;
@@ -68,7 +70,7 @@ export class Stream<T> implements IAttachable {
     }
   }
 
-  private subscribe<K>(callback: (data: T) => K | Stream<K>): void {
+  private subscribe<K>(callback: StreamTouchFunction<T, K>): void {
     if (this._destroyed) {
       throw new Error('Stream is destroyed');
     }

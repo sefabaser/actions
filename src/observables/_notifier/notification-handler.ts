@@ -1,6 +1,6 @@
 import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { Stream } from '../../stream/stream';
+import { Stream, StreamTouchFunction } from '../../stream/stream';
 import { ActionSubscription } from './action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
@@ -29,6 +29,7 @@ export class NotificationHandler<T> {
     });
   }
 
+  // TODO: unit tests
   toStream(): Stream<T> {
     let subscriptionId = this.getNextAvailableSubscriptionId();
     return new Stream<T>(
@@ -39,6 +40,11 @@ export class NotificationHandler<T> {
         this.listenersMap.delete(subscriptionId);
       }
     );
+  }
+
+  // TODO: unit tests
+  tap<K>(callback: StreamTouchFunction<T, K>): Stream<K> {
+    return this.toStream().tap(callback);
   }
 
   /** @internal */
