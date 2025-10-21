@@ -1,4 +1,4 @@
-import { LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
 
 export interface IDestroyable {
   destroy(): void;

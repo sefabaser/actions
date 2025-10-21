@@ -1,8 +1,8 @@
 import { IAttachable } from '../../attachable/attachable';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
-import { ActionSubscription } from '../../observables/_notifier/action-subscription';
 import { NotifierCallbackFunction } from '../../observables/_notifier/notifier';
+import { ActionSubscription } from '../../utilities/action-subscription';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;

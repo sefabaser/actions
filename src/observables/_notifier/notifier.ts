@@ -3,7 +3,7 @@ import { Comparator } from 'helpers-lib';
 import { IAttachable } from '../../attachable/attachable';
 import { NotificationHelper } from '../../helpers/notification.helper';
 import { Stream, StreamTouchFunction } from '../../stream/stream';
-import { ActionSubscription } from './action-subscription';
+import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
 

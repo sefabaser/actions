@@ -1,13 +1,11 @@
 export { Attachable, IAttachable } from './attachable/attachable';
 export { ClassId } from './attachable/helpers/class-id';
 export { LightweightAttachable } from './attachable/lightweight-attachable';
-export { CallbackUtilities } from './callback-utilities/callback-utilities';
 export { ActionLibDefaults } from './config';
 export { ActionLibUnitTestHelper } from './helpers/unit-test.helper';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';
 export { ObservableMap } from './observable-collections/observable-map/observable-map';
 export { ObservableSet } from './observable-collections/observable-set/observable-set';
-export { ActionSubscription, IDestroyable } from './observables/_notifier/action-subscription';
 export { Notifier, NotifierCallbackFunction } from './observables/_notifier/notifier';
 export { Action, ActionOptions } from './observables/action/action';
 export {
@@ -25,3 +23,5 @@ export {
   VariableOptions,
   VariableSubscriptionOptions
 } from './observables/variable/variable';
+export { ActionSubscription, IDestroyable } from './utilities/action-subscription';
+export { CallbackUtilities } from './utilities/callback-utilities';
