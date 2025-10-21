@@ -10,7 +10,7 @@ export class Stream<T> implements IAttachable {
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
   ) {
-    executor(data => this.takeDataPackage(data));
+    executor(data => this.dataReceived(data));
   }
 
   tap<K>(callback: (data: T) => K | Stream<K>): Stream<K> {
@@ -39,7 +39,7 @@ export class Stream<T> implements IAttachable {
 
   private resolvedBeforeListenerBy: T | undefined;
   private listener: ((data: T) => void) | undefined;
-  private takeDataPackage(data: T): void {
+  private dataReceived(data: T): void {
     if (!this._destroyed) {
       if (this.listener) {
         this.listener(data);
@@ -50,20 +50,18 @@ export class Stream<T> implements IAttachable {
   }
 
   private registerNextInLine<K>(executionCallback: (data: T) => K | Stream<K>, nextInLine: Stream<K>): void {
-    if (!this._destroyed) {
-      this.getData(data => {
-        this.getExecutionReturn(data, executionCallback, executionReturn => {
-          nextInLine.takeDataPackage(executionReturn);
-        });
+    this.subscribe(data => {
+      this.waitUntilExecution(data, executionCallback, executionReturn => {
+        nextInLine.dataReceived(executionReturn);
       });
-    }
+    });
   }
 
-  private getExecutionReturn<K>(data: T, executionCallback: (data: T) => K | Stream<K>, callback: (data: K) => void): void {
+  private waitUntilExecution<K>(data: T, executionCallback: (data: T) => K | Stream<K>, callback: (data: K) => void): void {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Stream) {
       let executionStream: Stream<K> = executionReturn;
-      executionStream.getData(innerData => {
+      executionStream.subscribe(innerData => {
         executionStream.destroy();
         callback(innerData);
       });
@@ -72,7 +70,7 @@ export class Stream<T> implements IAttachable {
     }
   }
 
-  private getData<K>(callback: (data: T) => K | Stream<K>): void {
+  private subscribe<K>(callback: (data: T) => K | Stream<K>): void {
     if (this._destroyed) {
       throw new Error('Stream is destroyed');
     }
