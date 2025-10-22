@@ -368,8 +368,10 @@ describe('Stream', () => {
       expect(action1.listenerCount).toEqual(0);
       expect(action2.listenerCount).toEqual(0);
     });
+  });
 
-    test('execution should stop even it is in the middle on destruction', () => {
+  describe('Edge Cases', () => {
+    test('execution should stop listening notifiers even it is in the middle on destruction', () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();
 
@@ -387,6 +389,39 @@ describe('Stream', () => {
       stream.destroy();
       expect(triggered).toEqual(false);
       action2.trigger('');
+      expect(triggered).toEqual(false);
+    });
+
+    test('execution should stop listening streams even it is in the middle on destruction', async () => {
+      let resolve1!: () => void;
+      let resolve2!: () => void;
+
+      let middleStream!: Stream<void>;
+
+      let triggered = false;
+      let stream = new Stream<void>(resolve => {
+        resolve1 = resolve;
+      })
+        .tap(() => {
+          middleStream = new Stream<void>(resolve => {
+            resolve2 = resolve;
+          });
+          return middleStream;
+        })
+        .tap(() => {
+          triggered = true;
+        })
+        .attachToRoot();
+
+      resolve1?.();
+      expect(middleStream['listener']).toBeDefined();
+      expect(triggered).toEqual(false);
+
+      stream.destroy();
+      expect(middleStream['listener']).toBeUndefined();
+
+      resolve2?.();
+      expect(middleStream['listener']).toBeUndefined();
       expect(triggered).toEqual(false);
     });
   });
