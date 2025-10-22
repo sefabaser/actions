@@ -1,5 +1,5 @@
 import { Wait } from 'helpers-lib';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
@@ -171,68 +171,56 @@ describe('Stream', () => {
   });
 
   describe('Attachment', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     test('not attaching to anything should throw error', () => {
-      let operation = async (): Promise<void> => {
+      expect(() => {
         let action = new Action<string>();
         action.tap(() => {});
-      };
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
         vi.runAllTimers();
       }).toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('attaching to a target should not throw error', () => {
-      let operation = async (): Promise<void> => {
+      expect(() => {
         let action = new Action<string>();
         action.tap(() => {}).attach(new Attachable().attachToRoot());
-      };
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('attaching to root should not throw error', () => {
-      let operation = async (): Promise<void> => {
+      expect(() => {
         let action = new Action<string>();
         action.tap(() => {}).attachToRoot();
         action.trigger('');
-      };
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('not attaching the chain to a target should throw error', () => {
-      let operation = async (): Promise<void> => {
+      expect(() => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
         action1.tap(() => action2).tap(() => {});
 
         action1.trigger('');
-      };
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
         vi.runAllTimers();
       }).toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('attaching the chain to a target should not throw error', () => {
-      let operation = async (): Promise<void> => {
+      expect(() => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
         action1
@@ -241,18 +229,13 @@ describe('Stream', () => {
           .attach(new Attachable().attachToRoot());
 
         action1.trigger('');
-      };
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('attaching the chain to root should not throw error', () => {
-      let operation = async (): Promise<void> => {
+      expect(() => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
         action1
@@ -261,14 +244,9 @@ describe('Stream', () => {
           .attachToRoot();
 
         action1.trigger('');
-      };
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
   });
 
