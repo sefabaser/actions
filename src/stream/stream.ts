@@ -1,3 +1,4 @@
+import { IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
@@ -29,10 +30,21 @@ export class Stream<T> extends LightweightAttachable {
     return nextInLine;
   }
 
+  private _toBeDestroyed: Set<IAttachable> | undefined;
+  private get toBeDestroyed(): Set<IAttachable> {
+    if (!this._toBeDestroyed) {
+      this._toBeDestroyed = new Set<IAttachable>();
+    }
+    return this._toBeDestroyed;
+  }
+
   destroy(): void {
     if (!this.destroyed) {
       this.listener = undefined;
       this.resolvedBeforeListenerBy = undefined;
+      this.toBeDestroyed.forEach(item => item.destroy());
+      this.toBeDestroyed.clear();
+      this._toBeDestroyed = undefined;
       this.onDestroy?.();
       super.destroy();
     }
@@ -42,21 +54,22 @@ export class Stream<T> extends LightweightAttachable {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Stream) {
       let executionStream: Stream<K> = executionReturn;
-      // Unsubscribe on this stream's destroy
       executionStream.subscribe(innerData => {
-        console.log('unsubscribing on execution stream destroy');
+        this.toBeDestroyed.delete(executionStream);
         executionStream.destroy();
         CallbackHelper.triggerCallback(innerData, callback);
       });
+      this.toBeDestroyed.add(executionStream);
       executionStream.attachToRoot();
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
-      // Cancel?
-      executionNotifier
+      let subscription = executionNotifier
         .waitUntilNext(innerData => {
+          this.toBeDestroyed.delete(subscription);
           CallbackHelper.triggerCallback(innerData, callback);
         })
         .attachToRoot();
+      this.toBeDestroyed.add(subscription);
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);
     }
