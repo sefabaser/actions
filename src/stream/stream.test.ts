@@ -157,11 +157,11 @@ describe('Stream', () => {
   });
 
   describe('Actions', () => {
-    test('continues stream chaining source', async () => {
+    test('chaining with tap action', async () => {
       let action = new Action<string>();
 
       let heap: any[] = [];
-      let stream = action
+      action
         .tap(data => {
           heap.push(data);
           return data + '1';
@@ -170,15 +170,68 @@ describe('Stream', () => {
           heap.push(data);
         });
 
-      expect(action.listenerCount).toEqual(1);
-
-      callEachDelayed(['a', 'b', 'c'], value => action.trigger(value));
+      callEachDelayed(['a', 'b', 'c'], value => {
+        action.trigger(value);
+      });
 
       await Wait(100);
-      stream.destroy();
-      expect(action.listenerCount).toEqual(0);
 
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
+    });
+
+    test('tap returning actions', async () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+
+      let heap: any[] = [];
+      action1
+        .tap(data => {
+          heap.push(data);
+          return data + '1';
+        })
+        .tap(data => {
+          heap.push(data);
+          return action2;
+        })
+        .tap(data => {
+          heap.push(data);
+        });
+
+      callEachDelayed(['a', 'b', 'c'], value => {
+        action1.trigger(value);
+        action2.trigger(value + 'x');
+      });
+
+      await Wait(100);
+
+      expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
+    });
+
+    test('chaining with tap action unsubscribing', async () => {
+      let action = new Action<string>();
+      let action2 = new Action<string>();
+
+      let triggered = false;
+      let stream = action
+        .tap(() => {
+          return action2;
+        })
+        .tap(() => {
+          triggered = true;
+        });
+
+      expect(action.listenerCount).toEqual(1);
+
+      action.trigger('');
+      action2.trigger('');
+
+      await Wait(100);
+
+      stream.destroy();
+      expect(action.listenerCount).toEqual(0);
+      expect(action2.listenerCount).toEqual(0);
+
+      expect(triggered).toEqual(true);
     });
   });
 });

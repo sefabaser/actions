@@ -1,6 +1,8 @@
 import { Attachable, IAttachable } from '../attachable/attachable';
+import { NotificationHelper } from '../helpers/notification.helper';
+import { Notifier } from '../observables/_notifier/notifier';
 
-export type StreamTouchFunction<T, K> = (data: T) => K | Stream<K>;
+export type StreamTouchFunction<T, K> = (data: T) => K | Stream<K> | Notifier<K>;
 
 export class Stream<T> implements IAttachable {
   private _destroyed = false;
@@ -51,10 +53,15 @@ export class Stream<T> implements IAttachable {
       let executionStream: Stream<K> = executionReturn;
       executionStream.subscribe(innerData => {
         executionStream.destroy();
-        callback(innerData);
+        NotificationHelper.notify(innerData, callback);
+      });
+    } else if (executionReturn instanceof Notifier) {
+      let executionNotifier: Notifier<K> = executionReturn;
+      executionNotifier.waitUntilNext(innerData => {
+        NotificationHelper.notify(innerData, callback);
       });
     } else {
-      callback(executionReturn);
+      NotificationHelper.notify(executionReturn, callback);
     }
   }
 
