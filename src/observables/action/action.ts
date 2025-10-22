@@ -1,7 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';
 
 export interface ActionOptions {
@@ -24,7 +24,7 @@ export class Action<T> extends Notifier<T> {
       data = JsonHelper.deepCopy(data);
     }
 
-    this.forEach(callback => NotificationHelper.notify(data, callback));
+    this.forEach(callback => CallbackHelper.triggerCallback(data, callback));
     return this;
   }
 }

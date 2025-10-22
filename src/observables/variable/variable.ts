@@ -3,7 +3,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { IAttachable } from '../../attachable/attachable';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { ActionLibDefaults } from '../../config';
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';
 
 export type VariableListenerCallbackFunction<T> = (data: T) => void;
@@ -53,7 +53,7 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     this.currentValue = this.options.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
 
     if (!this.options.notifyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.forEach(callback => NotificationHelper.notify(data, callback));
+      this.forEach(callback => CallbackHelper.triggerCallback(data, callback));
     }
 
     return this;
@@ -61,14 +61,14 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
 
   subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): IAttachable {
     if (!options?.listenOnlyNewChanges) {
-      NotificationHelper.notify(this.currentValue, callback);
+      CallbackHelper.triggerCallback(this.currentValue, callback);
     }
     return super.subscribe(callback);
   }
 
   waitUntil(expectedData: T, callback: (data: T) => void): IAttachable {
     if (Comparator.isEqual(this.currentValue, expectedData)) {
-      NotificationHelper.notify(expectedData, callback);
+      CallbackHelper.triggerCallback(expectedData, callback);
       return LightweightAttachable.getDestroyed();
     } else {
       return super.waitUntil(expectedData, callback);

@@ -1,5 +1,5 @@
 import { Attachable, IAttachable } from '../attachable/attachable';
-import { NotificationHelper } from '../helpers/notification.helper';
+import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 
 export type StreamTouchFunction<T, K> = (data: T) => K | Stream<K> | Notifier<K>;
@@ -53,15 +53,15 @@ export class Stream<T> implements IAttachable {
       let executionStream: Stream<K> = executionReturn;
       executionStream.subscribe(innerData => {
         executionStream.destroy();
-        NotificationHelper.notify(innerData, callback);
+        CallbackHelper.triggerCallback(innerData, callback);
       });
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
       executionNotifier.waitUntilNext(innerData => {
-        NotificationHelper.notify(innerData, callback);
+        CallbackHelper.triggerCallback(innerData, callback);
       });
     } else {
-      NotificationHelper.notify(executionReturn, callback);
+      CallbackHelper.triggerCallback(executionReturn, callback);
     }
   }
 

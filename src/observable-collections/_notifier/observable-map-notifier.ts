@@ -1,6 +1,6 @@
 import { IAttachable } from '../../attachable/attachable';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { NotifierCallbackFunction } from '../../observables/_notifier/notifier';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
@@ -55,7 +55,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
 
   waitUntilAdded(value: KeyType, callback: NotifierCallbackFunction<ValueType>): IAttachable {
     let triggerCallback = () => {
-      NotificationHelper.notify(this.map.get(value), callback);
+      CallbackHelper.triggerCallback(this.map.get(value), callback);
     };
 
     if (this.map.has(value)) {
@@ -77,7 +77,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
 
   waitUntilRemoved(value: KeyType, callback: NotifierCallbackFunction<void>): IAttachable {
     if (!this.map.has(value)) {
-      NotificationHelper.notify(undefined, callback);
+      CallbackHelper.triggerCallback(undefined, callback);
       return LightweightAttachable.getDestroyed();
     } else {
       let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
@@ -87,7 +87,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
       }
 
       let item = () => {
-        NotificationHelper.notify(undefined, callback);
+        CallbackHelper.triggerCallback(undefined, callback);
       };
       untilRemovedListenerSet.add(item);
       return new ActionSubscription(() => {

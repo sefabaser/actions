@@ -1,7 +1,7 @@
 import { Comparator } from 'helpers-lib';
 
 import { IAttachable } from '../../attachable/attachable';
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { Stream, StreamTouchFunction } from '../../stream/stream';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
@@ -27,7 +27,7 @@ export class Notifier<T> {
 
   forEach(callback: (listenerCallbackFunction: NotifierCallbackFunction<T>) => void): Notifier<T> {
     let newMap = new Map<number, NotifierCallbackFunction<T>>(this.listenersMap);
-    newMap.forEach(data => NotificationHelper.notify(data, callback));
+    newMap.forEach(data => CallbackHelper.triggerCallback(data, callback));
     return this;
   }
 
@@ -38,7 +38,7 @@ export class Notifier<T> {
   waitUntilNext(callback: NotifierCallbackFunction<T>): IAttachable {
     let subscription: IAttachable;
     subscription = this.baseSubscribe(data => {
-      NotificationHelper.notify(data, callback);
+      CallbackHelper.triggerCallback(data, callback);
       subscription.destroy();
     });
     return subscription;
@@ -48,7 +48,7 @@ export class Notifier<T> {
     let subscription: IAttachable;
     subscription = this.baseSubscribe(data => {
       if (Comparator.isEqual(data, expectedData)) {
-        NotificationHelper.notify(data, callback);
+        CallbackHelper.triggerCallback(data, callback);
         subscription.destroy();
       }
     });

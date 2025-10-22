@@ -3,7 +3,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { IAttachable } from '../../attachable/attachable';
 import { LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { ActionLibDefaults } from '../../config';
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
 
 export interface ReducerOptions {
@@ -253,14 +253,14 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
 
   subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachable {
     if (!options?.listenOnlyNewChanges) {
-      NotificationHelper.notify(this.previousBroadcast, callback);
+      CallbackHelper.triggerCallback(this.previousBroadcast, callback);
     }
     return super.subscribe(callback);
   }
 
   waitUntil(data: ResponseType, callback: NotifierCallbackFunction<ResponseType>): IAttachable {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
-      NotificationHelper.notify(data, callback);
+      CallbackHelper.triggerCallback(data, callback);
       return LightweightAttachable.getDestroyed();
     } else {
       return super.waitUntil(data, callback);
@@ -273,7 +273,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.forEach(callback => NotificationHelper.notify(value, callback));
+      this.forEach(callback => CallbackHelper.triggerCallback(value, callback));
       this.previousBroadcast = value;
     }
   }

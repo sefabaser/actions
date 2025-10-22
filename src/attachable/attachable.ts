@@ -1,4 +1,4 @@
-import { NotificationHelper } from '../helpers/notification.helper';
+import { CallbackHelper } from '../helpers/callback.helper';
 import { Action } from '../observables/action/action';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
@@ -35,7 +35,7 @@ export class Attachable extends ClassId {
   private _onDestroy: Action<void> | undefined;
   onDestroy(callback: () => void): IAttachable {
     if (this._destroyed) {
-      NotificationHelper.notify(undefined, callback);
+      CallbackHelper.triggerCallback(undefined, callback);
       return LightweightAttachable.getDestroyed();
     } else {
       if (!this._onDestroy) {
@@ -68,7 +68,7 @@ export class Attachable extends ClassId {
       this._destroyed = true;
       this._onDestroy = undefined;
 
-      onDestroyListeners.forEach(listener => NotificationHelper.notify(undefined, listener));
+      onDestroyListeners.forEach(listener => CallbackHelper.triggerCallback(undefined, listener));
     }
   }
 

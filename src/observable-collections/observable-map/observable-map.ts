@@ -1,4 +1,4 @@
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { ObservableMapNotifier } from '../_notifier/observable-map-notifier';
 
 export class ObservableMap<KeyType extends number | string, ValueType> extends ObservableMapNotifier<KeyType, ValueType> {
@@ -10,7 +10,7 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
     this.map.set(key, item);
     if (this._untilAddedListeners) {
       if (this._untilAddedListeners.has(key)) {
-        this._untilAddedListeners.get(key)?.forEach(callback => NotificationHelper.notify(undefined, callback));
+        this._untilAddedListeners.get(key)?.forEach(callback => CallbackHelper.triggerCallback(undefined, callback));
         this._untilAddedListeners.delete(key);
 
         if (this._untilAddedListeners.size === 0) {
@@ -26,7 +26,7 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
     if (this._untilRemovedListeners) {
       if (this._untilRemovedListeners.has(key)) {
         this._untilRemovedListeners.get(key)?.forEach(callback => {
-          NotificationHelper.notify(undefined, callback);
+          CallbackHelper.triggerCallback(undefined, callback);
         });
         this._untilRemovedListeners.delete(key);
 
