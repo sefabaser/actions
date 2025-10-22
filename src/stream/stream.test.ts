@@ -168,25 +168,6 @@ describe('Stream', () => {
       await Wait(100);
       expect(heap).toEqual(['a', 'a1', 'a1x', 'b', 'b1', 'b1x', 'c', 'c1', 'c1x']);
     });
-
-    test('multiple chain triggers should successfully unsubscribe on destruction', () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
-      let stream = action1
-        .tap(() => action2)
-        .tap(() => {})
-        .attachToRoot();
-
-      action1.trigger('');
-      action1.trigger('');
-
-      expect(action1.listenerCount).toEqual(1);
-      expect(action2.listenerCount).toEqual(2);
-
-      stream.destroy();
-      expect(action1.listenerCount).toEqual(0);
-      expect(action2.listenerCount).toEqual(0);
-    });
   });
 
   describe('Attachment', () => {
@@ -367,6 +348,46 @@ describe('Stream', () => {
       expect(action2.listenerCount).toEqual(0);
 
       expect(triggered).toEqual(true);
+    });
+
+    test('multiple chain triggers should successfully unsubscribe on destruction', () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+      let stream = action1
+        .tap(() => action2)
+        .tap(() => {})
+        .attachToRoot();
+
+      action1.trigger('');
+      action1.trigger('');
+
+      expect(action1.listenerCount).toEqual(1);
+      expect(action2.listenerCount).toEqual(2);
+
+      stream.destroy();
+      expect(action1.listenerCount).toEqual(0);
+      expect(action2.listenerCount).toEqual(0);
+    });
+
+    test('execution should stop even it is in the middle on destruction', () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+
+      let triggered = false;
+      let stream = action1
+        .tap(() => action2)
+        .tap(() => {
+          triggered = true;
+        })
+        .attachToRoot();
+
+      action1.trigger('');
+
+      expect(triggered).toEqual(false);
+      stream.destroy();
+      expect(triggered).toEqual(false);
+      action2.trigger('');
+      expect(triggered).toEqual(false);
     });
   });
 });
