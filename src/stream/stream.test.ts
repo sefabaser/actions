@@ -74,6 +74,20 @@ describe('Stream', () => {
   });
 
   describe('Multiple triggered streams', () => {
+    test('simple continues stream', async () => {
+      let heap: any[] = [];
+      new Stream<string>(resolve => {
+        callEachDelayed(['a', 'b', 'c'], value => resolve(value));
+      })
+        .tap(data => {
+          heap.push(data);
+        })
+        .attachToRoot();
+
+      await Wait(20);
+      expect(heap).toEqual(['a', 'b', 'c']);
+    });
+
     test('continues stream chaining source', async () => {
       let heap: any[] = [];
       new Stream<string>(resolve => {
@@ -88,7 +102,7 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await Wait(100);
+      await Wait(20);
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
@@ -108,7 +122,7 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await Wait(100);
+      await Wait(20);
       expect(heap).toEqual(['a', 'a1']);
     });
 
@@ -130,7 +144,7 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await Wait(100);
+      await Wait(20);
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
@@ -172,7 +186,7 @@ describe('Stream', () => {
 
       resolveNext();
 
-      await Wait(100);
+      await Wait(20);
       expect(heap).toEqual(['a', 'a1', 'a1x', 'b', 'b1', 'b1x', 'c', 'c1', 'c1x']);
     });
   });
@@ -276,7 +290,7 @@ describe('Stream', () => {
         action.trigger(value);
       });
 
-      await Wait(100);
+      await Wait(20);
 
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
@@ -305,7 +319,7 @@ describe('Stream', () => {
         action2.trigger(value + 'x');
       });
 
-      await Wait(100);
+      await Wait(20);
 
       expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
     });
@@ -329,7 +343,7 @@ describe('Stream', () => {
       action.trigger('');
       action2.trigger('');
 
-      await Wait(100);
+      await Wait(20);
 
       stream.destroy();
       expect(action.listenerCount).toEqual(0);

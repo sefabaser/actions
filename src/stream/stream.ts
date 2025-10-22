@@ -60,7 +60,7 @@ export class Stream<T> extends LightweightAttachable {
         CallbackHelper.triggerCallback(innerData, callback);
       });
       this.toBeDestroyed.add(executionStream);
-      executionStream.attachToRoot();
+      executionStream.attachToRoot(); // destoying is manually done
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
       let subscription = executionNotifier
@@ -68,7 +68,7 @@ export class Stream<T> extends LightweightAttachable {
           this.toBeDestroyed.delete(subscription);
           CallbackHelper.triggerCallback(innerData, callback);
         })
-        .attachToRoot();
+        .attachToRoot(); // destoying is manually done
       this.toBeDestroyed.add(subscription);
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);
