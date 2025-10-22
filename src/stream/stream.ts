@@ -1,19 +1,15 @@
-import { Attachable, IAttachable } from '../attachable/attachable';
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 
 export type StreamTouchFunction<T, K> = (data: T) => K | Stream<K> | Notifier<K>;
 
-export class Stream<T> implements IAttachable {
-  private _destroyed = false;
-  get destroyed(): boolean {
-    return this._destroyed;
-  }
-
+export class Stream<T> extends LightweightAttachable {
   constructor(
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
   ) {
+    super();
     executor(data => this.trigger(data));
   }
 
@@ -22,6 +18,7 @@ export class Stream<T> implements IAttachable {
       () => {},
       () => this.destroy()
     );
+    this.attachToRoot(); // Attachment is manually done by listening nextInLine
 
     this.subscribe(data => {
       this.waitUntilExecution(data, callback, executionReturn => {
@@ -33,18 +30,11 @@ export class Stream<T> implements IAttachable {
   }
 
   destroy(): void {
-    this.listener = undefined;
-    this.resolvedBeforeListenerBy = undefined;
-    this._destroyed = true;
-    this.onDestroy?.();
-  }
-
-  attach(parent: Attachable | string): this {
-    return this;
-  }
-
-  attachToRoot(): this {
-    return this;
+    if (!this.destroyed) {
+      this.listener = undefined;
+      this.resolvedBeforeListenerBy = undefined;
+      this.onDestroy?.();
+    }
   }
 
   private waitUntilExecution<K>(data: T, executionCallback: StreamTouchFunction<T, K>, callback: (data: K) => void): void {
@@ -57,6 +47,7 @@ export class Stream<T> implements IAttachable {
       });
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
+      // Cancel?
       executionNotifier.waitUntilNext(innerData => {
         CallbackHelper.triggerCallback(innerData, callback);
       });
@@ -68,7 +59,7 @@ export class Stream<T> implements IAttachable {
   private resolvedBeforeListenerBy: T | undefined;
   private listener: ((data: T) => void) | undefined;
   private trigger(data: T): void {
-    if (!this._destroyed) {
+    if (!this.destroyed) {
       if (this.listener) {
         this.listener(data);
       } else {
@@ -78,7 +69,7 @@ export class Stream<T> implements IAttachable {
   }
 
   private subscribe<K>(callback: StreamTouchFunction<T, K>): void {
-    if (this._destroyed) {
+    if (this.destroyed) {
       throw new Error('Stream is destroyed');
     }
     if (this.listener) {
