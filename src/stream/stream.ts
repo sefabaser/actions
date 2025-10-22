@@ -18,7 +18,7 @@ export class Stream<T> extends LightweightAttachable {
       () => {},
       () => this.destroy()
     );
-    this.attachToRoot(); // Attachment is manually done by listening nextInLine
+    this.attachToRoot(); // Destroying is manually done by listening nextInLine
 
     this.subscribe(data => {
       this.waitUntilExecution(data, callback, executionReturn => {
@@ -41,6 +41,7 @@ export class Stream<T> extends LightweightAttachable {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Stream) {
       let executionStream: Stream<K> = executionReturn;
+      // Destroying is manually done by destroy function
       executionStream.subscribe(innerData => {
         executionStream.destroy();
         CallbackHelper.triggerCallback(innerData, callback);
