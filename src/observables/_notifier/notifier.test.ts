@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -10,7 +10,7 @@ class SampleModel {
 
 describe('Notifier', () => {
   let triggerNotifierWith = <T>(data: T, notifier: Notifier<T>) => {
-    notifier.listeners.forEach(listener => NotificationHelper.notify(data, listener));
+    notifier.listeners.forEach(listener => CallbackHelper.triggerCallback(data, listener));
   };
 
   describe('Basics', () => {

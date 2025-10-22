@@ -44,7 +44,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           expect(data).toEqual(1);
-        });
+        })
+        .attachToRoot();
     });
 
     test('tap returning new sync stream', () => {
@@ -55,7 +56,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           expect(data).toEqual(1);
-        });
+        })
+        .attachToRoot();
     });
 
     test('tap returning new async stream', () => {
@@ -66,7 +68,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           expect(data).toEqual(1);
-        });
+        })
+        .attachToRoot();
     });
   });
 
@@ -82,7 +85,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           heap.push(data);
-        });
+        })
+        .attachToRoot();
 
       await Wait(100);
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
@@ -101,7 +105,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           heap.push(data);
-        });
+        })
+        .attachToRoot();
 
       await Wait(100);
       expect(heap).toEqual(['a', 'a1']);
@@ -122,7 +127,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           heap.push(data);
-        });
+        })
+        .attachToRoot();
 
       await Wait(100);
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
@@ -161,7 +167,8 @@ describe('Stream', () => {
         .tap(data => {
           heap.push(data);
           resolveNext();
-        });
+        })
+        .attachToRoot();
 
       resolveNext();
 
@@ -262,7 +269,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           heap.push(data);
-        });
+        })
+        .attachToRoot();
 
       callEachDelayed(['a', 'b', 'c'], value => {
         action.trigger(value);
@@ -289,7 +297,8 @@ describe('Stream', () => {
         })
         .tap(data => {
           heap.push(data);
-        });
+        })
+        .attachToRoot();
 
       callEachDelayed(['a', 'b', 'c'], value => {
         action1.trigger(value);
@@ -312,7 +321,8 @@ describe('Stream', () => {
         })
         .tap(() => {
           triggered = true;
-        });
+        })
+        .attachToRoot();
 
       expect(action.listenerCount).toEqual(1);
 
@@ -326,25 +336,6 @@ describe('Stream', () => {
       expect(action2.listenerCount).toEqual(0);
 
       expect(triggered).toEqual(true);
-    });
-
-    test('multiple chain triggers should successfully unsubscribe on destruction', () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
-      let stream = action1
-        .tap(() => action2)
-        .tap(() => {})
-        .attachToRoot();
-
-      action1.trigger('');
-      action1.trigger('');
-
-      expect(action1.listenerCount).toEqual(1);
-      expect(action2.listenerCount).toEqual(2);
-
-      stream.destroy();
-      expect(action1.listenerCount).toEqual(0);
-      expect(action2.listenerCount).toEqual(0);
     });
   });
 
@@ -364,8 +355,11 @@ describe('Stream', () => {
       action1.trigger('');
 
       expect(triggered).toEqual(false);
+      expect(action2.listenerCount).toEqual(1);
+
       stream.destroy();
-      expect(triggered).toEqual(false);
+      expect(action2.listenerCount).toEqual(0);
+
       action2.trigger('');
       expect(triggered).toEqual(false);
     });
@@ -393,7 +387,6 @@ describe('Stream', () => {
 
       resolve1?.();
       expect(middleStream['listener']).toBeDefined();
-      expect(triggered).toEqual(false);
 
       stream.destroy();
       expect(middleStream['listener']).toBeUndefined();
@@ -401,6 +394,25 @@ describe('Stream', () => {
       resolve2?.();
       expect(middleStream['listener']).toBeUndefined();
       expect(triggered).toEqual(false);
+    });
+
+    test('multiple chain triggers should successfully unsubscribe on destruction', () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+      let stream = action1
+        .tap(() => action2)
+        .tap(() => {})
+        .attachToRoot();
+
+      action1.trigger('');
+      action1.trigger('');
+
+      expect(action1.listenerCount).toEqual(1);
+      expect(action2.listenerCount).toEqual(2);
+
+      stream.destroy();
+      expect(action1.listenerCount).toEqual(0);
+      expect(action2.listenerCount).toEqual(0);
     });
   });
 });

@@ -34,6 +34,7 @@ export class Stream<T> extends LightweightAttachable {
       this.listener = undefined;
       this.resolvedBeforeListenerBy = undefined;
       this.onDestroy?.();
+      super.destroy();
     }
   }
 
@@ -41,17 +42,21 @@ export class Stream<T> extends LightweightAttachable {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Stream) {
       let executionStream: Stream<K> = executionReturn;
-      // Destroying is manually done by newly created stream's destroy function
+      // Unsubscribe on this stream's destroy
       executionStream.subscribe(innerData => {
+        console.log('unsubscribing on execution stream destroy');
         executionStream.destroy();
         CallbackHelper.triggerCallback(innerData, callback);
       });
+      executionStream.attachToRoot();
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
       // Cancel?
-      executionNotifier.waitUntilNext(innerData => {
-        CallbackHelper.triggerCallback(innerData, callback);
-      });
+      executionNotifier
+        .waitUntilNext(innerData => {
+          CallbackHelper.triggerCallback(innerData, callback);
+        })
+        .attachToRoot();
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);
     }
