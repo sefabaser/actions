@@ -1,3 +1,6 @@
 export default {
-  base: './'
+  base: './',
+  test: {
+    setupFiles: ['./vitest.setup.ts'],
+  },
 };

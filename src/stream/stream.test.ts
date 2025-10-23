@@ -1,10 +1,11 @@
+import { takeNodeMinimalHeap } from '@memlab/core';
 import { Wait } from 'helpers-lib';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Action } from '../observables/action/action';
-import { Stream } from './stream';
+import { Stream2 } from './stream';
 
 describe('Stream', () => {
   let allPromises: Promise<void>[] = [];
@@ -28,7 +29,7 @@ describe('Stream', () => {
 
   describe('Basics', () => {
     test('sync data chaining', () => {
-      new Stream<string>(resolve => resolve('a'))
+      new Stream2<string>(resolve => resolve('a'))
         .tap(data => {
           expect(data).toEqual('a');
           return 1;
@@ -43,7 +44,7 @@ describe('Stream', () => {
     });
 
     test('async resolve data chaining', () => {
-      new Stream<string>(resolve => setTimeout(() => resolve('a')))
+      new Stream2<string>(resolve => setTimeout(() => resolve('a')))
         .tap(data => {
           expect(data).toEqual('a');
           return 1;
@@ -55,10 +56,10 @@ describe('Stream', () => {
     });
 
     test('tap returning new sync stream', () => {
-      new Stream<string>(resolve => resolve('a'))
+      new Stream2<string>(resolve => resolve('a'))
         .tap(data => {
           expect(data).toEqual('a');
-          return new Stream<number>(resolve => resolve(1));
+          return new Stream2<number>(resolve => resolve(1));
         })
         .tap(data => {
           expect(data).toEqual(1);
@@ -67,10 +68,10 @@ describe('Stream', () => {
     });
 
     test('tap returning new async stream', () => {
-      new Stream<string>(resolve => setTimeout(() => resolve('a')))
+      new Stream2<string>(resolve => setTimeout(() => resolve('a')))
         .tap(data => {
           expect(data).toEqual('a');
-          return new Stream<number>(resolve => setTimeout(() => resolve(1)));
+          return new Stream2<number>(resolve => setTimeout(() => resolve(1)));
         })
         .tap(data => {
           expect(data).toEqual(1);
@@ -83,7 +84,7 @@ describe('Stream', () => {
     test('simple continues stream', async () => {
       let heap: any[] = [];
       let streamResolve!: (value: string) => void;
-      new Stream<string>(resolve => {
+      new Stream2<string>(resolve => {
         streamResolve = resolve;
       })
         .tap(data => {
@@ -100,7 +101,7 @@ describe('Stream', () => {
     test('continues stream chaining source', async () => {
       let heap: any[] = [];
       let streamResolve!: (value: string) => void;
-      new Stream<string>(resolve => {
+      new Stream2<string>(resolve => {
         streamResolve = resolve;
       })
         .tap(data => {
@@ -121,10 +122,10 @@ describe('Stream', () => {
     test('continues stream chaining target', async () => {
       let heap: any[] = [];
 
-      new Stream<string>(resolve => resolve('a'))
+      new Stream2<string>(resolve => resolve('a'))
         .tap(data => {
           heap.push(data);
-          return new Stream<string>(resolve => {
+          return new Stream2<string>(resolve => {
             callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
@@ -142,12 +143,12 @@ describe('Stream', () => {
     test('continues stream chaining source and target', async () => {
       let heap: any[] = [];
 
-      new Stream<string>(resolve => {
+      new Stream2<string>(resolve => {
         callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
         .tap(data => {
           heap.push(data);
-          return new Stream<string>(resolve => {
+          return new Stream2<string>(resolve => {
             callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
@@ -173,12 +174,12 @@ describe('Stream', () => {
         }
       };
 
-      new Stream<string>(r => {
+      new Stream2<string>(r => {
         resolve = r;
       })
         .tap(data => {
           heap.push(data);
-          return new Stream<string>(resolve => {
+          return new Stream2<string>(resolve => {
             callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
@@ -186,7 +187,7 @@ describe('Stream', () => {
         })
         .tap(data => {
           heap.push(data);
-          return new Stream<string>(resolve => {
+          return new Stream2<string>(resolve => {
             callEachDelayed(['x', 'y', 'z'], value => {
               resolve(data + value);
             });
@@ -283,11 +284,41 @@ describe('Stream', () => {
     });
   });
 
+  describe('Memory Leak', () => {
+    test('sample 1, no instance', async () => {
+      new Action<string>();
+
+      let snapshot = await takeNodeMinimalHeap();
+      expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
+    });
+
+    test('stream and action', async () => {
+      let action = new Action<string>();
+
+      let stream = action.tap(() => {}).attachToRoot();
+      stream.destroy();
+
+      let snapshot = await takeNodeMinimalHeap();
+
+      let count = 0;
+      snapshot.nodes.forEach(node => {
+        if (node.name === Stream2.name) {
+          count++;
+        }
+      });
+      console.log(count);
+
+      expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
+    });
+  });
+
   describe('Combinations', () => {
     test('stream and action', async () => {
       let action = new Action<string>();
       let foo = (data: string) => {
-        return new Stream<string>(resolve => {
+        return new Stream2<string>(resolve => {
           callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
         });
       };
@@ -418,14 +449,14 @@ describe('Stream', () => {
       let resolve1!: () => void;
       let resolve2!: () => void;
 
-      let middleStream!: Stream<void>;
+      let middleStream!: Stream2<void>;
 
       let triggered = false;
-      let stream = new Stream<void>(resolve => {
+      let stream = new Stream2<void>(resolve => {
         resolve1 = resolve;
       })
         .tap(() => {
-          middleStream = new Stream<void>(resolve => {
+          middleStream = new Stream2<void>(resolve => {
             resolve2 = resolve;
           });
           return middleStream;

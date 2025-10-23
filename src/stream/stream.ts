@@ -3,9 +3,9 @@ import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 
-export type StreamTouchFunction<T, K> = (data: T) => K | Stream<K> | Notifier<K>;
+export type StreamTouchFunction<T, K> = (data: T) => K | Stream2<K> | Notifier<K>;
 
-export class Stream<T> extends LightweightAttachable {
+export class Stream2<T> extends LightweightAttachable {
   constructor(
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
@@ -14,8 +14,8 @@ export class Stream<T> extends LightweightAttachable {
     executor(data => this.trigger(data));
   }
 
-  tap<K>(callback: StreamTouchFunction<T, K>): Stream<K> {
-    let nextInLine = new Stream<K>(
+  tap<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
+    let nextInLine = new Stream2<K>(
       () => {},
       () => this.destroy()
     );
@@ -52,8 +52,8 @@ export class Stream<T> extends LightweightAttachable {
 
   private waitUntilExecution<K>(data: T, executionCallback: StreamTouchFunction<T, K>, callback: (data: K) => void): void {
     let executionReturn = executionCallback(data);
-    if (executionReturn instanceof Stream) {
-      let executionStream: Stream<K> = executionReturn;
+    if (executionReturn instanceof Stream2) {
+      let executionStream: Stream2<K> = executionReturn;
       executionStream.subscribe(innerData => {
         this.toBeDestroyed.delete(executionStream);
         executionStream.destroy();

@@ -2,7 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Stream, StreamTouchFunction } from '../../stream/stream';
+import { Stream2, StreamTouchFunction } from '../../stream/stream';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
@@ -55,9 +55,9 @@ export class Notifier<T> {
     return subscription;
   }
 
-  toStream(): Stream<T> {
+  toStream(): Stream2<T> {
     let subscriptionId = this.getNextAvailableSubscriptionId();
-    return new Stream<T>(
+    return new Stream2<T>(
       resolve => {
         this.listenersMap.set(subscriptionId, resolve);
       },
@@ -67,7 +67,7 @@ export class Notifier<T> {
     );
   }
 
-  tap<K>(callback: StreamTouchFunction<T, K>): Stream<K> {
+  tap<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
     return this.toStream().tap(callback);
   }
 
