@@ -1,31 +1,72 @@
 import { takeNodeMinimalHeap } from '@memlab/core';
-import { expect, test } from 'vitest';
+import { Wait } from 'helpers-lib';
+import { describe, expect, test } from 'vitest';
 
+import { Action } from '../observables/action/action';
+import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
 import { Stream2 } from './stream';
 
-class Publisher {
-  callbacks: (() => void)[] = [];
+describe('Memory Leak', () => {
+  test('no instance', async () => {
+    new Action<string>();
 
-  subscribe(callback: () => void): void {
-    this.callbacks.push(callback);
-  }
-}
+    let snapshot = await takeNodeMinimalHeap();
+    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
+  });
 
-class Subscriber {
-  constructor(private publisher: Publisher) {
-    this.publisher.subscribe(() => {
-      this; // triggers memmory leak
+  test('tap chaining', async () => {
+    let action = new Action<string>();
+
+    let triggeredWith = '';
+    let stream = action
+      .toStream()
+      .tap(data => data)
+      .tap(data => data)
+      .tap(data => data)
+      .tap(data => {
+        triggeredWith = data;
+      })
+      .attachToRoot();
+
+    action.trigger('a');
+    expect(triggeredWith).toEqual('a');
+
+    stream.destroy();
+    action = undefined as any;
+    stream = undefined as any;
+    await Wait(); // Attachment check still keeps the reference, wait for one timeout
+
+    let snapshot = await takeNodeMinimalHeap();
+    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
+  });
+
+  test('stream and action', async () => {
+    let helper = new DelayedSequentialCallsHelper();
+
+    let action = new Action<string>();
+    let foo = (data: string) => {
+      return new Stream2<string>(resolve => {
+        helper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+      });
+    };
+
+    let stream = action.tap(data => foo(data)).attachToRoot();
+
+    helper.callEachDelayed(['1', '2', '3'], value => {
+      action.trigger(value);
     });
-  }
-}
 
-test('detects memory leak', async () => {
-  let publisher = new Publisher();
-  new Subscriber(publisher);
+    await helper.waitForAllPromises();
 
-  let snapshot = await takeNodeMinimalHeap();
-  let leaked = snapshot.hasObjectWithClassName(Subscriber.name);
+    stream.destroy();
+    action = undefined as any;
+    stream = undefined as any;
+    await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
-  expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
-  expect(leaked).toBeFalsy();
+    let snapshot = await takeNodeMinimalHeap();
+    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
+  });
 });

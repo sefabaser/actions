@@ -46,6 +46,7 @@ export class Stream2<T> extends LightweightAttachable {
       this.toBeDestroyed.clear();
       this._toBeDestroyed = undefined;
       this.onDestroy?.();
+      this.onDestroy = undefined;
       super.destroy();
     }
   }
