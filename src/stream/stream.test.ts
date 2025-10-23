@@ -7,17 +7,23 @@ import { Action } from '../observables/action/action';
 import { Stream } from './stream';
 
 describe('Stream', () => {
+  let allPromises: Promise<void>[] = [];
   function callEachDelayed<T>(values: T[], callback: (value: T) => void): void {
-    (async () => {
-      for (let value of values) {
-        callback(value);
-        await Wait();
-      }
-    })();
+    let promise = new Promise<void>(resolve => {
+      (async () => {
+        for (let value of values) {
+          callback(value);
+          await Wait();
+        }
+        resolve();
+      })();
+    });
+    allPromises.push(promise);
   }
 
   beforeEach(() => {
     ActionLibUnitTestHelper.hardReset();
+    allPromises = [];
   });
 
   describe('Basics', () => {
@@ -76,22 +82,26 @@ describe('Stream', () => {
   describe('Multiple triggered streams', () => {
     test('simple continues stream', async () => {
       let heap: any[] = [];
+      let streamResolve!: (value: string) => void;
       new Stream<string>(resolve => {
-        callEachDelayed(['a', 'b', 'c'], value => resolve(value));
+        streamResolve = resolve;
       })
         .tap(data => {
           heap.push(data);
         })
         .attachToRoot();
 
-      await Wait(20);
+      callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
+
+      await Promise.all(allPromises);
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
     test('continues stream chaining source', async () => {
       let heap: any[] = [];
+      let streamResolve!: (value: string) => void;
       new Stream<string>(resolve => {
-        callEachDelayed(['a', 'b', 'c'], value => resolve(value));
+        streamResolve = resolve;
       })
         .tap(data => {
           heap.push(data);
@@ -102,12 +112,15 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await Wait(20);
+      callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
+
+      await Promise.all(allPromises);
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
     test('continues stream chaining target', async () => {
       let heap: any[] = [];
+
       new Stream<string>(resolve => resolve('a'))
         .tap(data => {
           heap.push(data);
@@ -122,12 +135,13 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await Wait(20);
+      await Promise.all(allPromises);
       expect(heap).toEqual(['a', 'a1']);
     });
 
     test('continues stream chaining source and target', async () => {
       let heap: any[] = [];
+
       new Stream<string>(resolve => {
         callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
@@ -144,7 +158,7 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await Wait(20);
+      await Promise.all(allPromises);
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
@@ -186,8 +200,112 @@ describe('Stream', () => {
 
       resolveNext();
 
-      await Wait(20);
+      await Promise.all(allPromises);
       expect(heap).toEqual(['a', 'a1', 'a1x', 'b', 'b1', 'b1x', 'c', 'c1', 'c1x']);
+    });
+  });
+
+  describe('Actions', () => {
+    test('chaining with tap action', async () => {
+      let action = new Action<string>();
+
+      let heap: any[] = [];
+      action
+        .tap(data => {
+          heap.push(data);
+          return data + '1';
+        })
+        .tap(data => {
+          heap.push(data);
+        })
+        .attachToRoot();
+
+      callEachDelayed(['a', 'b', 'c'], value => {
+        action.trigger(value);
+      });
+
+      await Promise.all(allPromises);
+      expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
+    });
+
+    test('tap returning actions', async () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+
+      let heap: any[] = [];
+      action1
+        .tap(data => {
+          heap.push(data);
+          return data + '1';
+        })
+        .tap(data => {
+          heap.push(data);
+          return action2;
+        })
+        .tap(data => {
+          heap.push(data);
+        })
+        .attachToRoot();
+
+      callEachDelayed(['a', 'b', 'c'], value => {
+        action1.trigger(value);
+        action2.trigger(value + 'x');
+      });
+
+      await Promise.all(allPromises);
+      expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
+    });
+
+    test('chaining with tap action unsubscribing', async () => {
+      let action = new Action<string>();
+      let action2 = new Action<string>();
+
+      let triggered = false;
+      let stream = action
+        .tap(() => {
+          return action2;
+        })
+        .tap(() => {
+          triggered = true;
+        })
+        .attachToRoot();
+
+      expect(action.listenerCount).toEqual(1);
+
+      action.trigger('');
+      action2.trigger('');
+
+      stream.destroy();
+      expect(action.listenerCount).toEqual(0);
+      expect(action2.listenerCount).toEqual(0);
+
+      expect(triggered).toEqual(true);
+    });
+  });
+
+  describe('Combinations', () => {
+    test('stream and action', async () => {
+      let action = new Action<string>();
+      let foo = (data: string) => {
+        return new Stream<string>(resolve => {
+          callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+        });
+      };
+
+      let heap: string[] = [];
+      action
+        .tap(data => foo(data))
+        .tap(data => {
+          heap.push(data);
+        })
+        .attachToRoot();
+
+      callEachDelayed(['1', '2', '3'], value => {
+        action.trigger(value);
+      });
+
+      await Promise.all(allPromises);
+      expect(heap).toEqual(['1a', '2a', '3a']);
     });
   });
 
@@ -268,88 +386,6 @@ describe('Stream', () => {
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-    });
-  });
-
-  describe('Actions', () => {
-    test('chaining with tap action', async () => {
-      let action = new Action<string>();
-
-      let heap: any[] = [];
-      action
-        .tap(data => {
-          heap.push(data);
-          return data + '1';
-        })
-        .tap(data => {
-          heap.push(data);
-        })
-        .attachToRoot();
-
-      callEachDelayed(['a', 'b', 'c'], value => {
-        action.trigger(value);
-      });
-
-      await Wait(20);
-
-      expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
-    });
-
-    test('tap returning actions', async () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
-
-      let heap: any[] = [];
-      action1
-        .tap(data => {
-          heap.push(data);
-          return data + '1';
-        })
-        .tap(data => {
-          heap.push(data);
-          return action2;
-        })
-        .tap(data => {
-          heap.push(data);
-        })
-        .attachToRoot();
-
-      callEachDelayed(['a', 'b', 'c'], value => {
-        action1.trigger(value);
-        action2.trigger(value + 'x');
-      });
-
-      await Wait(20);
-
-      expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
-    });
-
-    test('chaining with tap action unsubscribing', async () => {
-      let action = new Action<string>();
-      let action2 = new Action<string>();
-
-      let triggered = false;
-      let stream = action
-        .tap(() => {
-          return action2;
-        })
-        .tap(() => {
-          triggered = true;
-        })
-        .attachToRoot();
-
-      expect(action.listenerCount).toEqual(1);
-
-      action.trigger('');
-      action2.trigger('');
-
-      await Wait(20);
-
-      stream.destroy();
-      expect(action.listenerCount).toEqual(0);
-      expect(action2.listenerCount).toEqual(0);
-
-      expect(triggered).toEqual(true);
     });
   });
 
