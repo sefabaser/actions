@@ -377,6 +377,17 @@ describe('Stream', () => {
   });
 
   describe('Edge Cases', () => {
+    test('resolve undefined should still trigger next tap', () => {
+      let triggered = false;
+      new Stream2<void>(resolve => resolve())
+        .tap(() => {
+          triggered = true;
+        })
+        .attachToRoot();
+
+      expect(triggered).toBeTruthy();
+    });
+
     test('execution should stop listening notifiers even it is in the middle on destruction', () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();

@@ -5,6 +5,8 @@ import { Notifier } from '../observables/_notifier/notifier';
 
 export type StreamTouchFunction<T, K> = (data: T) => K | Stream2<K> | Notifier<K>;
 
+const NO_DATA = Symbol('NO_DATA');
+
 export class Stream2<T> extends LightweightAttachable {
   constructor(
     executor: (resolve: (data: T) => void) => void,
@@ -41,7 +43,7 @@ export class Stream2<T> extends LightweightAttachable {
   destroy(): void {
     if (!this.destroyed) {
       this.listener = undefined;
-      this.resolvedBeforeListenerBy = undefined;
+      this.resolvedBeforeListenerBy = NO_DATA;
       this.toBeDestroyed.forEach(item => item.destroy());
       this.toBeDestroyed.clear();
       this._toBeDestroyed = undefined;
@@ -76,7 +78,7 @@ export class Stream2<T> extends LightweightAttachable {
     }
   }
 
-  private resolvedBeforeListenerBy: T | undefined;
+  private resolvedBeforeListenerBy: T | typeof NO_DATA = NO_DATA;
   private listener: ((data: T) => void) | undefined;
   private trigger(data: T): void {
     if (!this.destroyed) {
@@ -96,9 +98,9 @@ export class Stream2<T> extends LightweightAttachable {
       throw new Error('Stream is already being listened to');
     }
 
-    if (this.resolvedBeforeListenerBy) {
+    if (this.resolvedBeforeListenerBy !== NO_DATA) {
       callback(this.resolvedBeforeListenerBy);
-      this.resolvedBeforeListenerBy = undefined;
+      this.resolvedBeforeListenerBy = NO_DATA;
     }
     this.listener = data => callback(data);
   }

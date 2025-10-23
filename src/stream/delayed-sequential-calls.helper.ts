@@ -7,8 +7,8 @@ export class DelayedSequentialCallsHelper {
     let promise = new Promise<void>(resolve => {
       (async () => {
         for (let value of values) {
-          callback(value);
           await Wait();
+          callback(value);
         }
         resolve();
       })();
@@ -17,7 +17,12 @@ export class DelayedSequentialCallsHelper {
   }
 
   async waitForAllPromises(): Promise<void> {
-    await Promise.all(this.allPromises);
+    let promises = [...this.allPromises];
     this.allPromises = [];
+
+    await Promise.all(promises);
+    if (this.allPromises.length > 0) {
+      await this.waitForAllPromises();
+    }
   }
 }
