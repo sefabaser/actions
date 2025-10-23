@@ -7,7 +7,7 @@ import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper'
 import { Stream2 } from './stream';
 
 describe('Stream', () => {
-  let helper = new DelayedSequentialCallsHelper();
+  let delayedCalls = new DelayedSequentialCallsHelper();
 
   beforeEach(() => {
     ActionLibUnitTestHelper.hardReset();
@@ -78,9 +78,9 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      helper.callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
+      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
@@ -99,9 +99,9 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      helper.callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
+      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
@@ -112,7 +112,7 @@ describe('Stream', () => {
         .tap(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
-            helper.callEachDelayed(['1', '2', '3'], value => {
+            delayedCalls.callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
           });
@@ -122,7 +122,7 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1']);
     });
 
@@ -130,12 +130,12 @@ describe('Stream', () => {
       let heap: any[] = [];
 
       new Stream2<string>(resolve => {
-        helper.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
+        delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
         .tap(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
-            helper.callEachDelayed(['1', '2', '3'], value => {
+            delayedCalls.callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
           });
@@ -145,7 +145,7 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
@@ -166,7 +166,7 @@ describe('Stream', () => {
         .tap(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
-            helper.callEachDelayed(['1', '2', '3'], value => {
+            delayedCalls.callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
           });
@@ -174,7 +174,7 @@ describe('Stream', () => {
         .tap(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
-            helper.callEachDelayed(['x', 'y', 'z'], value => {
+            delayedCalls.callEachDelayed(['x', 'y', 'z'], value => {
               resolve(data + value);
             });
           });
@@ -187,7 +187,7 @@ describe('Stream', () => {
 
       resolveNext();
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1', 'a1x', 'b', 'b1', 'b1x', 'c', 'c1', 'c1x']);
     });
   });
@@ -207,11 +207,11 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      helper.callEachDelayed(['a', 'b', 'c'], value => {
+      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => {
         action.trigger(value);
       });
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
@@ -234,12 +234,12 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      helper.callEachDelayed(['a', 'b', 'c'], value => {
+      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => {
         action1.trigger(value);
         action2.trigger(value + 'x');
       });
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
     });
 
@@ -275,7 +275,7 @@ describe('Stream', () => {
       let action = new Action<string>();
       let foo = (data: string) => {
         return new Stream2<string>(resolve => {
-          helper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+          delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
         });
       };
 
@@ -287,11 +287,11 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      helper.callEachDelayed(['1', '2', '3'], value => {
+      delayedCalls.callEachDelayed(['1', '2', '3'], value => {
         action.trigger(value);
       });
 
-      await helper.waitForAllPromises();
+      await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['1a', '2a', '3a']);
     });
   });

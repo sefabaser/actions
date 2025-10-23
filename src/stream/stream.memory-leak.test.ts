@@ -7,6 +7,8 @@ import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper'
 import { Stream2 } from './stream';
 
 describe('Memory Leak', () => {
+  let delayedCalls = new DelayedSequentialCallsHelper();
+
   test('no instance', async () => {
     new Action<string>();
 
@@ -43,22 +45,20 @@ describe('Memory Leak', () => {
   });
 
   test('stream and action', async () => {
-    let helper = new DelayedSequentialCallsHelper();
-
     let action = new Action<string>();
     let foo = (data: string) => {
       return new Stream2<string>(resolve => {
-        helper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+        delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
       });
     };
 
     let stream = action.tap(data => foo(data)).attachToRoot();
 
-    helper.callEachDelayed(['1', '2', '3'], value => {
+    delayedCalls.callEachDelayed(['1', '2', '3'], value => {
       action.trigger(value);
     });
 
-    await helper.waitForAllPromises();
+    await delayedCalls.waitForAllPromises();
 
     stream.destroy();
     action = undefined as any;
