@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 
 import { Action } from '../observables/action/action';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { Stream2 } from './stream';
+import { Sequence } from './sequence';
 
 describe('Memory Leak', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
@@ -13,28 +13,28 @@ describe('Memory Leak', () => {
     new Action<string>();
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   });
 
-  test('stream chaining', async () => {
-    let stream = new Stream2<string>(resolve => {
+  test('sequence chaining', async () => {
+    let sequence = new Sequence<string>(resolve => {
       delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
     }).map(
       data =>
-        new Stream2<string>(resolve => {
+        new Sequence<string>(resolve => {
           delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
         })
     );
 
-    stream.destroy();
+    sequence.destroy();
     await delayedCalls.waitForAllPromises();
 
-    stream = undefined as any;
+    sequence = undefined as any;
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
@@ -43,8 +43,8 @@ describe('Memory Leak', () => {
     let action2 = new Action<string>();
 
     let triggeredWith = '';
-    let stream = action1
-      .toStream()
+    let sequence = action1
+      .toSequence()
       .map(() => action2)
       .map(data => data)
       .map(data => data)
@@ -59,42 +59,42 @@ describe('Memory Leak', () => {
 
     expect(triggeredWith).toEqual('a');
 
-    stream.destroy();
+    sequence.destroy();
     action1 = undefined as any;
     action2 = undefined as any;
-    stream = undefined as any;
+    sequence = undefined as any;
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
-  test('stream waiting for action to complete cut in the middle', async () => {
+  test('sequence waiting for action to complete cut in the middle', async () => {
     let action = new Action<void>();
 
-    let stream = new Stream2<void>(resolve => resolve())
+    let sequence = new Sequence<void>(resolve => resolve())
       .map(() => action) // Action will never resolve
       .attachToRoot();
 
-    stream.destroy();
+    sequence.destroy();
     action = undefined as any;
-    stream = undefined as any;
+    sequence = undefined as any;
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
-  test('stream waiting for stream to complete cut in the middle', async () => {
+  test('sequence waiting for sequence to complete cut in the middle', async () => {
     let resolve!: () => void;
 
-    let stream = new Stream2<void>(resolve => resolve())
+    let sequence = new Sequence<void>(resolve => resolve())
       .map(
         () =>
-          // This stream will never be resolved
-          new Stream2<void>(r => {
+          // This sequence will never be resolved
+          new Sequence<void>(r => {
             resolve = r;
           })
       )
@@ -102,26 +102,26 @@ describe('Memory Leak', () => {
 
     expect(resolve).toBeDefined();
 
-    stream.destroy();
+    sequence.destroy();
     resolve = undefined as any;
-    stream = undefined as any;
+    sequence = undefined as any;
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
-  test('stream and action complex', async () => {
+  test('sequence and action complex', async () => {
     let action1 = new Action<string>();
     let action2 = new Action<string>();
     let action3 = new Action<string>();
 
     let heap: string[] = [];
-    let stream = action1
+    let sequence = action1
       .map(a1 => action2.map(a2 => a1 + a2))
       .map(a2 =>
-        new Stream2<string>(resolve => {
+        new Sequence<string>(resolve => {
           delayedCalls.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
         }).map(s2 => action3.map(d3 => s2 + d3))
       )
@@ -145,14 +145,14 @@ describe('Memory Leak', () => {
     await delayedCalls.waitForAllPromises();
     expect(heap).toEqual(['1kay', '2laz', '3maw']);
 
-    stream.destroy();
+    sequence.destroy();
     action1 = undefined as any;
     action2 = undefined as any;
     action3 = undefined as any;
-    stream = undefined as any;
+    sequence = undefined as any;
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 });

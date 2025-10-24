@@ -5,9 +5,9 @@ import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { Stream2 } from './stream';
+import { Sequence } from './sequence';
 
-describe('Stream', () => {
+describe('Sequence', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
 
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe('Stream', () => {
 
   describe('Basics', () => {
     test('sync data chaining', () => {
-      new Stream2<string>(resolve => resolve('a'))
+      new Sequence<string>(resolve => resolve('a'))
         .map(data => {
           expect(data).toEqual('a');
           return 1;
@@ -31,7 +31,7 @@ describe('Stream', () => {
     });
 
     test('async resolve data chaining', () => {
-      new Stream2<string>(resolve => setTimeout(() => resolve('a')))
+      new Sequence<string>(resolve => setTimeout(() => resolve('a')))
         .map(data => {
           expect(data).toEqual('a');
           return 1;
@@ -42,11 +42,11 @@ describe('Stream', () => {
         .attachToRoot();
     });
 
-    test('map returning new sync stream', () => {
-      new Stream2<string>(resolve => resolve('a'))
+    test('map returning new sync sequence', () => {
+      new Sequence<string>(resolve => resolve('a'))
         .map(data => {
           expect(data).toEqual('a');
-          return new Stream2<number>(resolve => resolve(1));
+          return new Sequence<number>(resolve => resolve(1));
         })
         .map(data => {
           expect(data).toEqual(1);
@@ -54,11 +54,11 @@ describe('Stream', () => {
         .attachToRoot();
     });
 
-    test('map returning new async stream', () => {
-      new Stream2<string>(resolve => setTimeout(() => resolve('a')))
+    test('map returning new async sequence', () => {
+      new Sequence<string>(resolve => setTimeout(() => resolve('a')))
         .map(data => {
           expect(data).toEqual('a');
-          return new Stream2<number>(resolve => setTimeout(() => resolve(1)));
+          return new Sequence<number>(resolve => setTimeout(() => resolve(1)));
         })
         .map(data => {
           expect(data).toEqual(1);
@@ -67,29 +67,29 @@ describe('Stream', () => {
     });
   });
 
-  describe('Multiple triggered streams', () => {
-    test('simple continues stream', async () => {
+  describe('Multiple triggered sequences', () => {
+    test('simple continues sequence', async () => {
       let heap: any[] = [];
-      let streamResolve!: (value: string) => void;
-      new Stream2<string>(resolve => {
-        streamResolve = resolve;
+      let sequenceResolve!: (value: string) => void;
+      new Sequence<string>(resolve => {
+        sequenceResolve = resolve;
       })
         .map(data => {
           heap.push(data);
         })
         .attachToRoot();
 
-      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
+      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => sequenceResolve(value));
 
       await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
-    test('continues stream chaining source', async () => {
+    test('continues sequence chaining source', async () => {
       let heap: any[] = [];
-      let streamResolve!: (value: string) => void;
-      new Stream2<string>(resolve => {
-        streamResolve = resolve;
+      let sequenceResolve!: (value: string) => void;
+      new Sequence<string>(resolve => {
+        sequenceResolve = resolve;
       })
         .map(data => {
           heap.push(data);
@@ -100,19 +100,19 @@ describe('Stream', () => {
         })
         .attachToRoot();
 
-      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => streamResolve(value));
+      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => sequenceResolve(value));
 
       await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
-    test('continues stream chaining target', async () => {
+    test('continues sequence chaining target', async () => {
       let heap: any[] = [];
 
-      new Stream2<string>(resolve => resolve('a'))
+      new Sequence<string>(resolve => resolve('a'))
         .map(data => {
           heap.push(data);
-          return new Stream2<string>(resolve => {
+          return new Sequence<string>(resolve => {
             delayedCalls.callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
@@ -127,15 +127,15 @@ describe('Stream', () => {
       expect(heap).toEqual(['a', 'a1']);
     });
 
-    test('continues stream chaining source and target', async () => {
+    test('continues sequence chaining source and target', async () => {
       let heap: any[] = [];
 
-      new Stream2<string>(resolve => {
+      new Sequence<string>(resolve => {
         delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
         .map(data => {
           heap.push(data);
-          return new Stream2<string>(resolve => {
+          return new Sequence<string>(resolve => {
             delayedCalls.callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
@@ -150,7 +150,7 @@ describe('Stream', () => {
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
-    test('continues multiple streams chaining source and target', async () => {
+    test('continues multiple sequences chaining source and target', async () => {
       let heap: any[] = [];
 
       let resolve: (data: string) => void;
@@ -161,12 +161,12 @@ describe('Stream', () => {
         }
       };
 
-      new Stream2<string>(r => {
+      new Sequence<string>(r => {
         resolve = r;
       })
         .map(data => {
           heap.push(data);
-          return new Stream2<string>(resolve => {
+          return new Sequence<string>(resolve => {
             delayedCalls.callEachDelayed(['1', '2', '3'], value => {
               resolve(data + value);
             });
@@ -174,7 +174,7 @@ describe('Stream', () => {
         })
         .map(data => {
           heap.push(data);
-          return new Stream2<string>(resolve => {
+          return new Sequence<string>(resolve => {
             delayedCalls.callEachDelayed(['x', 'y', 'z'], value => {
               resolve(data + value);
             });
@@ -249,7 +249,7 @@ describe('Stream', () => {
       let action2 = new Action<string>();
 
       let triggered = false;
-      let stream = action
+      let sequence = action
         .map(() => {
           return action2;
         })
@@ -263,7 +263,7 @@ describe('Stream', () => {
       action.trigger('');
       action2.trigger('');
 
-      stream.destroy();
+      sequence.destroy();
       expect(action.listenerCount).toEqual(0);
       expect(action2.listenerCount).toEqual(0);
 
@@ -274,7 +274,7 @@ describe('Stream', () => {
       let variable = new Variable<string>('a');
 
       let heap: string[] = [];
-      let stream = variable
+      let sequence = variable
         .map(data => {
           heap.push(data);
         })
@@ -283,16 +283,16 @@ describe('Stream', () => {
       expect(heap).toEqual(['a']);
       expect(variable.listenerCount).toEqual(1);
 
-      stream.destroy();
+      sequence.destroy();
       expect(variable.listenerCount).toEqual(0);
     });
   });
 
   describe('Combinations', () => {
-    test('stream and action', async () => {
+    test('sequence and action', async () => {
       let action = new Action<string>();
       let foo = (data: string) => {
-        return new Stream2<string>(resolve => {
+        return new Sequence<string>(resolve => {
           delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
         });
       };
@@ -397,7 +397,7 @@ describe('Stream', () => {
   describe('Edge Cases', () => {
     test('resolve undefined should still trigger next map', () => {
       let triggered = false;
-      new Stream2<void>(resolve => resolve())
+      new Sequence<void>(resolve => resolve())
         .map(() => {
           triggered = true;
         })
@@ -411,7 +411,7 @@ describe('Stream', () => {
       let action2 = new Action<string>();
 
       let triggered = false;
-      let stream = action1
+      let sequence = action1
         .map(() => action2)
         .map(() => {
           triggered = true;
@@ -423,28 +423,28 @@ describe('Stream', () => {
       expect(triggered).toEqual(false);
       expect(action2.listenerCount).toEqual(1);
 
-      stream.destroy();
+      sequence.destroy();
       expect(action2.listenerCount).toEqual(0);
 
       action2.trigger('');
       expect(triggered).toEqual(false);
     });
 
-    test('execution should stop listening streams even it is in the middle on destruction', async () => {
+    test('execution should stop listening sequences even it is in the middle on destruction', async () => {
       let resolve1!: () => void;
       let resolve2!: () => void;
 
-      let middleStream!: Stream2<void>;
+      let middleSequence!: Sequence<void>;
 
       let triggered = false;
-      let stream = new Stream2<void>(resolve => {
+      let sequence = new Sequence<void>(resolve => {
         resolve1 = resolve;
       })
         .map(() => {
-          middleStream = new Stream2<void>(resolve => {
+          middleSequence = new Sequence<void>(resolve => {
             resolve2 = resolve;
           });
-          return middleStream;
+          return middleSequence;
         })
         .map(() => {
           triggered = true;
@@ -452,20 +452,20 @@ describe('Stream', () => {
         .attachToRoot();
 
       resolve1?.();
-      expect(middleStream['listener']).toBeDefined();
+      expect(middleSequence['listener']).toBeDefined();
 
-      stream.destroy();
-      expect(middleStream['listener']).toBeUndefined();
+      sequence.destroy();
+      expect(middleSequence['listener']).toBeUndefined();
 
       resolve2?.();
-      expect(middleStream['listener']).toBeUndefined();
+      expect(middleSequence['listener']).toBeUndefined();
       expect(triggered).toEqual(false);
     });
 
     test('multiple chain triggers should successfully unsubscribe on destruction', () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();
-      let stream = action1
+      let sequence = action1
         .map(() => action2)
         .map(() => {})
         .attachToRoot();
@@ -476,7 +476,7 @@ describe('Stream', () => {
       expect(action1.listenerCount).toEqual(1);
       expect(action2.listenerCount).toEqual(2);
 
-      stream.destroy();
+      sequence.destroy();
       expect(action1.listenerCount).toEqual(0);
       expect(action2.listenerCount).toEqual(0);
     });

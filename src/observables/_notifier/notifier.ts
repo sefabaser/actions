@@ -2,7 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Stream2, StreamTouchFunction } from '../../stream/stream';
+import { Sequence, SequenceTouchFunction } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
@@ -55,19 +55,18 @@ export class Notifier<T> {
     return subscription;
   }
 
-  toStream(): Stream2<T> {
+  toSequence(): Sequence<T> {
     let subscription: IAttachable;
-    let stream = new Stream2<T>(
+    return new Sequence<T>(
       resolve => {
         subscription = this.subscribe(resolve).attachToRoot();
       },
       () => subscription.destroy()
     );
-    return stream;
   }
 
-  map<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
-    return this.toStream().map(callback);
+  map<K>(callback: SequenceTouchFunction<T, K>): Sequence<K> {
+    return this.toSequence().map(callback);
   }
 
   /** @internal */

@@ -3,11 +3,11 @@ import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 
-export type StreamTouchFunction<T, K> = (data: T) => K | Stream2<K> | Notifier<K>;
+export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifier<K>;
 
 const NO_DATA = Symbol('NO_DATA');
 
-export class Stream2<T> extends LightweightAttachable {
+export class Sequence<T> extends LightweightAttachable {
   constructor(
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
@@ -16,8 +16,8 @@ export class Stream2<T> extends LightweightAttachable {
     executor(data => this.trigger(data));
   }
 
-  map<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
-    let nextInLine = new Stream2<K>(
+  map<K>(callback: SequenceTouchFunction<T, K>): Sequence<K> {
+    let nextInLine = new Sequence<K>(
       () => {},
       () => this.destroy()
     );
@@ -53,17 +53,17 @@ export class Stream2<T> extends LightweightAttachable {
     }
   }
 
-  private waitUntilExecution<K>(data: T, executionCallback: StreamTouchFunction<T, K>, callback: (data: K) => void): void {
+  private waitUntilExecution<K>(data: T, executionCallback: SequenceTouchFunction<T, K>, callback: (data: K) => void): void {
     let executionReturn = executionCallback(data);
-    if (executionReturn instanceof Stream2) {
-      let executionStream: Stream2<K> = executionReturn;
-      executionStream.subscribe(innerData => {
-        this.toBeDestroyed.delete(executionStream);
-        executionStream.destroy();
+    if (executionReturn instanceof Sequence) {
+      let executionSequence: Sequence<K> = executionReturn;
+      executionSequence.subscribe(innerData => {
+        this.toBeDestroyed.delete(executionSequence);
+        executionSequence.destroy();
         CallbackHelper.triggerCallback(innerData, callback);
       });
-      this.toBeDestroyed.add(executionStream);
-      executionStream.attachToRoot(); // destoying is manually done
+      this.toBeDestroyed.add(executionSequence);
+      executionSequence.attachToRoot(); // destoying is manually done
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
 
@@ -99,12 +99,12 @@ export class Stream2<T> extends LightweightAttachable {
     }
   }
 
-  private subscribe<K>(callback: StreamTouchFunction<T, K>): void {
+  private subscribe<K>(callback: SequenceTouchFunction<T, K>): void {
     if (this.destroyed) {
-      throw new Error('Stream is destroyed');
+      throw new Error('Sequence is destroyed');
     }
     if (this.listener) {
-      throw new Error('Stream is already being listened to');
+      throw new Error('Sequence is already being listened to');
     }
 
     if (this.resolvedBeforeListenerBy !== NO_DATA) {
