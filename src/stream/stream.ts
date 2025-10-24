@@ -70,7 +70,6 @@ export class Stream2<T> extends LightweightAttachable {
       let destroyedDirectly = false;
       let subscription = executionNotifier
         .subscribe(innerData => {
-          console.log('subscription', subscription);
           if (subscription) {
             subscription.destroy();
             this.toBeDestroyed.delete(subscription);

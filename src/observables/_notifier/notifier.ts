@@ -61,10 +61,7 @@ export class Notifier<T> {
       resolve => {
         subscription = this.subscribe(resolve).attachToRoot();
       },
-      () => {
-        subscription.destroy();
-        console.log('subscription destroyed');
-      }
+      () => subscription.destroy()
     );
     return stream;
   }
