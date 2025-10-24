@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Action } from '../observables/action/action';
+import { Variable } from '../observables/variable/variable';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
 import { Stream2 } from './stream';
 
@@ -267,6 +268,23 @@ describe('Stream', () => {
       expect(action2.listenerCount).toEqual(0);
 
       expect(triggered).toEqual(true);
+    });
+
+    test('chaining variable should trigger current value', () => {
+      let variable = new Variable<string>('a');
+
+      let heap: string[] = [];
+      let stream = variable
+        .tap(data => {
+          heap.push(data);
+        })
+        .attachToRoot();
+
+      expect(heap).toEqual(['a']);
+      expect(variable.listenerCount).toEqual(1);
+
+      stream.destroy();
+      expect(variable.listenerCount).toEqual(0);
     });
   });
 

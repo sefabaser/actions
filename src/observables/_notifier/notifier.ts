@@ -56,15 +56,17 @@ export class Notifier<T> {
   }
 
   toStream(): Stream2<T> {
-    let subscriptionId = this.getNextAvailableSubscriptionId();
-    return new Stream2<T>(
+    let subscription: IAttachable;
+    let stream = new Stream2<T>(
       resolve => {
-        this.listenersMap.set(subscriptionId, resolve);
+        subscription = this.subscribe(resolve).attachToRoot();
       },
       () => {
-        this.listenersMap.delete(subscriptionId);
+        subscription.destroy();
+        console.log('subscription destroyed');
       }
     );
+    return stream;
   }
 
   tap<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {

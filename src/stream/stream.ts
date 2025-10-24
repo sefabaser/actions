@@ -66,13 +66,23 @@ export class Stream2<T> extends LightweightAttachable {
       executionStream.attachToRoot(); // destoying is manually done
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
+
+      let destroyedDirectly = false;
       let subscription = executionNotifier
-        .waitUntilNext(innerData => {
-          this.toBeDestroyed.delete(subscription);
+        .subscribe(innerData => {
+          console.log('subscription', subscription);
+          if (subscription) {
+            subscription.destroy();
+            this.toBeDestroyed.delete(subscription);
+          } else {
+            destroyedDirectly = true;
+          }
           CallbackHelper.triggerCallback(innerData, callback);
         })
         .attachToRoot(); // destoying is manually done
-      this.toBeDestroyed.add(subscription);
+      if (!destroyedDirectly) {
+        this.toBeDestroyed.add(subscription);
+      }
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);
     }
