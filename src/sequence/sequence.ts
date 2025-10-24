@@ -8,6 +8,8 @@ export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifie
 const NO_DATA = Symbol('NO_DATA');
 
 export class Sequence<T> extends LightweightAttachable {
+  private nextInLine: Sequence<unknown> | undefined;
+
   constructor(
     executor: (resolve: (data: T) => void) => void,
     private onDestroy?: () => void
@@ -16,12 +18,17 @@ export class Sequence<T> extends LightweightAttachable {
     executor(data => this.trigger(data));
   }
 
+  read(callback: (data: T) => void): Sequence<T> {
+    let nextInLine = this.createNextInLine<T>();
+    this.subscribe(data => {
+      callback(data);
+      nextInLine.trigger(data);
+    });
+    return nextInLine;
+  }
+
   map<K>(callback: SequenceTouchFunction<T, K>): Sequence<K> {
-    let nextInLine = new Sequence<K>(
-      () => {},
-      () => this.destroy()
-    );
-    this.attachToRoot(); // Destroying is manually done by listening nextInLine
+    let nextInLine = this.createNextInLine<K>();
 
     this.subscribe(data => {
       this.waitUntilExecution(data, callback, executionReturn => {
@@ -29,6 +36,20 @@ export class Sequence<T> extends LightweightAttachable {
       });
     });
 
+    return nextInLine;
+  }
+
+  private createNextInLine<K>(): Sequence<K> {
+    if (this.nextInLine) {
+      throw new Error('A sequence can only be linked once.');
+    }
+
+    let nextInLine = new Sequence<K>(
+      () => {},
+      () => this.destroy()
+    );
+    this.attachToRoot(); // Destroying is manually done by listening nextInLine
+    this.nextInLine = nextInLine;
     return nextInLine;
   }
 
@@ -47,9 +68,12 @@ export class Sequence<T> extends LightweightAttachable {
       this.toBeDestroyed.forEach(item => item.destroy());
       this.toBeDestroyed.clear();
       this._toBeDestroyed = undefined;
+
+      super.destroy();
       this.onDestroy?.();
       this.onDestroy = undefined;
-      super.destroy();
+
+      this.nextInLine?.destroy();
     }
   }
 

@@ -14,7 +14,47 @@ describe('Sequence', () => {
     ActionLibUnitTestHelper.hardReset();
   });
 
-  describe('Basics', () => {
+  describe('Setup', () => {
+    test('simple sequence', () => {
+      expect(new Sequence<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
+    });
+
+    test('linking twice should throw error', () => {
+      let sequence = new Sequence<string>(resolve => resolve('a'));
+      sequence.read(() => {}).attachToRoot();
+      expect(() => sequence.read(() => {}).attachToRoot()).toThrow('A sequence can only be linked once.');
+    });
+
+    test('destroying sequence', () => {
+      let s1 = new Sequence<string>(resolve => resolve('a'));
+      let s2 = s1.read(() => {});
+      let s3 = s2.read(() => {}).attachToRoot();
+      s2.destroy();
+      expect(s1.destroyed).toBeTruthy();
+      expect(s2.destroyed).toBeTruthy();
+      expect(s3.destroyed).toBeTruthy();
+    });
+  });
+
+  describe('Read', () => {
+    test('simple sequence', () => {
+      new Sequence<string>(resolve => resolve('a')).read(data => expect(data).toEqual('a')).attachToRoot();
+    });
+
+    test('read should not change the data', () => {
+      new Sequence<string>(resolve => resolve('a'))
+        .read(data => {
+          expect(data).toEqual('a');
+          return 2;
+        })
+        .read(data => {
+          expect(data).toEqual('a');
+        })
+        .attachToRoot();
+    });
+  });
+
+  describe('Map', () => {
     test('sync data chaining', () => {
       new Sequence<string>(resolve => resolve('a'))
         .map(data => {
