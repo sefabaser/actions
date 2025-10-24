@@ -1,3 +1,4 @@
+import { Wait } from 'helpers-lib';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
@@ -23,16 +24,6 @@ describe('Sequence', () => {
       let sequence = new Sequence<string>(resolve => resolve('a'));
       sequence.read(() => {}).attachToRoot();
       expect(() => sequence.read(() => {}).attachToRoot()).toThrow('A sequence can only be linked once.');
-    });
-
-    test('destroying sequence', () => {
-      let s1 = new Sequence<string>(resolve => resolve('a'));
-      let s2 = s1.read(() => {});
-      let s3 = s2.read(() => {}).attachToRoot();
-      s2.destroy();
-      expect(s1.destroyed).toBeTruthy();
-      expect(s2.destroyed).toBeTruthy();
-      expect(s3.destroyed).toBeTruthy();
     });
   });
 
@@ -104,6 +95,80 @@ describe('Sequence', () => {
           expect(data).toEqual(1);
         })
         .attachToRoot();
+    });
+  });
+
+  describe('Filter', () => {
+    test('simple filter', () => {
+      new Sequence<string>(resolve => resolve('a'))
+        .filter(data => data === 'a')
+        .read(data => expect(data).toEqual('a'))
+        .attachToRoot();
+    });
+
+    test('filtering unwanted data', async () => {
+      let heap: string[] = [];
+      new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], resolve))
+        .filter(data => data === 'b')
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual(['b']);
+    });
+  });
+
+  describe('Take', () => {
+    test('simple take', async () => {
+      let sequence = new Sequence<string>(resolve => resolve('a')).take(1).attachToRoot();
+      await Wait();
+      expect(sequence.destroyed).toBeTruthy();
+    });
+
+    test('delayed sequence take', async () => {
+      let heap: string[] = [];
+      new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], resolve))
+        .take(1)
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual(['a']);
+    });
+
+    test('taking more data than available', async () => {
+      let heap: string[] = [];
+      new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], resolve))
+        .take(4)
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual(['a', 'b', 'c']);
+    });
+
+    test('finishing take should destroy the sequence', async () => {
+      let heap: string[] = [];
+      let s1 = new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve));
+      let s2 = s1
+        .take(1)
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual(['a']);
+      expect(s1.destroyed).toBeTruthy();
+      expect(s2.destroyed).toBeTruthy();
+    });
+
+    test('instantly finishing the sequence should not block the chain', () => {
+      let heap: string[] = [];
+      new Sequence<string>(resolve => resolve('a'))
+        .take(1)
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual(['a']);
     });
   });
 

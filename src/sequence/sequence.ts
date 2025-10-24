@@ -20,10 +20,12 @@ export class Sequence<T> extends LightweightAttachable {
 
   read(callback: (data: T) => void): Sequence<T> {
     let nextInLine = this.createNextInLine<T>();
+
     this.subscribe(data => {
       callback(data);
       nextInLine.trigger(data);
     });
+
     return nextInLine;
   }
 
@@ -34,6 +36,33 @@ export class Sequence<T> extends LightweightAttachable {
       this.waitUntilExecution(data, callback, executionReturn => {
         nextInLine.trigger(executionReturn);
       });
+    });
+
+    return nextInLine;
+  }
+
+  filter(callback: (data: T) => boolean): Sequence<T> {
+    let nextInLine = this.createNextInLine<T>();
+
+    this.subscribe(data => {
+      if (callback(data)) {
+        nextInLine.trigger(data);
+      }
+    });
+
+    return nextInLine;
+  }
+
+  take(count: number): Sequence<T> {
+    let nextInLine = this.createNextInLine<T>();
+    let taken = 0;
+
+    this.subscribe(data => {
+      nextInLine.trigger(data);
+      taken++;
+      if (taken >= count) {
+        this.destroyEndOfSequence();
+      }
     });
 
     return nextInLine;
@@ -65,16 +94,27 @@ export class Sequence<T> extends LightweightAttachable {
     if (!this.destroyed) {
       this.listener = undefined;
       this.resolvedBeforeListenerBy = NO_DATA;
+      this.nextInLine = undefined;
+
       this.toBeDestroyed.forEach(item => item.destroy());
       this.toBeDestroyed.clear();
       this._toBeDestroyed = undefined;
 
-      super.destroy();
       this.onDestroy?.();
       this.onDestroy = undefined;
 
-      this.nextInLine?.destroy();
+      super.destroy();
     }
+  }
+
+  private destroyEndOfSequence(): void {
+    queueMicrotask(() => {
+      let endOfSequence: Sequence<unknown> = this;
+      while (endOfSequence.nextInLine) {
+        endOfSequence = endOfSequence.nextInLine;
+      }
+      endOfSequence.destroy();
+    });
   }
 
   private waitUntilExecution<K>(data: T, executionCallback: SequenceTouchFunction<T, K>, callback: (data: K) => void): void {

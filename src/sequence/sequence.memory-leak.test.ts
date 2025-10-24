@@ -38,6 +38,18 @@ describe('Memory Leak', () => {
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
+  test('destroying sequence in the middle of the chain', async () => {
+    new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+      .take(2)
+      .map(() => {})
+      .attachToRoot();
+
+    await delayedCalls.waitForAllPromises();
+
+    let snapshot = await takeNodeMinimalHeap();
+    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+  }, 30000);
+
   test('map chaining', async () => {
     let action1 = new Action<void>();
     let action2 = new Action<string>();
