@@ -66,8 +66,8 @@ export class Notifier<T> {
     return stream;
   }
 
-  tap<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
-    return this.toStream().tap(callback);
+  map<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
+    return this.toStream().map(callback);
   }
 
   /** @internal */

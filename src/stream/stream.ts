@@ -16,7 +16,7 @@ export class Stream2<T> extends LightweightAttachable {
     executor(data => this.trigger(data));
   }
 
-  tap<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
+  map<K>(callback: StreamTouchFunction<T, K>): Stream2<K> {
     let nextInLine = new Stream2<K>(
       () => {},
       () => this.destroy()

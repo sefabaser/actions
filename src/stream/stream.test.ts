@@ -17,14 +17,14 @@ describe('Stream', () => {
   describe('Basics', () => {
     test('sync data chaining', () => {
       new Stream2<string>(resolve => resolve('a'))
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual('a');
           return 1;
         })
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual(1);
         })
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual(undefined);
         })
         .attachToRoot();
@@ -32,35 +32,35 @@ describe('Stream', () => {
 
     test('async resolve data chaining', () => {
       new Stream2<string>(resolve => setTimeout(() => resolve('a')))
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual('a');
           return 1;
         })
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual(1);
         })
         .attachToRoot();
     });
 
-    test('tap returning new sync stream', () => {
+    test('map returning new sync stream', () => {
       new Stream2<string>(resolve => resolve('a'))
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual('a');
           return new Stream2<number>(resolve => resolve(1));
         })
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual(1);
         })
         .attachToRoot();
     });
 
-    test('tap returning new async stream', () => {
+    test('map returning new async stream', () => {
       new Stream2<string>(resolve => setTimeout(() => resolve('a')))
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual('a');
           return new Stream2<number>(resolve => setTimeout(() => resolve(1)));
         })
-        .tap(data => {
+        .map(data => {
           expect(data).toEqual(1);
         })
         .attachToRoot();
@@ -74,7 +74,7 @@ describe('Stream', () => {
       new Stream2<string>(resolve => {
         streamResolve = resolve;
       })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -91,11 +91,11 @@ describe('Stream', () => {
       new Stream2<string>(resolve => {
         streamResolve = resolve;
       })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return data + '1';
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -110,7 +110,7 @@ describe('Stream', () => {
       let heap: any[] = [];
 
       new Stream2<string>(resolve => resolve('a'))
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
             delayedCalls.callEachDelayed(['1', '2', '3'], value => {
@@ -118,7 +118,7 @@ describe('Stream', () => {
             });
           });
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -133,7 +133,7 @@ describe('Stream', () => {
       new Stream2<string>(resolve => {
         delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
             delayedCalls.callEachDelayed(['1', '2', '3'], value => {
@@ -141,7 +141,7 @@ describe('Stream', () => {
             });
           });
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -164,7 +164,7 @@ describe('Stream', () => {
       new Stream2<string>(r => {
         resolve = r;
       })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
             delayedCalls.callEachDelayed(['1', '2', '3'], value => {
@@ -172,7 +172,7 @@ describe('Stream', () => {
             });
           });
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return new Stream2<string>(resolve => {
             delayedCalls.callEachDelayed(['x', 'y', 'z'], value => {
@@ -180,7 +180,7 @@ describe('Stream', () => {
             });
           });
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           resolveNext();
         })
@@ -194,16 +194,16 @@ describe('Stream', () => {
   });
 
   describe('Actions', () => {
-    test('chaining with tap action', async () => {
+    test('chaining with map action', async () => {
       let action = new Action<string>();
 
       let heap: any[] = [];
       action
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return data + '1';
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -216,21 +216,21 @@ describe('Stream', () => {
       expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
     });
 
-    test('tap returning actions', async () => {
+    test('map returning actions', async () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();
 
       let heap: any[] = [];
       action1
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return data + '1';
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
           return action2;
         })
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -244,16 +244,16 @@ describe('Stream', () => {
       expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
     });
 
-    test('chaining with tap action unsubscribing', async () => {
+    test('chaining with map action unsubscribing', async () => {
       let action = new Action<string>();
       let action2 = new Action<string>();
 
       let triggered = false;
       let stream = action
-        .tap(() => {
+        .map(() => {
           return action2;
         })
-        .tap(() => {
+        .map(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -275,7 +275,7 @@ describe('Stream', () => {
 
       let heap: string[] = [];
       let stream = variable
-        .tap(data => {
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -299,8 +299,8 @@ describe('Stream', () => {
 
       let heap: string[] = [];
       action
-        .tap(data => foo(data))
-        .tap(data => {
+        .map(data => foo(data))
+        .map(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -326,7 +326,7 @@ describe('Stream', () => {
     test('not attaching to anything should throw error', () => {
       expect(() => {
         let action = new Action<string>();
-        action.tap(() => {});
+        action.map(() => {});
 
         vi.runAllTimers();
       }).toThrow('LightweightAttachable: The object is not attached to anything!');
@@ -335,7 +335,7 @@ describe('Stream', () => {
     test('attaching to a target should not throw error', () => {
       expect(() => {
         let action = new Action<string>();
-        action.tap(() => {}).attach(new Attachable().attachToRoot());
+        action.map(() => {}).attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
@@ -344,7 +344,7 @@ describe('Stream', () => {
     test('attaching to root should not throw error', () => {
       expect(() => {
         let action = new Action<string>();
-        action.tap(() => {}).attachToRoot();
+        action.map(() => {}).attachToRoot();
         action.trigger('');
 
         vi.runAllTimers();
@@ -355,7 +355,7 @@ describe('Stream', () => {
       expect(() => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
-        action1.tap(() => action2).tap(() => {});
+        action1.map(() => action2).map(() => {});
 
         action1.trigger('');
 
@@ -368,8 +368,8 @@ describe('Stream', () => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
         action1
-          .tap(() => action2)
-          .tap(() => {})
+          .map(() => action2)
+          .map(() => {})
           .attach(new Attachable().attachToRoot());
 
         action1.trigger('');
@@ -383,8 +383,8 @@ describe('Stream', () => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
         action1
-          .tap(() => action2)
-          .tap(() => {})
+          .map(() => action2)
+          .map(() => {})
           .attachToRoot();
 
         action1.trigger('');
@@ -395,10 +395,10 @@ describe('Stream', () => {
   });
 
   describe('Edge Cases', () => {
-    test('resolve undefined should still trigger next tap', () => {
+    test('resolve undefined should still trigger next map', () => {
       let triggered = false;
       new Stream2<void>(resolve => resolve())
-        .tap(() => {
+        .map(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -412,8 +412,8 @@ describe('Stream', () => {
 
       let triggered = false;
       let stream = action1
-        .tap(() => action2)
-        .tap(() => {
+        .map(() => action2)
+        .map(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -440,13 +440,13 @@ describe('Stream', () => {
       let stream = new Stream2<void>(resolve => {
         resolve1 = resolve;
       })
-        .tap(() => {
+        .map(() => {
           middleStream = new Stream2<void>(resolve => {
             resolve2 = resolve;
           });
           return middleStream;
         })
-        .tap(() => {
+        .map(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -466,8 +466,8 @@ describe('Stream', () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();
       let stream = action1
-        .tap(() => action2)
-        .tap(() => {})
+        .map(() => action2)
+        .map(() => {})
         .attachToRoot();
 
       action1.trigger('');

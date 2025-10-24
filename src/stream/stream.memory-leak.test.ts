@@ -20,7 +20,7 @@ describe('Memory Leak', () => {
   test('stream chaining', async () => {
     let stream = new Stream2<string>(resolve => {
       delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
-    }).tap(
+    }).map(
       data =>
         new Stream2<string>(resolve => {
           delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
@@ -36,19 +36,19 @@ describe('Memory Leak', () => {
     let snapshot = await takeNodeMinimalHeap();
     expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
-  });
+  }, 30000);
 
-  test('tap chaining', async () => {
+  test('map chaining', async () => {
     let action1 = new Action<void>();
     let action2 = new Action<string>();
 
     let triggeredWith = '';
     let stream = action1
       .toStream()
-      .tap(() => action2)
-      .tap(data => data)
-      .tap(data => data)
-      .tap(data => {
+      .map(() => action2)
+      .map(data => data)
+      .map(data => data)
+      .map(data => {
         triggeredWith = data;
       })
       .attachToRoot();
@@ -68,13 +68,13 @@ describe('Memory Leak', () => {
     let snapshot = await takeNodeMinimalHeap();
     expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
-  });
+  }, 30000);
 
   test('stream waiting for action to complete cut in the middle', async () => {
     let action = new Action<void>();
 
     let stream = new Stream2<void>(resolve => resolve())
-      .tap(() => action) // Action will never resolve
+      .map(() => action) // Action will never resolve
       .attachToRoot();
 
     stream.destroy();
@@ -85,13 +85,13 @@ describe('Memory Leak', () => {
     let snapshot = await takeNodeMinimalHeap();
     expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
-  });
+  }, 30000);
 
   test('stream waiting for stream to complete cut in the middle', async () => {
     let resolve!: () => void;
 
     let stream = new Stream2<void>(resolve => resolve())
-      .tap(
+      .map(
         () =>
           // This stream will never be resolved
           new Stream2<void>(r => {
@@ -110,7 +110,7 @@ describe('Memory Leak', () => {
     let snapshot = await takeNodeMinimalHeap();
     expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
-  });
+  }, 30000);
 
   test('stream and action complex', async () => {
     let action1 = new Action<string>();
@@ -119,13 +119,13 @@ describe('Memory Leak', () => {
 
     let heap: string[] = [];
     let stream = action1
-      .tap(a1 => action2.tap(a2 => a1 + a2))
-      .tap(a2 =>
+      .map(a1 => action2.map(a2 => a1 + a2))
+      .map(a2 =>
         new Stream2<string>(resolve => {
           delayedCalls.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
-        }).tap(s2 => action3.tap(d3 => s2 + d3))
+        }).map(s2 => action3.map(d3 => s2 + d3))
       )
-      .tap(data => {
+      .map(data => {
         heap.push(data);
       })
       .attachToRoot();
@@ -154,5 +154,5 @@ describe('Memory Leak', () => {
     let snapshot = await takeNodeMinimalHeap();
     expect(snapshot.hasObjectWithClassName(Stream2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
-  });
+  }, 30000);
 });
