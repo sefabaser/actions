@@ -33,15 +33,18 @@ describe('Sequence', () => {
     });
 
     test('read should not change the data', () => {
+      let heap: string[] = [];
       new Sequence<string>(resolve => resolve('a'))
         .read(data => {
-          expect(data).toEqual('a');
+          heap.push(data);
           return 2;
         })
         .read(data => {
-          expect(data).toEqual('a');
+          heap.push(data);
         })
         .attachToRoot();
+
+      expect(heap).toEqual(['a', 'a']);
     });
   });
 
@@ -193,6 +196,57 @@ describe('Sequence', () => {
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       expect(notifier.listenerCount).toEqual(2);
+    });
+  });
+
+  describe('Merge', () => {
+    test('simple merge', async () => {
+      let heap: string[] = [];
+
+      Sequence.merge(new Sequence<string>(resolve => resolve('a')), new Sequence<string>(resolve => resolve('b')))
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+
+      expect(heap).toEqual(['a', 'b']);
+    });
+
+    test('merge with delayed sequences', async () => {
+      let heap: string[] = [];
+      Sequence.merge(
+        new Sequence<string>(resolve => delayedCalls.callEachDelayed(['1', '2'], resolve)),
+        new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve))
+      )
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual(['1', 'a', '2', 'b']);
+    });
+
+    test('destroyed merged sequence should destroy children sequences', async () => {
+      let sequence1 = new Sequence<string>(() => {});
+      let sequence2 = new Sequence<string>(() => {});
+      let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
+
+      expect(sequence1.destroyed).toBeFalsy();
+      expect(sequence2.destroyed).toBeFalsy();
+      merged.destroy();
+      expect(sequence1.destroyed).toBeTruthy();
+      expect(sequence2.destroyed).toBeTruthy();
+    });
+
+    test('destroyed children sequences should destroy merged sequence', async () => {
+      let sequence1 = new Sequence<string>(() => {});
+      let sequence2 = new Sequence<string>(() => {});
+      let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
+
+      expect(merged.destroyed).toBeFalsy();
+      sequence1.destroy();
+      expect(merged.destroyed).toBeFalsy();
+      sequence2.destroy();
+      expect(merged.destroyed).toBeTruthy();
     });
   });
 

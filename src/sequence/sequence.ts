@@ -9,6 +9,29 @@ export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifie
 const NO_DATA = Symbol('NO_DATA');
 
 export class Sequence<T> extends LightweightAttachable {
+  static merge<T>(...sequences: Sequence<T>[]): Sequence<T> {
+    sequences.forEach(sequence => {
+      sequence.attachToRoot();
+    });
+
+    // when all sequences are destroyed, destroy the merge sequence
+
+    return new Sequence<T>(
+      resolve => {
+        sequences.forEach(sequence => {
+          sequence.subscribe(data => {
+            resolve(data);
+          });
+        });
+      },
+      () => {
+        sequences.forEach(sequence => {
+          sequence.destroy();
+        });
+      }
+    );
+  }
+
   private nextInLine: Sequence<unknown> | undefined;
 
   constructor(
