@@ -172,6 +172,30 @@ describe('Sequence', () => {
     });
   });
 
+  describe('To Notifier', () => {
+    test('setup', () => {
+      let notifier = new Sequence<string>(() => {}).attachToRoot().toNotifier();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+
+    test('converting notifier before attaching should not throw error', () => {
+      vi.useFakeTimers();
+      expect(() => {
+        new Sequence<string>(() => {}).toNotifier();
+
+        vi.runAllTimers();
+      }).toThrow('LightweightAttachable: The object is not attached to anything!');
+      vi.useRealTimers();
+    });
+
+    test('converted notifier can be subscribed by many', () => {
+      let notifier = new Sequence<string>(resolve => resolve('a')).attachToRoot().toNotifier();
+      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
+      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
+      expect(notifier.listenerCount).toEqual(2);
+    });
+  });
+
   describe('Multiple triggered sequences', () => {
     test('simple continues sequence', async () => {
       let heap: any[] = [];

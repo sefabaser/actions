@@ -2,6 +2,7 @@ import { IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
+import { Action } from '../observables/action/action';
 
 export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifier<K>;
 
@@ -66,6 +67,12 @@ export class Sequence<T> extends LightweightAttachable {
     });
 
     return nextInLine;
+  }
+
+  toNotifier(): Notifier<T> {
+    let action = new Action<T>();
+    this.subscribe(data => action.trigger(data));
+    return action.notifier;
   }
 
   private createNextInLine<K>(): Sequence<K> {
