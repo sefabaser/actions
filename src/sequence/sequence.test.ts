@@ -203,26 +203,31 @@ describe('Sequence', () => {
     test('simple merge', async () => {
       let heap: string[] = [];
 
-      Sequence.merge(new Sequence<string>(resolve => resolve('a')), new Sequence<string>(resolve => resolve('b')))
+      Sequence.merge(
+        new Sequence<string>(resolve => resolve('a')),
+        new Sequence<string>(resolve => resolve('b')),
+        new Sequence<string>(resolve => resolve('c'))
+      )
         .read(data => heap.push(data))
         .attachToRoot();
 
       await delayedCalls.waitForAllPromises();
 
-      expect(heap).toEqual(['a', 'b']);
+      expect(heap).toEqual(['a', 'b', 'c']);
     });
 
     test('merge with delayed sequences', async () => {
       let heap: string[] = [];
       Sequence.merge(
         new Sequence<string>(resolve => delayedCalls.callEachDelayed(['1', '2'], resolve)),
-        new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve))
+        new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
+        new Sequence<string>(resolve => delayedCalls.callEachDelayed(['x', 'y'], resolve))
       )
         .read(data => heap.push(data))
         .attachToRoot();
 
       await delayedCalls.waitForAllPromises();
-      expect(heap).toEqual(['1', 'a', '2', 'b']);
+      expect(heap).toEqual(['1', 'a', 'x', '2', 'b', 'y']);
     });
 
     test('destroyed merged sequence should destroy children sequences', async () => {
@@ -247,6 +252,85 @@ describe('Sequence', () => {
       expect(merged.destroyed).toBeFalsy();
       sequence2.destroy();
       expect(merged.destroyed).toBeTruthy();
+    });
+
+    test('merged sequances should not need to be attached manually', () => {
+      vi.useFakeTimers();
+      expect(() => {
+        let sequence1 = new Sequence<string>(() => {});
+        let sequence2 = new Sequence<string>(() => {});
+        Sequence.merge(sequence1, sequence2).attachToRoot();
+
+        vi.runAllTimers();
+      }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+      vi.useRealTimers();
+    });
+  });
+
+  describe('Combine', () => {
+    test('simple combine', () => {
+      let sequence1 = new Sequence<string>(resolve => resolve('a'));
+      let sequence2 = new Sequence<number>(resolve => resolve(1));
+
+      let heap: { a: string; b: number }[] = [];
+      Sequence.combine({ a: sequence1, b: sequence2 })
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([{ a: 'a', b: 1 }]);
+    });
+
+    test('combine with delayed sequences', async () => {
+      let heap: { a: string; b: number }[] = [];
+      Sequence.combine({
+        a: new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
+        b: new Sequence<number>(resolve => delayedCalls.callEachDelayed([1, 2], resolve))
+      })
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual([
+        { a: 'a', b: 1 },
+        { a: 'b', b: 1 },
+        { a: 'b', b: 2 }
+      ]);
+    });
+
+    test('destroyed combined sequence should destroy children sequences', async () => {
+      let sequence1 = new Sequence<string>(() => {});
+      let sequence2 = new Sequence<string>(() => {});
+      let combined = Sequence.combine({ a: sequence1, b: sequence2 }).attachToRoot();
+
+      expect(sequence1.destroyed).toBeFalsy();
+      expect(sequence2.destroyed).toBeFalsy();
+      combined.destroy();
+      expect(sequence1.destroyed).toBeTruthy();
+      expect(sequence2.destroyed).toBeTruthy();
+    });
+
+    test('destroyed children sequences should destroy combined sequence', async () => {
+      let sequence1 = new Sequence<string>(() => {});
+      let sequence2 = new Sequence<string>(() => {});
+      let combined = Sequence.combine({ a: sequence1, b: sequence2 }).attachToRoot();
+
+      expect(combined.destroyed).toBeFalsy();
+      sequence1.destroy();
+      expect(combined.destroyed).toBeFalsy();
+      sequence2.destroy();
+      expect(combined.destroyed).toBeTruthy();
+    });
+
+    test('combined sequances should not need to be attached manually', () => {
+      vi.useFakeTimers();
+      expect(() => {
+        let sequence1 = new Sequence<string>(() => {});
+        let sequence2 = new Sequence<string>(() => {});
+        Sequence.combine({ a: sequence1, b: sequence2 }).attachToRoot();
+
+        vi.runAllTimers();
+      }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+      vi.useRealTimers();
     });
   });
 

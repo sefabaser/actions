@@ -32,6 +32,12 @@ export class Sequence<T> extends LightweightAttachable {
     );
   }
 
+  static combine<T extends Record<string, Sequence<any>>>(
+    sequences: T
+  ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }> {
+    throw new Error('Not implemented');
+  }
+
   private nextInLine: Sequence<unknown> | undefined;
 
   constructor(
