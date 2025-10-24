@@ -70,6 +70,10 @@ export class Sequence<T> extends LightweightAttachable {
   }
 
   toNotifier(): Notifier<T> {
+    if (!this.attachIsCalled) {
+      throw new Error('Before converting a sequence to notifier, it must be attached to something!');
+    }
+
     let action = new Action<T>();
     this.subscribe(data => action.trigger(data));
     return action.notifier;

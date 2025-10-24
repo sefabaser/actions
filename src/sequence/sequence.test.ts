@@ -184,7 +184,7 @@ describe('Sequence', () => {
         new Sequence<string>(() => {}).toNotifier();
 
         vi.runAllTimers();
-      }).toThrow('LightweightAttachable: The object is not attached to anything!');
+      }).toThrow('Before converting a sequence to notifier, it must be attached to something!');
       vi.useRealTimers();
     });
 
