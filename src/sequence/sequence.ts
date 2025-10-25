@@ -6,8 +6,6 @@ import { Action } from '../observables/action/action';
 
 export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifier<K>;
 
-const NO_DATA = Symbol('NO_DATA');
-
 export class Sequence<T> extends LightweightAttachable {
   static merge<T>(...sequences: Sequence<T>[]): Sequence<T> {
     sequences.forEach(sequence => {
@@ -38,7 +36,10 @@ export class Sequence<T> extends LightweightAttachable {
     throw new Error('Not implemented');
   }
 
-  private nextInLine: Sequence<unknown> | undefined;
+  private _nextInLine: Sequence<unknown> | undefined;
+  private _toBeDestroyed: Set<IAttachable> | undefined;
+  private _resolvedBeforeListenerBy: T[] | undefined;
+  private _listener: ((data: T) => void) | undefined;
 
   constructor(
     executor: (resolve: (data: T) => void) => void,
@@ -109,7 +110,7 @@ export class Sequence<T> extends LightweightAttachable {
   }
 
   private createNextInLine<K>(): Sequence<K> {
-    if (this.nextInLine) {
+    if (this._nextInLine) {
       throw new Error('A sequence can only be linked once.');
     }
 
@@ -118,11 +119,10 @@ export class Sequence<T> extends LightweightAttachable {
       () => this.destroy()
     );
     this.attachToRoot(); // Destroying is manually done by listening nextInLine
-    this.nextInLine = nextInLine;
+    this._nextInLine = nextInLine;
     return nextInLine;
   }
 
-  private _toBeDestroyed: Set<IAttachable> | undefined;
   private get toBeDestroyed(): Set<IAttachable> {
     if (!this._toBeDestroyed) {
       this._toBeDestroyed = new Set<IAttachable>();
@@ -132,9 +132,9 @@ export class Sequence<T> extends LightweightAttachable {
 
   destroy(): void {
     if (!this.destroyed) {
-      this.listener = undefined;
-      this.resolvedBeforeListenerBy = NO_DATA;
-      this.nextInLine = undefined;
+      this._listener = undefined;
+      this._resolvedBeforeListenerBy = undefined;
+      this._nextInLine = undefined;
 
       this.toBeDestroyed.forEach(item => item.destroy());
       this.toBeDestroyed.clear();
@@ -150,8 +150,8 @@ export class Sequence<T> extends LightweightAttachable {
   private destroyEndOfSequence(): void {
     queueMicrotask(() => {
       let endOfSequence: Sequence<unknown> = this;
-      while (endOfSequence.nextInLine) {
-        endOfSequence = endOfSequence.nextInLine;
+      while (endOfSequence._nextInLine) {
+        endOfSequence = endOfSequence._nextInLine;
       }
       endOfSequence.destroy();
     });
@@ -191,14 +191,15 @@ export class Sequence<T> extends LightweightAttachable {
     }
   }
 
-  private resolvedBeforeListenerBy: T | typeof NO_DATA = NO_DATA;
-  private listener: ((data: T) => void) | undefined;
   private trigger(data: T): void {
     if (!this.destroyed) {
-      if (this.listener) {
-        this.listener(data);
+      if (this._listener) {
+        this._listener(data);
       } else {
-        this.resolvedBeforeListenerBy = data;
+        if (!this._resolvedBeforeListenerBy) {
+          this._resolvedBeforeListenerBy = [];
+        }
+        this._resolvedBeforeListenerBy.push(data);
       }
     }
   }
@@ -207,14 +208,14 @@ export class Sequence<T> extends LightweightAttachable {
     if (this.destroyed) {
       throw new Error('Sequence is destroyed');
     }
-    if (this.listener) {
+    if (this._listener) {
       throw new Error('Sequence is already being listened to');
     }
 
-    if (this.resolvedBeforeListenerBy !== NO_DATA) {
-      callback(this.resolvedBeforeListenerBy);
-      this.resolvedBeforeListenerBy = NO_DATA;
+    if (this._resolvedBeforeListenerBy && this._resolvedBeforeListenerBy.length > 0) {
+      this._resolvedBeforeListenerBy.forEach(data => callback(data));
+      this._resolvedBeforeListenerBy = undefined;
     }
-    this.listener = data => callback(data);
+    this._listener = data => callback(data);
   }
 }
