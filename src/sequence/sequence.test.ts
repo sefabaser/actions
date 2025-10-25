@@ -314,6 +314,13 @@ describe('Sequence', () => {
         'Each given sequence to merge or combine has to be diferent.'
       );
     });
+
+    test('merging same notifier should throw error', () => {
+      let action = new Action<string>();
+      expect(() => Sequence.merge(action, action).attachToRoot()).toThrow(
+        'Each given sequence to merge or combine has to be diferent.'
+      );
+    });
   });
 
   describe('Combine', () => {
@@ -417,6 +424,13 @@ describe('Sequence', () => {
     test('combining same sequence should throw error', () => {
       let sequence = new Sequence(() => {});
       expect(() => Sequence.combine({ a: sequence, b: sequence }).attachToRoot()).toThrow(
+        'Each given sequence to merge or combine has to be diferent.'
+      );
+    });
+
+    test('combining same notifier should throw error', () => {
+      let action = new Action<string>();
+      expect(() => Sequence.combine({ a: action, b: action }).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
     });

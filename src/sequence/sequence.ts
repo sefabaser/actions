@@ -1,28 +1,31 @@
+import { IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
-import { Notifier } from '../observables/_notifier/notifier';
+import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 
-export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifier<K>;
 export type IStream<T> = Notifier<T> | Sequence<T>;
+export type SequenceTouchFunction<T, K> = (data: T) => K | IStream<K>;
 
 export class Sequence<T> extends LightweightAttachable {
   static merge<T>(...streams: IStream<T>[]): Sequence<T> {
-    let sequences = this.convertToSequences(streams);
-    let activeSequences = this.validateAndConvertToSet(sequences);
+    let activeSequences = this.validateAndConvertToSet(streams);
 
+    let subscriptions: IAttachable[] = [];
     let mergedSequence = new Sequence<T>(
       resolve => {
-        sequences.forEach(sequence => {
-          sequence.subscribe(data => {
-            resolve(data);
-          });
+        streams.forEach(stream => {
+          let subscription = stream
+            .subscribe(data => {
+              resolve(data);
+            })
+            .attachToRoot(); // Each handled manually
+          subscriptions.push(subscription);
         });
       },
-      () => sequences.forEach(sequence => sequence.destroy())
+      () => subscriptions.forEach(subscription => subscription.destroy())
     );
 
-    sequences.forEach(sequence => sequence.attachToRoot()); // Each handled manually
     this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroyEndOfSequence());
 
     return mergedSequence;
@@ -31,36 +34,38 @@ export class Sequence<T> extends LightweightAttachable {
   static combine<T extends Record<string, IStream<any>>>(
     streamsObject: T
   ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
-    let sequencesObject = this.convertToSequencesObject(streamsObject);
-    let sequences = Object.values(sequencesObject);
-    let activeSequences = this.validateAndConvertToSet(sequences);
+    let streams = Object.values(streamsObject);
+    let activeStreams = this.validateAndConvertToSet(streams);
 
     let latestValues: any = {};
-    let keys = Object.keys(sequencesObject);
+    let keys = Object.keys(streamsObject);
     let unresolvedKeys = new Set(keys);
 
+    let subscriptions: IAttachable[] = [];
     let combinedSequence = new Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(
       resolve => {
         keys.forEach(key => {
-          let sequence = sequencesObject[key];
-          sequence.subscribe(data => {
-            latestValues[key] = data;
-            if (unresolvedKeys.size === 0) {
-              resolve(this.shallowCopy(latestValues));
-            } else {
-              unresolvedKeys.delete(key);
+          let stream = streamsObject[key];
+          let subscription = stream
+            .subscribe(data => {
+              latestValues[key] = data;
               if (unresolvedKeys.size === 0) {
                 resolve(this.shallowCopy(latestValues));
+              } else {
+                unresolvedKeys.delete(key);
+                if (unresolvedKeys.size === 0) {
+                  resolve(this.shallowCopy(latestValues));
+                }
               }
-            }
-          });
+            })
+            .attachToRoot(); // Each handled manually
+          subscriptions.push(subscription);
         });
       },
-      () => sequences.forEach(sequence => sequence.destroy())
+      () => subscriptions.forEach(subscription => subscription.destroy())
     );
 
-    sequences.forEach(sequence => sequence.attachToRoot()); // Each handled manually
-    this.waitUntilAllSequencedDestroyed(activeSequences, () => combinedSequence.destroyEndOfSequence());
+    this.waitUntilAllSequencedDestroyed(activeStreams, () => combinedSequence.destroyEndOfSequence());
 
     return combinedSequence;
   }
@@ -72,55 +77,45 @@ export class Sequence<T> extends LightweightAttachable {
     }, {} as any);
   }
 
-  private static convertToSequencesObject(streamsObject: Record<string, IStream<any>>): Record<string, Sequence<any>> {
-    let result: Partial<Record<string, Sequence<any>>> = {};
-    Object.keys(streamsObject).forEach(key => {
-      let stream = streamsObject[key];
-      let sequence = this.convertToSequence(stream);
-      result[key] = sequence;
-    });
-    return result as Record<string, Sequence<any>>;
-  }
-
-  private static convertToSequences<T = unknown>(streams: IStream<T>[]): Sequence<T>[] {
-    return streams.map(stream => this.convertToSequence(stream));
-  }
-
-  private static convertToSequence<T = unknown>(stream: IStream<T>): Sequence<T> {
-    if (stream instanceof Notifier) {
-      return stream.toSequence();
-    } else {
-      return stream;
-    }
-  }
-
-  private static validateAndConvertToSet(sequences: Sequence<unknown>[]) {
-    let sequencesSet = new Set(sequences);
-    if (sequencesSet.size !== sequences.length) {
-      sequences.forEach(sequence => {
-        // Prevent attachment error before sending the real error.
-        sequence._attachIsCalled = true;
+  private static validateAndConvertToSet(streams: IStream<unknown>[]) {
+    let streamsSet = new Set(streams);
+    if (streamsSet.size !== streams.length) {
+      streams.forEach(stream => {
+        if (stream instanceof Sequence) {
+          stream._attachIsCalled = true;
+        }
       });
       throw new Error('Each given sequence to merge or combine has to be diferent.');
     }
-    return sequencesSet;
+    return streamsSet;
   }
 
-  private static waitUntilAllSequencedDestroyed(sequences: Set<Sequence<unknown>>, callback: () => void): void {
-    let oneDestroyed = (sequence: Sequence<unknown>) => {
-      sequences.delete(sequence);
-      if (sequences.size === 0) {
-        callback();
-      }
-    };
-
-    sequences.forEach(sequence => {
-      if (sequence.destroyed) {
-        oneDestroyed(sequence);
-      } else {
-        sequence._onDestroyListeners.add(() => oneDestroyed(sequence));
+  private static waitUntilAllSequencedDestroyed(streams: Set<IStream<unknown>>, callback: () => void): void {
+    let notifierFound = false;
+    streams.forEach(stream => {
+      if (stream instanceof Notifier) {
+        notifierFound = true;
       }
     });
+
+    if (!notifierFound) {
+      let sequences = streams as Set<Sequence<unknown>>;
+
+      let oneDestroyed = (sequence: Sequence<unknown>) => {
+        sequences.delete(sequence);
+        if (sequences.size === 0) {
+          callback();
+        }
+      };
+
+      sequences.forEach(sequence => {
+        if (sequence.destroyed) {
+          oneDestroyed(sequence);
+        } else {
+          sequence._onDestroyListeners.add(() => oneDestroyed(sequence));
+        }
+      });
+    }
   }
 
   private _nextInLine: Sequence<unknown> | undefined;
@@ -249,32 +244,24 @@ export class Sequence<T> extends LightweightAttachable {
 
   private waitUntilExecution<K>(data: T, executionCallback: SequenceTouchFunction<T, K>, callback: (data: K) => void): void {
     let executionReturn = executionCallback(data);
-    if (executionReturn instanceof Sequence) {
-      let executionSequence: Sequence<K> = executionReturn;
-      let destroyListener = () => executionSequence.destroy();
-      executionSequence.subscribe(innerData => {
-        this._onDestroyListeners.delete(destroyListener);
-        destroyListener();
-        CallbackHelper.triggerCallback(innerData, callback);
-      });
-      this._onDestroyListeners.add(destroyListener);
-      executionSequence.attachToRoot(); // destoying is manually done
-    } else if (executionReturn instanceof Notifier) {
-      let executionNotifier: Notifier<K> = executionReturn;
-
+    if (executionReturn instanceof Sequence || executionReturn instanceof Notifier) {
       let destroyedDirectly = false;
-      let subscription = executionNotifier
+      let destroyListener = () => subscription.destroy();
+
+      let subscription: { destroy: () => void } = undefined as any;
+      subscription = executionReturn
         .subscribe(innerData => {
           if (subscription) {
             subscription.destroy();
+            this._onDestroyListeners.delete(destroyListener);
           } else {
             destroyedDirectly = true;
           }
           CallbackHelper.triggerCallback(innerData, callback);
         })
-        .attachToRoot(); // destoying is manually done
+        .attachToRoot();
       if (!destroyedDirectly) {
-        this._onDestroyListeners.add(() => subscription.destroy());
+        this._onDestroyListeners.add(destroyListener);
       }
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);
@@ -294,7 +281,8 @@ export class Sequence<T> extends LightweightAttachable {
     }
   }
 
-  private subscribe<K>(callback: SequenceTouchFunction<T, K>): void {
+  /** @internal */
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
     if (this.destroyed) {
       throw new Error('Sequence is destroyed');
     }
@@ -307,5 +295,6 @@ export class Sequence<T> extends LightweightAttachable {
       this._resolvedBeforeListenerBy = undefined;
     }
     this._listener = data => callback(data);
+    return this;
   }
 }
