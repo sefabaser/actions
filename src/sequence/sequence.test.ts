@@ -25,6 +25,16 @@ describe('Sequence', () => {
       sequence.read(() => {}).attachToRoot();
       expect(() => sequence.read(() => {}).attachToRoot()).toThrow('A sequence can only be linked once.');
     });
+
+    test('attach cannot be called before the end of the chain', () => {
+      let sequence = new Sequence<string>(resolve => resolve('a'));
+      expect(() =>
+        sequence
+          .read(() => {})
+          .attachToRoot()
+          .read(() => {})
+      ).toThrow('After attaching a sequence you cannot add another operation.');
+    });
   });
 
   describe('Read', () => {
@@ -231,8 +241,8 @@ describe('Sequence', () => {
     });
 
     test('destroyed merged sequence should destroy children sequences', async () => {
-      let sequence1 = new Sequence<string>(() => {});
-      let sequence2 = new Sequence<string>(() => {});
+      let sequence1 = new Sequence(() => {});
+      let sequence2 = new Sequence(() => {});
       let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
 
       expect(sequence1.destroyed).toBeFalsy();
@@ -243,8 +253,8 @@ describe('Sequence', () => {
     });
 
     test('destroyed children sequences should destroy merged sequence', async () => {
-      let sequence1 = new Sequence<string>(() => {});
-      let sequence2 = new Sequence<string>(() => {});
+      let sequence1 = new Sequence(() => {});
+      let sequence2 = new Sequence(() => {});
       let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
 
       expect(merged.destroyed).toBeFalsy();
@@ -257,13 +267,38 @@ describe('Sequence', () => {
     test('merged sequances should not need to be attached manually', () => {
       vi.useFakeTimers();
       expect(() => {
-        let sequence1 = new Sequence<string>(() => {});
-        let sequence2 = new Sequence<string>(() => {});
+        let sequence1 = new Sequence(() => {});
+        let sequence2 = new Sequence(() => {});
         Sequence.merge(sequence1, sequence2).attachToRoot();
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
       vi.useRealTimers();
+    });
+
+    test('merging same sequence should throw error', () => {
+      let sequence = new Sequence(() => {});
+      expect(() => Sequence.merge(sequence, sequence).attachToRoot()).toThrow(
+        'Each given sequence to merge or combine has to be diferent.'
+      );
+    });
+
+    test('merging instantly getting destroyed sequences', async () => {
+      let heap: string[] = [];
+
+      let s1 = new Sequence<string>(resolve => resolve('a')).take(1);
+      let s2 = new Sequence<string>(resolve => resolve('b')).take(1);
+
+      let merged = Sequence.merge(s1, s2);
+      let read = merged.read(data => heap.push(data)).attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+
+      expect(heap).toEqual(['a', 'b']);
+      expect(s1.destroyed).toBeTruthy();
+      expect(s2.destroyed).toBeTruthy();
+      expect(merged.destroyed).toBeTruthy();
+      expect(read.destroyed).toBeTruthy();
     });
   });
 

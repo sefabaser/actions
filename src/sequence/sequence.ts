@@ -7,13 +7,9 @@ export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifie
 
 export class Sequence<T> extends LightweightAttachable {
   static merge<T>(...sequences: Sequence<T>[]): Sequence<T> {
-    sequences.forEach(sequence => {
-      sequence.attachToRoot();
-    });
+    let activeSequences = this.convertToSet(sequences);
 
-    // when all sequences are destroyed, destroy the merge sequence
-
-    return new Sequence<T>(
+    let mergedSequence = new Sequence<T>(
       resolve => {
         sequences.forEach(sequence => {
           sequence.subscribe(data => {
@@ -27,12 +23,48 @@ export class Sequence<T> extends LightweightAttachable {
         });
       }
     );
+
+    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroyEndOfSequence());
+    sequences.forEach(sequence => sequence.attachToRoot()); // Each handled manually
+
+    return mergedSequence;
   }
 
   static combine<T extends Record<string, Sequence<any>>>(
     sequences: T
   ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }> {
     throw new Error('Not implemented');
+  }
+
+  static convertToSet(sequences: Sequence<unknown>[]) {
+    let sequencesSet = new Set(sequences);
+    if (sequencesSet.size !== sequences.length) {
+      sequences.forEach(sequence => {
+        // Prevent attachment error before sending the real error.
+        sequence._attachIsCalled = true;
+      });
+      throw new Error('Each given sequence to merge or combine has to be diferent.');
+    }
+    return sequencesSet;
+  }
+
+  static waitUntilAllSequencedDestroyed(sequences: Set<Sequence<unknown>>, callback: () => void): void {
+    let oneDestroyed = (sequence: Sequence<unknown>) => {
+      sequences.delete(sequence);
+      if (sequences.size === 0) {
+        callback();
+      }
+    };
+
+    sequences.forEach(sequence => {
+      if (sequence.destroyed) {
+        oneDestroyed(sequence);
+      } else {
+        sequence._onDestroyListeners.add(() => {
+          oneDestroyed(sequence);
+        });
+      }
+    });
   }
 
   private _nextInLine: Sequence<unknown> | undefined;
@@ -112,6 +144,9 @@ export class Sequence<T> extends LightweightAttachable {
     if (this._nextInLine) {
       throw new Error('A sequence can only be linked once.');
     }
+    if (this._attachIsCalled) {
+      throw new Error('After attaching a sequence you cannot add another operation.');
+    }
 
     let nextInLine = new Sequence<K>(
       () => {},
@@ -128,21 +163,32 @@ export class Sequence<T> extends LightweightAttachable {
       this._resolvedBeforeListenerBy = undefined;
       this._nextInLine = undefined;
 
+      super.destroy();
+
       this._onDestroyListeners.forEach(item => item());
       this._onDestroyListeners = undefined as any;
-
-      super.destroy();
     }
   }
 
   private destroyEndOfSequence(): void {
-    queueMicrotask(() => {
-      let endOfSequence: Sequence<unknown> = this;
-      while (endOfSequence._nextInLine) {
-        endOfSequence = endOfSequence._nextInLine;
-      }
+    let endOfSequence = this.getEndOfSequence();
+    if (endOfSequence._attachIsCalled) {
       endOfSequence.destroy();
-    });
+    } else {
+      // The linking has not complete yet, wait for a microtask to all chain to be ready
+      queueMicrotask(() => {
+        this.getEndOfSequence();
+        endOfSequence.destroy();
+      });
+    }
+  }
+
+  private getEndOfSequence(): Sequence<unknown> {
+    let endOfSequence: Sequence<unknown> = this;
+    while (endOfSequence._nextInLine) {
+      endOfSequence = endOfSequence._nextInLine;
+    }
+    return endOfSequence;
   }
 
   private waitUntilExecution<K>(data: T, executionCallback: SequenceTouchFunction<T, K>, callback: (data: K) => void): void {
