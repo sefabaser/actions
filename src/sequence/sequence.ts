@@ -31,9 +31,9 @@ export class Sequence<T> extends LightweightAttachable {
   ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }> {
     let sequences = Object.values(sequencesObject);
     let activeSequences = this.convertToSet(sequences);
-    let unResolvedSequences = new Set(sequences);
 
     let latestValues: any = {};
+    let unresolvedKeys = new Set(Object.keys(sequencesObject));
 
     let combinedSequence = new Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(
       resolve => {
@@ -41,14 +41,13 @@ export class Sequence<T> extends LightweightAttachable {
           let sequence = sequencesObject[key];
           sequence.subscribe(data => {
             latestValues[key] = data;
-            unResolvedSequences.delete(sequence);
-            if (unResolvedSequences.size === 0) {
-              resolve(
-                Object.keys(latestValues).reduce((acc, reduceKey) => {
-                  acc[reduceKey] = latestValues[reduceKey];
-                  return acc;
-                }, {} as any)
-              );
+            if (unresolvedKeys.size === 0) {
+              resolve(this.shallowCopy(latestValues));
+            } else {
+              unresolvedKeys.delete(key);
+              if (unresolvedKeys.size === 0) {
+                resolve(this.shallowCopy(latestValues));
+              }
             }
           });
         });
@@ -62,7 +61,14 @@ export class Sequence<T> extends LightweightAttachable {
     return combinedSequence;
   }
 
-  static convertToSet(sequences: Sequence<unknown>[]) {
+  private static shallowCopy<T extends object>(obj: T): T {
+    return Object.keys(obj).reduce((acc, key) => {
+      acc[key] = (obj as any)[key];
+      return acc;
+    }, {} as any);
+  }
+
+  private static convertToSet(sequences: Sequence<unknown>[]) {
     let sequencesSet = new Set(sequences);
     if (sequencesSet.size !== sequences.length) {
       sequences.forEach(sequence => {
@@ -74,7 +80,7 @@ export class Sequence<T> extends LightweightAttachable {
     return sequencesSet;
   }
 
-  static waitUntilAllSequencedDestroyed(sequences: Set<Sequence<unknown>>, callback: () => void): void {
+  private static waitUntilAllSequencedDestroyed(sequences: Set<Sequence<unknown>>, callback: () => void): void {
     let oneDestroyed = (sequence: Sequence<unknown>) => {
       sequences.delete(sequence);
       if (sequences.size === 0) {
