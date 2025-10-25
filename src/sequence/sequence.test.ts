@@ -226,6 +226,24 @@ describe('Sequence', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
+    test('merging instantly getting destroyed sequences', async () => {
+      let heap: string[] = [];
+
+      let s1 = new Sequence<string>(resolve => resolve('a')).take(1);
+      let s2 = new Sequence<string>(resolve => resolve('b')).take(1);
+
+      let merged = Sequence.merge(s1, s2);
+      let read = merged.read(data => heap.push(data)).attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+
+      expect(heap).toEqual(['a', 'b']);
+      expect(s1.destroyed).toBeTruthy();
+      expect(s2.destroyed).toBeTruthy();
+      expect(merged.destroyed).toBeTruthy();
+      expect(read.destroyed).toBeTruthy();
+    });
+
     test('merge with delayed sequences', async () => {
       let heap: string[] = [];
       Sequence.merge(
@@ -282,24 +300,6 @@ describe('Sequence', () => {
         'Each given sequence to merge or combine has to be diferent.'
       );
     });
-
-    test('merging instantly getting destroyed sequences', async () => {
-      let heap: string[] = [];
-
-      let s1 = new Sequence<string>(resolve => resolve('a')).take(1);
-      let s2 = new Sequence<string>(resolve => resolve('b')).take(1);
-
-      let merged = Sequence.merge(s1, s2);
-      let read = merged.read(data => heap.push(data)).attachToRoot();
-
-      await delayedCalls.waitForAllPromises();
-
-      expect(heap).toEqual(['a', 'b']);
-      expect(s1.destroyed).toBeTruthy();
-      expect(s2.destroyed).toBeTruthy();
-      expect(merged.destroyed).toBeTruthy();
-      expect(read.destroyed).toBeTruthy();
-    });
   });
 
   describe('Combine', () => {
@@ -313,6 +313,24 @@ describe('Sequence', () => {
         .attachToRoot();
 
       expect(heap).toEqual([{ a: 'a', b: 1 }]);
+    });
+
+    test('combine instantly getting destroyed sequences', async () => {
+      let heap: { a: string; b: number }[] = [];
+
+      let s1 = new Sequence<string>(resolve => resolve('a')).take(1);
+      let s2 = new Sequence<string>(resolve => resolve('b')).take(1);
+
+      let combined = Sequence.combine({ a: s1, b: s2 });
+      let read = combined.read(data => heap.push(data)).attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+
+      expect(heap).toEqual([{ a: 'a', b: 1 }]);
+      expect(s1.destroyed).toBeTruthy();
+      expect(s2.destroyed).toBeTruthy();
+      expect(combined.destroyed).toBeTruthy();
+      expect(read.destroyed).toBeTruthy();
     });
 
     test('combine with delayed sequences', async () => {
@@ -366,6 +384,13 @@ describe('Sequence', () => {
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
       vi.useRealTimers();
+    });
+
+    test('combining same sequence should throw error', () => {
+      let sequence = new Sequence(() => {});
+      expect(() => Sequence.combine({ a: sequence, b: sequence }).attachToRoot()).toThrow(
+        'Each given sequence to merge or combine has to be diferent.'
+      );
     });
   });
 
