@@ -683,9 +683,59 @@ describe('Sequence', () => {
     });
 
     test('wait until any of it completed', () => {
-      // let action1 = new Action<string>();
-      // let action2 = new Action<string>();
-      // Sequence.merge(action1, action2).
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+
+      let heap: string[] = [];
+      let sequence = Sequence.merge(action1, action2)
+        .take(1)
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([]);
+
+      expect(sequence.destroyed).toBeFalsy();
+      expect(action1.listenerCount).toEqual(1);
+      expect(action2.listenerCount).toEqual(1);
+
+      action1.trigger('a');
+      expect(heap).toEqual(['a']);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(action1.listenerCount).toEqual(0);
+      expect(action2.listenerCount).toEqual(0);
+
+      action2.trigger('b');
+      expect(heap).toEqual(['a']);
+    });
+
+    test('wait until all completed', () => {
+      let action1 = new Action<void>();
+      let action2 = new Action<void>();
+
+      let callCount = 0;
+
+      let sequence = Sequence.combine({ a: action1, b: action2 })
+        .take(1)
+        .read(() => callCount++)
+        .attachToRoot();
+
+      expect(sequence.destroyed).toBeFalsy();
+      expect(action1.listenerCount).toEqual(1);
+      expect(action2.listenerCount).toEqual(1);
+
+      action1.trigger();
+      action1.trigger();
+      expect(callCount).toEqual(0);
+      expect(sequence.destroyed).toBeFalsy();
+      expect(action1.listenerCount).toEqual(1);
+      expect(action2.listenerCount).toEqual(1);
+
+      action2.trigger();
+      action2.trigger();
+      expect(callCount).toEqual(1);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(action1.listenerCount).toEqual(0);
+      expect(action2.listenerCount).toEqual(0);
     });
   });
 
