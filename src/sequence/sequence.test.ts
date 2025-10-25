@@ -226,6 +226,20 @@ describe('Sequence', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
+    test('using action directly', () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+
+      let heap: string[] = [];
+      Sequence.merge(action1, action2)
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      action1.trigger('a');
+      action2.trigger('b');
+      expect(heap).toEqual(['a', 'b']);
+    });
+
     test('merging instantly getting destroyed sequences', async () => {
       let heap: string[] = [];
 
@@ -312,6 +326,20 @@ describe('Sequence', () => {
         .read(data => heap.push(data))
         .attachToRoot();
 
+      expect(heap).toEqual([{ a: 'a', b: 1 }]);
+    });
+
+    test('using action directly', () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<number>();
+
+      let heap: { a: string; b: number }[] = [];
+      Sequence.combine({ a: action1, b: action2 })
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      action1.trigger('a');
+      action2.trigger(1);
       expect(heap).toEqual([{ a: 'a', b: 1 }]);
     });
 
@@ -638,6 +666,12 @@ describe('Sequence', () => {
 
       await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['1a', '2a', '3a']);
+    });
+
+    test('wait until any of it completed', () => {
+      // let action1 = new Action<string>();
+      // let action2 = new Action<string>();
+      // Sequence.merge(action1, action2).
     });
   });
 

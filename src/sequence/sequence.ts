@@ -4,10 +4,12 @@ import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 
 export type SequenceTouchFunction<T, K> = (data: T) => K | Sequence<K> | Notifier<K>;
+export type IStream<T> = Notifier<T> | Sequence<T>;
 
 export class Sequence<T> extends LightweightAttachable {
-  static merge<T>(...sequences: Sequence<T>[]): Sequence<T> {
-    let activeSequences = this.convertToSet(sequences);
+  static merge<T>(...streams: IStream<T>[]): Sequence<T> {
+    let sequences = this.convertToSequences(streams);
+    let activeSequences = this.validateAndConvertToSet(sequences);
 
     let mergedSequence = new Sequence<T>(
       resolve => {
@@ -26,18 +28,20 @@ export class Sequence<T> extends LightweightAttachable {
     return mergedSequence;
   }
 
-  static combine<T extends Record<string, Sequence<any>>>(
-    sequencesObject: T
-  ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }> {
+  static combine<T extends Record<string, IStream<any>>>(
+    streamsObject: T
+  ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
+    let sequencesObject = this.convertToSequencesObject(streamsObject);
     let sequences = Object.values(sequencesObject);
-    let activeSequences = this.convertToSet(sequences);
+    let activeSequences = this.validateAndConvertToSet(sequences);
 
     let latestValues: any = {};
-    let unresolvedKeys = new Set(Object.keys(sequencesObject));
+    let keys = Object.keys(sequencesObject);
+    let unresolvedKeys = new Set(keys);
 
     let combinedSequence = new Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(
       resolve => {
-        Object.keys(sequencesObject).forEach(key => {
+        keys.forEach(key => {
           let sequence = sequencesObject[key];
           sequence.subscribe(data => {
             latestValues[key] = data;
@@ -68,7 +72,29 @@ export class Sequence<T> extends LightweightAttachable {
     }, {} as any);
   }
 
-  private static convertToSet(sequences: Sequence<unknown>[]) {
+  private static convertToSequencesObject(streamsObject: Record<string, IStream<any>>): Record<string, Sequence<any>> {
+    let result: Partial<Record<string, Sequence<any>>> = {};
+    Object.keys(streamsObject).forEach(key => {
+      let stream = streamsObject[key];
+      let sequence = this.convertToSequence(stream);
+      result[key] = sequence;
+    });
+    return result as Record<string, Sequence<any>>;
+  }
+
+  private static convertToSequences<T = unknown>(streams: IStream<T>[]): Sequence<T>[] {
+    return streams.map(stream => this.convertToSequence(stream));
+  }
+
+  private static convertToSequence<T = unknown>(stream: IStream<T>): Sequence<T> {
+    if (stream instanceof Notifier) {
+      return stream.toSequence();
+    } else {
+      return stream;
+    }
+  }
+
+  private static validateAndConvertToSet(sequences: Sequence<unknown>[]) {
     let sequencesSet = new Set(sequences);
     if (sequencesSet.size !== sequences.length) {
       sequences.forEach(sequence => {

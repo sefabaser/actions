@@ -167,4 +167,9 @@ describe('Memory Leak', () => {
     expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
+
+  test('complex merge and combine', async () => {});
+
+  // TODO: complex merge combine
+  // TODO: complex merge combine finish early
 });
