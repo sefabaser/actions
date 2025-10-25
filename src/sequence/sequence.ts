@@ -17,23 +17,49 @@ export class Sequence<T> extends LightweightAttachable {
           });
         });
       },
-      () => {
-        sequences.forEach(sequence => {
-          sequence.destroy();
-        });
-      }
+      () => sequences.forEach(sequence => sequence.destroy())
     );
 
-    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroyEndOfSequence());
     sequences.forEach(sequence => sequence.attachToRoot()); // Each handled manually
+    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroyEndOfSequence());
 
     return mergedSequence;
   }
 
   static combine<T extends Record<string, Sequence<any>>>(
-    sequences: T
+    sequencesObject: T
   ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }> {
-    throw new Error('Not implemented');
+    let sequences = Object.values(sequencesObject);
+    let activeSequences = this.convertToSet(sequences);
+    let unResolvedSequences = new Set(sequences);
+
+    let latestValues: any = {};
+
+    let combinedSequence = new Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(
+      resolve => {
+        Object.keys(sequencesObject).forEach(key => {
+          let sequence = sequencesObject[key];
+          sequence.subscribe(data => {
+            latestValues[key] = data;
+            unResolvedSequences.delete(sequence);
+            if (unResolvedSequences.size === 0) {
+              resolve(
+                Object.keys(latestValues).reduce((acc, reduceKey) => {
+                  acc[reduceKey] = latestValues[reduceKey];
+                  return acc;
+                }, {} as any)
+              );
+            }
+          });
+        });
+      },
+      () => sequences.forEach(sequence => sequence.destroy())
+    );
+
+    sequences.forEach(sequence => sequence.attachToRoot()); // Each handled manually
+    this.waitUntilAllSequencedDestroyed(activeSequences, () => combinedSequence.destroyEndOfSequence());
+
+    return combinedSequence;
   }
 
   static convertToSet(sequences: Sequence<unknown>[]) {
@@ -60,9 +86,7 @@ export class Sequence<T> extends LightweightAttachable {
       if (sequence.destroyed) {
         oneDestroyed(sequence);
       } else {
-        sequence._onDestroyListeners.add(() => {
-          oneDestroyed(sequence);
-        });
+        sequence._onDestroyListeners.add(() => oneDestroyed(sequence));
       }
     });
   }
@@ -76,7 +100,7 @@ export class Sequence<T> extends LightweightAttachable {
     super();
     executor(data => this.trigger(data));
     if (onDestroy) {
-      this._onDestroyListeners.add(onDestroy);
+      this._onDestroyListeners.add(() => onDestroy());
     }
   }
 
@@ -195,12 +219,13 @@ export class Sequence<T> extends LightweightAttachable {
     let executionReturn = executionCallback(data);
     if (executionReturn instanceof Sequence) {
       let executionSequence: Sequence<K> = executionReturn;
+      let destroyListener = () => executionSequence.destroy();
       executionSequence.subscribe(innerData => {
-        this._onDestroyListeners.delete(executionSequence.destroy);
-        executionSequence.destroy();
+        this._onDestroyListeners.delete(destroyListener);
+        destroyListener();
         CallbackHelper.triggerCallback(innerData, callback);
       });
-      this._onDestroyListeners.add(executionSequence.destroy);
+      this._onDestroyListeners.add(destroyListener);
       executionSequence.attachToRoot(); // destoying is manually done
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
@@ -210,7 +235,6 @@ export class Sequence<T> extends LightweightAttachable {
         .subscribe(innerData => {
           if (subscription) {
             subscription.destroy();
-            this._onDestroyListeners.delete(subscription.destroy);
           } else {
             destroyedDirectly = true;
           }
@@ -218,7 +242,7 @@ export class Sequence<T> extends LightweightAttachable {
         })
         .attachToRoot(); // destoying is manually done
       if (!destroyedDirectly) {
-        this._onDestroyListeners.add(subscription.destroy);
+        this._onDestroyListeners.add(() => subscription.destroy());
       }
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);

@@ -319,7 +319,7 @@ describe('Sequence', () => {
       let heap: { a: string; b: number }[] = [];
 
       let s1 = new Sequence<string>(resolve => resolve('a')).take(1);
-      let s2 = new Sequence<string>(resolve => resolve('b')).take(1);
+      let s2 = new Sequence<number>(resolve => resolve(1)).take(1);
 
       let combined = Sequence.combine({ a: s1, b: s2 });
       let read = combined.read(data => heap.push(data)).attachToRoot();
@@ -779,13 +779,13 @@ describe('Sequence', () => {
         .attachToRoot();
 
       resolve1?.();
-      expect(middleSequence['listener']).toBeDefined();
+      expect(middleSequence['_listener']).toBeDefined();
 
       sequence.destroy();
-      expect(middleSequence['listener']).toBeUndefined();
+      expect(middleSequence['_listener']).toBeUndefined();
 
       resolve2?.();
-      expect(middleSequence['listener']).toBeUndefined();
+      expect(middleSequence['_listener']).toBeUndefined();
       expect(triggered).toEqual(false);
     });
 
