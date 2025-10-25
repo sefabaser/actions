@@ -1,4 +1,3 @@
-import { IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier } from '../observables/_notifier/notifier';
@@ -37,16 +36,16 @@ export class Sequence<T> extends LightweightAttachable {
   }
 
   private _nextInLine: Sequence<unknown> | undefined;
-  private _toBeDestroyed: Set<IAttachable> | undefined;
   private _resolvedBeforeListenerBy: T[] | undefined;
   private _listener: ((data: T) => void) | undefined;
+  private _onDestroyListeners = new Set<() => void>();
 
-  constructor(
-    executor: (resolve: (data: T) => void) => void,
-    private onDestroy?: () => void
-  ) {
+  constructor(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void) {
     super();
     executor(data => this.trigger(data));
+    if (onDestroy) {
+      this._onDestroyListeners.add(onDestroy);
+    }
   }
 
   read(callback: (data: T) => void): Sequence<T> {
@@ -123,25 +122,14 @@ export class Sequence<T> extends LightweightAttachable {
     return nextInLine;
   }
 
-  private get toBeDestroyed(): Set<IAttachable> {
-    if (!this._toBeDestroyed) {
-      this._toBeDestroyed = new Set<IAttachable>();
-    }
-    return this._toBeDestroyed;
-  }
-
   destroy(): void {
     if (!this.destroyed) {
       this._listener = undefined;
       this._resolvedBeforeListenerBy = undefined;
       this._nextInLine = undefined;
 
-      this.toBeDestroyed.forEach(item => item.destroy());
-      this.toBeDestroyed.clear();
-      this._toBeDestroyed = undefined;
-
-      this.onDestroy?.();
-      this.onDestroy = undefined;
+      this._onDestroyListeners.forEach(item => item());
+      this._onDestroyListeners = undefined as any;
 
       super.destroy();
     }
@@ -162,11 +150,11 @@ export class Sequence<T> extends LightweightAttachable {
     if (executionReturn instanceof Sequence) {
       let executionSequence: Sequence<K> = executionReturn;
       executionSequence.subscribe(innerData => {
-        this.toBeDestroyed.delete(executionSequence);
+        this._onDestroyListeners.delete(executionSequence.destroy);
         executionSequence.destroy();
         CallbackHelper.triggerCallback(innerData, callback);
       });
-      this.toBeDestroyed.add(executionSequence);
+      this._onDestroyListeners.add(executionSequence.destroy);
       executionSequence.attachToRoot(); // destoying is manually done
     } else if (executionReturn instanceof Notifier) {
       let executionNotifier: Notifier<K> = executionReturn;
@@ -176,7 +164,7 @@ export class Sequence<T> extends LightweightAttachable {
         .subscribe(innerData => {
           if (subscription) {
             subscription.destroy();
-            this.toBeDestroyed.delete(subscription);
+            this._onDestroyListeners.delete(subscription.destroy);
           } else {
             destroyedDirectly = true;
           }
@@ -184,7 +172,7 @@ export class Sequence<T> extends LightweightAttachable {
         })
         .attachToRoot(); // destoying is manually done
       if (!destroyedDirectly) {
-        this.toBeDestroyed.add(subscription);
+        this._onDestroyListeners.add(subscription.destroy);
       }
     } else {
       CallbackHelper.triggerCallback(executionReturn, callback);
