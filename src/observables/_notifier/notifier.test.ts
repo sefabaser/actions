@@ -439,6 +439,27 @@ describe('Notifier', () => {
     });
   });
 
+  describe('To Sequence', () => {
+    test('convert to sequence', () => {
+      let notifier = new Notifier<string>();
+      let sequence = notifier.toSequence().attachToRoot();
+      expect(sequence).toBeInstanceOf(Sequence);
+    });
+
+    test('triggering notifier should trigger sequence', () => {
+      let notifier = new Notifier<void>();
+
+      let triggered = false;
+      notifier
+        .toSequence()
+        .read(() => (triggered = true))
+        .attachToRoot();
+
+      notifier.forEach(listener => listener());
+      expect(triggered).toEqual(true);
+    });
+  });
+
   describe('Create From Sqeuence', () => {
     test('setup', () => {
       let sequence = new Sequence<string>(() => {}).attachToRoot();

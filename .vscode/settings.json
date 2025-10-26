@@ -36,5 +36,5 @@
     "**/dist/**": true,
     "**/build/**": true
   },
-  "vitest.cliArguments": "--env.MANUAL=1"
+  "vitest.cliArguments": "--env.MANUAL=1 --expose-gc"
 }

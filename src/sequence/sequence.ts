@@ -205,7 +205,9 @@ export class Sequence<T> extends LightweightAttachable {
 
       super.destroy();
 
-      this._onDestroyListeners.forEach(item => item());
+      for (let item of this._onDestroyListeners) {
+        item();
+      }
       this._onDestroyListeners = undefined as any;
     }
   }
@@ -279,8 +281,10 @@ export class Sequence<T> extends LightweightAttachable {
       throw new Error('Sequence is already being listened to');
     }
 
-    if (this._resolvedBeforeListenerBy && this._resolvedBeforeListenerBy.length > 0) {
-      this._resolvedBeforeListenerBy.forEach(data => callback(data));
+    if (this._resolvedBeforeListenerBy) {
+      for (let data of this._resolvedBeforeListenerBy) {
+        callback(data);
+      }
       this._resolvedBeforeListenerBy = undefined;
     }
     this._listener = data => callback(data);
