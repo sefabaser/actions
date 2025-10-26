@@ -1,5 +1,5 @@
 import { Wait } from 'helpers-lib';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
@@ -185,30 +185,6 @@ describe('Sequence', () => {
     });
   });
 
-  describe('To Notifier', () => {
-    test('setup', () => {
-      let notifier = new Sequence<string>(() => {}).attachToRoot().toNotifier();
-      expect(notifier.listenerCount).toEqual(0);
-    });
-
-    test('converting notifier before attaching should not throw error', () => {
-      vi.useFakeTimers();
-      expect(() => {
-        new Sequence<string>(() => {}).toNotifier();
-
-        vi.runAllTimers();
-      }).toThrow('Before converting a sequence to notifier, it must be attached to something!');
-      vi.useRealTimers();
-    });
-
-    test('converted notifier can be subscribed by many', () => {
-      let notifier = new Sequence<string>(resolve => resolve('a')).attachToRoot().toNotifier();
-      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
-      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
-      expect(notifier.listenerCount).toEqual(2);
-    });
-  });
-
   describe('Merge', () => {
     test('simple merge', async () => {
       let heap: string[] = [];
@@ -305,7 +281,6 @@ describe('Sequence', () => {
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('merging same sequence should throw error', () => {
@@ -418,7 +393,6 @@ describe('Sequence', () => {
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('combining same sequence should throw error', () => {
@@ -742,10 +716,6 @@ describe('Sequence', () => {
   describe('Attachment', () => {
     beforeEach(() => {
       vi.useFakeTimers();
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
     });
 
     test('not attaching to anything should throw error', () => {

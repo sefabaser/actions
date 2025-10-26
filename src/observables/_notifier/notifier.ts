@@ -8,6 +8,16 @@ import { ActionSubscription } from '../../utilities/action-subscription';
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
+  static fromSequence<T>(sequence: Sequence<T>): Notifier<T> {
+    if (!sequence.attachIsCalled) {
+      throw new Error('Before converting a sequence to notifier, it must be attached to something!');
+    }
+
+    let notifier = new Notifier<T>();
+    sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
+    return notifier;
+  }
+
   private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
   private nextAvailableSubscriptionId = 1;
 
@@ -25,6 +35,7 @@ export class Notifier<T> {
     return wrapper;
   }
 
+  /** @internal */
   forEach(callback: (listenerCallbackFunction: NotifierCallbackFunction<T>) => void): Notifier<T> {
     let newMap = new Map<number, NotifierCallbackFunction<T>>(this.listenersMap);
     newMap.forEach(data => CallbackHelper.triggerCallback(data, callback));

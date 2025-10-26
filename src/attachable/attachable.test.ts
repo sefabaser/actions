@@ -30,7 +30,6 @@ describe('Attachable', () => {
         operation();
         vi.runAllTimers();
       }).toThrow('Attachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('attachment is not necessary if attachable is destroyed right after creation', () => {
@@ -44,7 +43,6 @@ describe('Attachable', () => {
         operation();
         vi.runAllTimers();
       }).not.toThrow('Attachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('when attachment target is destroyed, it should destroy its attachments', () => {

@@ -2,7 +2,6 @@ import { IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
-import { Action } from '../observables/action/action';
 
 export type IStream<T> = Notifier<T> | Sequence<T>;
 export type SequenceTouchFunction<T, K> = (data: T) => K | IStream<K>;
@@ -179,16 +178,6 @@ export class Sequence<T> extends LightweightAttachable {
     });
 
     return nextInLine;
-  }
-
-  toNotifier(): Notifier<T> {
-    if (!this.attachIsCalled) {
-      throw new Error('Before converting a sequence to notifier, it must be attached to something!');
-    }
-
-    let action = new Action<T>();
-    this.subscribe(data => action.trigger(data));
-    return action.notifier;
   }
 
   private createNextInLine<K>(): Sequence<K> {

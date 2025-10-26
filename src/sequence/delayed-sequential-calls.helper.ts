@@ -2,18 +2,26 @@ import { Wait } from 'helpers-lib';
 
 export class DelayedSequentialCallsHelper {
   private allPromises: Promise<void>[] = [];
+  private allResolves = new Set<(value: void | PromiseLike<void>) => void>();
 
   callEachDelayed<T>(values: T[], callback: (value: T) => void): void {
     let promise = new Promise<void>(resolve => {
+      this.allResolves.add(resolve);
       (async () => {
         for (let value of values) {
           await Wait();
           callback(value);
         }
         resolve();
+        this.allResolves.delete(resolve);
       })();
     });
     this.allPromises.push(promise);
+  }
+
+  reset() {
+    this.allResolves.forEach(resolve => resolve());
+    this.allResolves.clear();
   }
 
   async waitForAllPromises(): Promise<void> {

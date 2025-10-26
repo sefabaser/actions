@@ -38,9 +38,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
+    "@memlab/core": "1.1.43",
     "@types/node": "20.12.11",
     "typescript": "5.3.3",
-    "vitest": "3.2.4",
-    "@memlab/core": "1.1.43"
+    "vitest": "3.2.4"
   }
 }

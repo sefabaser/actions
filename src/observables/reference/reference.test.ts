@@ -54,7 +54,6 @@ describe('Reference', () => {
         new Reference().attachToRoot();
         vi.runAllTimers();
       }).not.toThrow('Attachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
     test('destroyed reference returns undefined for value', () => {

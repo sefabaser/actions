@@ -24,7 +24,6 @@ describe('LightweightAttachable', () => {
       operation();
       vi.runAllTimers();
     }).toThrow('LightweightAttachable: The object is not attached to anything!');
-    vi.useRealTimers();
   });
 
   test('attachment is not necessary if attachable is destroyed right after creation', () => {
@@ -38,7 +37,6 @@ describe('LightweightAttachable', () => {
       operation();
       vi.runAllTimers();
     }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
-    vi.useRealTimers();
   });
 
   test('attach returns this for chaining', () => {

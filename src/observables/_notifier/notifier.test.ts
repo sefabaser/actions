@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
+import { Sequence } from '../../sequence/sequence';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -280,7 +281,7 @@ describe('Notifier', () => {
     });
   });
 
-  describe('Notifier getter', () => {
+  describe('Notifier Getter', () => {
     test('returns new notifier with same handler', () => {
       let notifier = new Notifier<SampleModel>();
       let notifier2 = notifier.notifier;
@@ -340,7 +341,7 @@ describe('Notifier', () => {
     });
   });
 
-  describe('forEach', () => {
+  describe('For Each', () => {
     let notifier: Notifier<string>;
 
     beforeEach(() => {
@@ -427,7 +428,7 @@ describe('Notifier', () => {
     });
   });
 
-  describe('attached parent', () => {
+  describe('Attached Parent', () => {
     test('should destroy the subscription when it is destroyed', () => {
       let notifier = new Notifier<string>();
       let parent = new Attachable().attachToRoot();
@@ -435,6 +436,32 @@ describe('Notifier', () => {
       expect(subscription.destroyed).toEqual(false);
       parent.destroy();
       expect(subscription.destroyed).toEqual(true);
+    });
+  });
+
+  describe('Create From Sqeuence', () => {
+    test('setup', () => {
+      let sequence = new Sequence<string>(() => {}).attachToRoot();
+      let notifier = Notifier.fromSequence(sequence);
+      expect(notifier.listenerCount).toEqual(0);
+    });
+
+    test('converting notifier before attaching should throw error', () => {
+      vi.useFakeTimers();
+      expect(() => {
+        let sequence = new Sequence<string>(() => {});
+        Notifier.fromSequence(sequence);
+
+        vi.runAllTimers();
+      }).toThrow('Before converting a sequence to notifier, it must be attached to something!');
+    });
+
+    test('converted notifier can be subscribed by many', () => {
+      let sequence = new Sequence<string>(resolve => resolve('a')).attachToRoot();
+      let notifier = Notifier.fromSequence(sequence);
+      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
+      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
+      expect(notifier.listenerCount).toEqual(2);
     });
   });
 });
