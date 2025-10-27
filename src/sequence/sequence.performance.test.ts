@@ -4,6 +4,7 @@ import { describe, test } from 'vitest';
 import { Attachable } from '../attachable/attachable';
 import { Action } from '../observables/action/action';
 import { Sequence } from './sequence';
+import { Sequence2 } from './sequence2';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let testPerformance = async (
@@ -87,7 +88,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence single read', async () => {
     let resolve!: () => void;
     await testPerformance(() => {
-      let sequence = new Sequence(r => {
+      let sequence = Sequence2.create(r => {
         resolve = r as any;
       });
 
@@ -136,6 +137,44 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     /*
     Min: 3.9265999794006348 -> 2.4036999940872192
+    */
+  }, 60000);
+
+  test('sequence2 10x read and resolve', async () => {
+    let resolve!: () => void;
+    await testPerformance(() => {
+      let sequence = Sequence2.create(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .attach(parent);
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      parent.destroy();
+    });
+
+    /*
+    Min: 2.4246000051498413
     */
   }, 60000);
 

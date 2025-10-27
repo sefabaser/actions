@@ -7,14 +7,24 @@ export type SequenceTouchFunction<T, K> = (data: T) => K | IStream<K>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
-class SequenceExecuter<T> extends LightweightAttachable {
+class SequenceExecuter extends LightweightAttachable {
   onDestroyListeners = new Set<() => void>();
 
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
-  private _pendingValues: unknown[] | undefined = [];
+  private _pendingValues: unknown[] | undefined;
 
-  trigger(data: T): void {
-    this.executePipelineItem(data, 0);
+  trigger(data: unknown, index = 0): void {
+    if (index < this._pipeline.length) {
+      let item = this._pipeline[index];
+      item(data, returnData => this.trigger(returnData, index + 1));
+    } else {
+      if (!this.attachIsCalled) {
+        if (!this._pendingValues) {
+          this._pendingValues = [];
+        }
+        this._pendingValues.push(data);
+      }
+    }
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
@@ -30,7 +40,7 @@ class SequenceExecuter<T> extends LightweightAttachable {
 
       for (let i = 0; i < pendingValues.length; i++) {
         let value = pendingValues[i];
-        this.executePipelineItem(value, itemIndex);
+        this.trigger(value, itemIndex);
       }
     }
   }
@@ -54,22 +64,11 @@ class SequenceExecuter<T> extends LightweightAttachable {
     this._pendingValues = undefined;
     return super.attachToRoot();
   }
-
-  private executePipelineItem<A>(data: A, index: number) {
-    if (index < this._pipeline.length) {
-      let item = this._pipeline[index];
-      item(data, returnData => this.executePipelineItem(returnData, index + 1));
-    } else {
-      if (!this.attachIsCalled) {
-        this._pendingValues!.push(data);
-      }
-    }
-  }
 }
 
 export class Sequence2<T> extends LightweightAttachable {
   static create<T>(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void): Sequence2<T> {
-    let sequenceExecutor = new SequenceExecuter<T>();
+    let sequenceExecutor = new SequenceExecuter();
     executor(data => sequenceExecutor.trigger(data));
     if (onDestroy) {
       sequenceExecutor.onDestroyListeners.add(onDestroy);
@@ -77,7 +76,7 @@ export class Sequence2<T> extends LightweightAttachable {
     return new Sequence2(sequenceExecutor);
   }
 
-  private constructor(private executor: SequenceExecuter<T>) {
+  private constructor(private executor: SequenceExecuter) {
     super();
     this._attachIsCalled = true;
   }
