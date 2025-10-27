@@ -16,17 +16,11 @@ describe('Sequence', () => {
 
   describe('Setup', () => {
     test('simple sequence', () => {
-      expect(new Sequence<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
-    });
-
-    test('linking twice should throw error with attach', () => {
-      let sequence = new Sequence<string>(resolve => resolve('a'));
-      sequence.read(() => {}).attachToRoot();
-      expect(() => sequence.read(() => {}).attachToRoot()).toThrow('A sequence can only be linked once.');
+      expect(Sequence.create<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
     });
 
     test('attach cannot be called before the end of the chain', () => {
-      let sequence = new Sequence<string>(resolve => resolve('a'));
+      let sequence = Sequence.create<string>(resolve => resolve('a'));
       expect(() =>
         sequence
           .read(() => {})
@@ -38,12 +32,14 @@ describe('Sequence', () => {
 
   describe('Read', () => {
     test('simple sequence', () => {
-      new Sequence<string>(resolve => resolve('a')).read(data => expect(data).toEqual('a')).attachToRoot();
+      Sequence.create<string>(resolve => resolve('a'))
+        .read(data => expect(data).toEqual('a'))
+        .attachToRoot();
     });
 
     test('read should not change the data', () => {
       let heap: string[] = [];
-      new Sequence<string>(resolve => resolve('a'))
+      Sequence.create<string>(resolve => resolve('a'))
         .read(data => {
           heap.push(data);
           return 2;
@@ -61,7 +57,7 @@ describe('Sequence', () => {
       let secondTrigger = 0;
       let thirdTrigger = 0;
 
-      new Sequence<void>(resolve => resolve())
+      Sequence.create<void>(resolve => resolve())
         .read(() => {
           firstTrigger++;
         })
@@ -253,7 +249,7 @@ describe('Sequence', () => {
   describe('Edge Cases', () => {
     test('resolve undefined should still trigger next link', () => {
       let triggered = false;
-      new Sequence<void>(resolve => resolve())
+      Sequence.create<void>(resolve => resolve())
         .read(() => {
           triggered = true;
         })

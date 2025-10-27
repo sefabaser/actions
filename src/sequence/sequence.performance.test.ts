@@ -4,7 +4,6 @@ import { describe, test } from 'vitest';
 import { Attachable } from '../attachable/attachable';
 import { Action } from '../observables/action/action';
 import { Sequence } from './sequence';
-import { Sequence2 } from './sequence2';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let testPerformance = async (
@@ -105,7 +104,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence 10x read and resolve', async () => {
     let resolve!: () => void;
     await testPerformance(() => {
-      let sequence = new Sequence2(r => {
+      let sequence = new Sequence(r => {
         resolve = r as any;
       });
 

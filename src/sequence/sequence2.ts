@@ -1,103 +1,107 @@
-import { IAttachable } from '../attachable/attachable';
+import { Attachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
+import { Notifier } from '../observables/_notifier/notifier';
 
 export type IStream<T> = Notifier<T> | Sequence2<T>;
 export type SequenceTouchFunction<T, K> = (data: T) => K | IStream<K>;
 
-export class Sequence2<T> extends LightweightAttachable {
-  private _nextInLine: Sequence2<unknown> | undefined;
-  private _resolvedBeforeListenerBy: T[] | undefined;
-  private _listener: ((data: T) => void) | undefined;
-  private _onDestroyListeners = new Set<() => void>();
+type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
-  constructor(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void) {
-    super();
-    executor(data => this.trigger(data));
-    if (onDestroy) {
-      this._onDestroyListeners.add(() => onDestroy());
+class SequenceExecuter<T> extends LightweightAttachable {
+  onDestroyListeners = new Set<() => void>();
+
+  private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
+  private _pendingValues: unknown[] | undefined = [];
+
+  trigger(data: T): void {
+    this.executePipelineItem(data, 0);
+  }
+
+  enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
+    if (this._attachIsCalled) {
+      throw new Error('After attaching a sequence you cannot add another operation.');
+    }
+
+    this._pipeline.push(item);
+    if (this._pendingValues) {
+      let pendingValues = this._pendingValues;
+      this._pendingValues = [];
+      let itemIndex = this._pipeline.length - 1;
+
+      for (let i = 0; i < pendingValues.length; i++) {
+        let value = pendingValues[i];
+        this.executePipelineItem(value, itemIndex);
+      }
     }
   }
 
   destroy(): void {
     if (!this.destroyed) {
-      this._listener = undefined;
-      this._resolvedBeforeListenerBy = undefined;
-      this._nextInLine = undefined;
-
-      super.destroy();
-
-      for (let item of this._onDestroyListeners) {
+      this._pipeline = undefined as any;
+      for (let item of this.onDestroyListeners) {
         item();
       }
-      this._onDestroyListeners = undefined as any;
+      this.onDestroyListeners.clear();
     }
+  }
+
+  attach(parent: string | Attachable): this {
+    this._pendingValues = undefined;
+    return super.attach(parent);
+  }
+
+  attachToRoot(): this {
+    this._pendingValues = undefined;
+    return super.attachToRoot();
+  }
+
+  private executePipelineItem<A>(data: A, index: number) {
+    if (index < this._pipeline.length) {
+      let item = this._pipeline[index];
+      item(data, returnData => this.executePipelineItem(returnData, index + 1));
+    } else {
+      if (!this.attachIsCalled) {
+        this._pendingValues!.push(data);
+      }
+    }
+  }
+}
+
+export class Sequence2<T> extends LightweightAttachable {
+  static create<T>(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void): Sequence2<T> {
+    let sequenceExecutor = new SequenceExecuter<T>();
+    executor(data => sequenceExecutor.trigger(data));
+    if (onDestroy) {
+      sequenceExecutor.onDestroyListeners.add(onDestroy);
+    }
+    return new Sequence2(sequenceExecutor);
+  }
+
+  private constructor(private executor: SequenceExecuter<T>) {
+    super();
+    this._attachIsCalled = true;
+  }
+
+  destroy(): void {
+    this.executor.destroy();
+    super.destroy();
   }
 
   read(callback: (data: T) => void): Sequence2<T> {
-    if (!this._listener) {
-      this.subscribe(data => callback(data), false);
-      return this;
-    } else {
-      let nextInLine = this.createNextInLine<T>();
-      this._listener = undefined;
-
-      this.subscribe(data => {
-        callback(data);
-        nextInLine.trigger(data);
-      });
-      return nextInLine;
-    }
+    this.executor.enterPipeline<T, T>((data, resolve) => {
+      callback(data as T);
+      resolve(data);
+    });
+    return this;
   }
 
-  private createNextInLine<K>(): Sequence2<K> {
-    if (this._nextInLine) {
-      throw new Error('A sequence can only be linked once.');
-    }
-    if (this._attachIsCalled) {
-      throw new Error('After attaching a sequence you cannot add another operation.');
-    }
-
-    let nextInLine = new Sequence2<K>(
-      () => {},
-      () => this.destroy()
-    );
-    this.attachToRoot(); // Destroying is manually done by listening nextInLine
-    this._nextInLine = nextInLine;
-    return nextInLine;
+  attach(parent: string | Attachable): this {
+    this.executor.attach(parent);
+    return this;
   }
 
-  private trigger(data: T): void {
-    if (!this.destroyed) {
-      if (this._listener) {
-        this._listener(data);
-      } else {
-        if (!this._resolvedBeforeListenerBy) {
-          this._resolvedBeforeListenerBy = [];
-        }
-        this._resolvedBeforeListenerBy.push(data);
-      }
-    }
-  }
-
-  /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>, eraseHistory = true): IAttachable {
-    if (this.destroyed) {
-      throw new Error('Sequence is destroyed');
-    }
-    if (this._listener) {
-      throw new Error('Sequence is already being listened to');
-    }
-
-    if (this._resolvedBeforeListenerBy) {
-      for (let data of this._resolvedBeforeListenerBy) {
-        callback(data);
-      }
-      if (eraseHistory) {
-        this._resolvedBeforeListenerBy = undefined;
-      }
-    }
-    this._listener = data => callback(data);
+  attachToRoot(): this {
+    this.executor.attachToRoot();
     return this;
   }
 }
