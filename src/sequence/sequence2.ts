@@ -1,4 +1,4 @@
-import { Attachable } from '../attachable/attachable';
+import { Attachable, IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { Notifier } from '../observables/_notifier/notifier';
 
@@ -66,25 +66,23 @@ class SequenceExecuter extends LightweightAttachable {
   }
 }
 
-export class Sequence2<T> extends LightweightAttachable {
+export class Sequence2<T> implements IAttachable {
   static create<T>(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void): Sequence2<T> {
     let sequenceExecutor = new SequenceExecuter();
-    executor(data => sequenceExecutor.trigger(data));
+
+    executor(sequenceExecutor.trigger.bind(sequenceExecutor));
     if (onDestroy) {
       sequenceExecutor.onDestroyListeners.add(onDestroy);
     }
-    return new Sequence2(sequenceExecutor);
+
+    return new Sequence2<T>(sequenceExecutor);
   }
 
-  private constructor(private executor: SequenceExecuter) {
-    super();
-    this._attachIsCalled = true;
+  get destroyed(): boolean {
+    return this.executor.destroyed;
   }
 
-  destroy(): void {
-    this.executor.destroy();
-    super.destroy();
-  }
+  private constructor(private executor: SequenceExecuter) {}
 
   read(callback: (data: T) => void): Sequence2<T> {
     this.executor.enterPipeline<T, T>((data, resolve) => {
@@ -92,6 +90,10 @@ export class Sequence2<T> extends LightweightAttachable {
       resolve(data);
     });
     return this;
+  }
+
+  destroy(): void {
+    this.executor.destroy();
   }
 
   attach(parent: string | Attachable): this {

@@ -3,13 +3,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Action } from '../observables/action/action';
-import { Variable } from '../observables/variable/variable';
-import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
 import { Sequence2 as Sequence } from './sequence2';
 
 describe('Sequence', () => {
-  let delayedCalls = new DelayedSequentialCallsHelper();
-
   beforeEach(() => {
     ActionLibUnitTestHelper.hardReset();
   });
@@ -75,101 +71,6 @@ describe('Sequence', () => {
     });
   });
 
-  describe('Actions', () => {
-    test('chaining with map action', async () => {
-      let action = new Action<string>();
-
-      let heap: any[] = [];
-      action
-        .map(data => {
-          heap.push(data);
-          return data + '1';
-        })
-        .map(data => {
-          heap.push(data);
-        })
-        .attachToRoot();
-
-      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => {
-        action.trigger(value);
-      });
-
-      await delayedCalls.waitForAllPromises();
-      expect(heap).toEqual(['a', 'a1', 'b', 'b1', 'c', 'c1']);
-    });
-
-    test('map returning actions', async () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
-
-      let heap: any[] = [];
-      action1
-        .map(data => {
-          heap.push(data);
-          return data + '1';
-        })
-        .map(data => {
-          heap.push(data);
-          return action2;
-        })
-        .map(data => {
-          heap.push(data);
-        })
-        .attachToRoot();
-
-      delayedCalls.callEachDelayed(['a', 'b', 'c'], value => {
-        action1.trigger(value);
-        action2.trigger(value + 'x');
-      });
-
-      await delayedCalls.waitForAllPromises();
-      expect(heap).toEqual(['a', 'a1', 'ax', 'b', 'b1', 'bx', 'c', 'c1', 'cx']);
-    });
-
-    test('chaining with map action unsubscribing', async () => {
-      let action = new Action<string>();
-      let action2 = new Action<string>();
-
-      let triggered = false;
-      let sequence = action
-        .map(() => {
-          return action2;
-        })
-        .map(() => {
-          triggered = true;
-        })
-        .attachToRoot();
-
-      expect(action.listenerCount).toEqual(1);
-
-      action.trigger('');
-      action2.trigger('');
-
-      sequence.destroy();
-      expect(action.listenerCount).toEqual(0);
-      expect(action2.listenerCount).toEqual(0);
-
-      expect(triggered).toEqual(true);
-    });
-
-    test('chaining variable should trigger current value', () => {
-      let variable = new Variable<string>('a');
-
-      let heap: string[] = [];
-      let sequence = variable
-        .map(data => {
-          heap.push(data);
-        })
-        .attachToRoot();
-
-      expect(heap).toEqual(['a']);
-      expect(variable.listenerCount).toEqual(1);
-
-      sequence.destroy();
-      expect(variable.listenerCount).toEqual(0);
-    });
-  });
-
   describe('Attachment', () => {
     beforeEach(() => {
       vi.useFakeTimers();
@@ -177,17 +78,16 @@ describe('Sequence', () => {
 
     test('not attaching to anything should throw error', () => {
       expect(() => {
-        let action = new Action<string>();
-        action.map(() => {});
-
+        Sequence.create<void>(resolve => resolve());
         vi.runAllTimers();
       }).toThrow('LightweightAttachable: The object is not attached to anything!');
     });
 
     test('attaching to a target should not throw error', () => {
       expect(() => {
-        let action = new Action<string>();
-        action.map(() => {}).attach(new Attachable().attachToRoot());
+        Sequence.create<void>(resolve => resolve())
+          .read(() => {})
+          .attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
@@ -195,9 +95,9 @@ describe('Sequence', () => {
 
     test('attaching to root should not throw error', () => {
       expect(() => {
-        let action = new Action<string>();
-        action.map(() => {}).attachToRoot();
-        action.trigger('');
+        Sequence.create<void>(resolve => resolve())
+          .read(() => {})
+          .attachToRoot();
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
