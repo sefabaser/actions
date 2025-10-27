@@ -20,19 +20,25 @@ describe('Sequence', () => {
       expect(new Sequence<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
     });
 
-    test('linking twice should throw error', () => {
+    test('linking twice should throw error without attach', () => {
       let sequence = new Sequence<string>(resolve => resolve('a'));
-      sequence.read(() => {}).attachToRoot();
-      expect(() => sequence.read(() => {}).attachToRoot()).toThrow('A sequence can only be linked once.');
+      sequence.read(() => { });
+      expect(() => sequence.read(() => { }).attachToRoot()).toThrow('A sequence can only be linked once.');
+    });
+
+    test('linking twice should throw error with attach', () => {
+      let sequence = new Sequence<string>(resolve => resolve('a'));
+      sequence.read(() => { }).attachToRoot();
+      expect(() => sequence.read(() => { }).attachToRoot()).toThrow('A sequence can only be linked once.');
     });
 
     test('attach cannot be called before the end of the chain', () => {
       let sequence = new Sequence<string>(resolve => resolve('a'));
       expect(() =>
         sequence
-          .read(() => {})
+          .read(() => { })
           .attachToRoot()
-          .read(() => {})
+          .read(() => { })
       ).toThrow('After attaching a sequence you cannot add another operation.');
     });
   });
@@ -55,6 +61,28 @@ describe('Sequence', () => {
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'a']);
+    });
+
+    test('read chain', () => {
+      let firstTrigger = 0;
+      let secondTrigger = 0;
+      let thirdTrigger = 0;
+
+      new Sequence<void>(resolve => resolve())
+        .read(() => {
+          firstTrigger++;
+        })
+        .read(() => {
+          secondTrigger++;
+        })
+        .read(() => {
+          thirdTrigger++;
+        })
+        .attachToRoot();
+
+      expect(firstTrigger).toEqual(1);
+      expect(secondTrigger).toEqual(1);
+      expect(thirdTrigger).toEqual(1);
     });
   });
 
@@ -249,8 +277,8 @@ describe('Sequence', () => {
     });
 
     test('destroyed merged sequence should destroy children sequences', async () => {
-      let sequence1 = new Sequence(() => {});
-      let sequence2 = new Sequence(() => {});
+      let sequence1 = new Sequence(() => { });
+      let sequence2 = new Sequence(() => { });
       let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
 
       expect(sequence1.destroyed).toBeFalsy();
@@ -261,8 +289,8 @@ describe('Sequence', () => {
     });
 
     test('destroyed children sequences should destroy merged sequence', async () => {
-      let sequence1 = new Sequence(() => {});
-      let sequence2 = new Sequence(() => {});
+      let sequence1 = new Sequence(() => { });
+      let sequence2 = new Sequence(() => { });
       let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
 
       expect(merged.destroyed).toBeFalsy();
@@ -275,8 +303,8 @@ describe('Sequence', () => {
     test('merged sequances should not need to be attached manually', () => {
       vi.useFakeTimers();
       expect(() => {
-        let sequence1 = new Sequence(() => {});
-        let sequence2 = new Sequence(() => {});
+        let sequence1 = new Sequence(() => { });
+        let sequence2 = new Sequence(() => { });
         Sequence.merge(sequence1, sequence2).attachToRoot();
 
         vi.runAllTimers();
@@ -284,7 +312,7 @@ describe('Sequence', () => {
     });
 
     test('merging same sequence should throw error', () => {
-      let sequence = new Sequence(() => {});
+      let sequence = new Sequence(() => { });
       expect(() => Sequence.merge(sequence, sequence).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
@@ -361,8 +389,8 @@ describe('Sequence', () => {
     });
 
     test('destroyed combined sequence should destroy children sequences', async () => {
-      let sequence1 = new Sequence<string>(() => {});
-      let sequence2 = new Sequence<string>(() => {});
+      let sequence1 = new Sequence<string>(() => { });
+      let sequence2 = new Sequence<string>(() => { });
       let combined = Sequence.combine({ a: sequence1, b: sequence2 }).attachToRoot();
 
       expect(sequence1.destroyed).toBeFalsy();
@@ -373,8 +401,8 @@ describe('Sequence', () => {
     });
 
     test('destroyed children sequences should destroy combined sequence', async () => {
-      let sequence1 = new Sequence<string>(() => {});
-      let sequence2 = new Sequence<string>(() => {});
+      let sequence1 = new Sequence<string>(() => { });
+      let sequence2 = new Sequence<string>(() => { });
       let combined = Sequence.combine({ a: sequence1, b: sequence2 }).attachToRoot();
 
       expect(combined.destroyed).toBeFalsy();
@@ -387,8 +415,8 @@ describe('Sequence', () => {
     test('combined sequances should not need to be attached manually', () => {
       vi.useFakeTimers();
       expect(() => {
-        let sequence1 = new Sequence<string>(() => {});
-        let sequence2 = new Sequence<string>(() => {});
+        let sequence1 = new Sequence<string>(() => { });
+        let sequence2 = new Sequence<string>(() => { });
         Sequence.combine({ a: sequence1, b: sequence2 }).attachToRoot();
 
         vi.runAllTimers();
@@ -396,7 +424,7 @@ describe('Sequence', () => {
     });
 
     test('combining same sequence should throw error', () => {
-      let sequence = new Sequence(() => {});
+      let sequence = new Sequence(() => { });
       expect(() => Sequence.combine({ a: sequence, b: sequence }).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
@@ -721,7 +749,7 @@ describe('Sequence', () => {
     test('not attaching to anything should throw error', () => {
       expect(() => {
         let action = new Action<string>();
-        action.map(() => {});
+        action.map(() => { });
 
         vi.runAllTimers();
       }).toThrow('LightweightAttachable: The object is not attached to anything!');
@@ -730,7 +758,7 @@ describe('Sequence', () => {
     test('attaching to a target should not throw error', () => {
       expect(() => {
         let action = new Action<string>();
-        action.map(() => {}).attach(new Attachable().attachToRoot());
+        action.map(() => { }).attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
       }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
@@ -739,7 +767,7 @@ describe('Sequence', () => {
     test('attaching to root should not throw error', () => {
       expect(() => {
         let action = new Action<string>();
-        action.map(() => {}).attachToRoot();
+        action.map(() => { }).attachToRoot();
         action.trigger('');
 
         vi.runAllTimers();
@@ -750,7 +778,7 @@ describe('Sequence', () => {
       expect(() => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
-        action1.map(() => action2).map(() => {});
+        action1.map(() => action2).map(() => { });
 
         action1.trigger('');
 
@@ -764,7 +792,7 @@ describe('Sequence', () => {
         let action2 = new Action<string>();
         action1
           .map(() => action2)
-          .map(() => {})
+          .map(() => { })
           .attach(new Attachable().attachToRoot());
 
         action1.trigger('');
@@ -779,7 +807,7 @@ describe('Sequence', () => {
         let action2 = new Action<string>();
         action1
           .map(() => action2)
-          .map(() => {})
+          .map(() => { })
           .attachToRoot();
 
         action1.trigger('');
@@ -862,7 +890,7 @@ describe('Sequence', () => {
       let action2 = new Action<string>();
       let sequence = action1
         .map(() => action2)
-        .map(() => {})
+        .map(() => { })
         .attachToRoot();
 
       action1.trigger('');

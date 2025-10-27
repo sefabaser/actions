@@ -3,6 +3,7 @@ import { describe, test } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { Action } from '../observables/action/action';
+import { Sequence } from './sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let testPerformance = async (
@@ -37,7 +38,24 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     console.log('Median: ', median);
   };
 
-  test('subscribe', async () => {
+  test('sequence only', async () => {
+    let resolve!: () => void;
+    await testPerformance(() => {
+      let sequence = new Sequence(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence.attach(parent);
+      resolve();
+      parent.destroy();
+    });
+    /*
+    Min:  0.736299991607666
+    */
+  }, 60000);
+
+  test('action subscribe', async () => {
     let action = new Action<void>();
     await testPerformance(() => {
       let parent = new Attachable().attachToRoot();
@@ -47,29 +65,51 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     /*
     Min:  0.9406000375747681
-    Median:  1.1822000741958618
     */
   }, 60000);
 
-  test('to sequence only', async () => {
-    let action = new Action<void>();
-    await testPerformance(() => {
-      let parent = new Attachable().attachToRoot();
-      action.toSequence().attach(parent);
-      action.trigger();
-      parent.destroy();
-    });
-    /*
-    Min:  1.2843999862670898
-    */
-  }, 60000);
-
-  test('to sequence and read', async () => {
+  test('action to sequence read', async () => {
     let action = new Action<void>();
     await testPerformance(() => {
       let parent = new Attachable().attachToRoot();
       action
         .toSequence()
+        .read(() => {})
+        .attach(parent);
+      action.trigger();
+      parent.destroy();
+    });
+    /*
+    Min:  1.4560999870300293 -> 1.2453999519348145
+    */
+  }, 60000);
+
+  test('sequence single read', async () => {
+    let resolve!: () => void;
+    await testPerformance(() => {
+      let sequence = new Sequence(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence.read(() => {}).attach(parent);
+      resolve();
+      parent.destroy();
+    });
+    /*
+    Min:  0.9735000133514404 -> 0.7195000648498535
+    */
+  }, 60000);
+
+  test('sequence 10x read and resolve', async () => {
+    let resolve!: () => void;
+    await testPerformance(() => {
+      let sequence = new Sequence(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence
         .read(() => {})
         .read(() => {})
         .read(() => {})
@@ -81,22 +121,33 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .read(() => {})
         .read(() => {})
         .attach(parent);
-      action.trigger();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
       parent.destroy();
     });
 
     /*
-    Min:  1.4880000352859497
-    x10 read: 4.196700096130371 -> 3.6646000146865845
+    Min: 3.9265999794006348 -> 2.4036999940872192
     */
   }, 60000);
 
   test('to sequence and map', async () => {
-    let action = new Action<void>();
+    let resolve!: () => void;
     await testPerformance(() => {
+      let sequence = new Sequence(r => {
+        resolve = r as any;
+      });
+
       let parent = new Attachable().attachToRoot();
-      action
-        .toSequence()
+      sequence
         .map(() => {})
         .map(() => {})
         .map(() => {})
@@ -108,12 +159,21 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .map(() => {})
         .map(() => {})
         .attach(parent);
-      action.trigger();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
       parent.destroy();
     });
     /*
-    Min:  1.5273000001907349
-    x10 map: 4.306399941444397 -> 4.249099969863892 -> 4.132699966430664
+    Min: 9.82260000705719
     */
   }, 60000);
 });

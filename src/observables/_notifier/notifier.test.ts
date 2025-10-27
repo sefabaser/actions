@@ -452,6 +452,7 @@ describe('Notifier', () => {
       let triggered = false;
       notifier
         .toSequence()
+        .read(() => {})
         .read(() => (triggered = true))
         .attachToRoot();
 

@@ -141,6 +141,22 @@ export class Sequence<T> extends LightweightAttachable {
     return nextInLine;
   }
 
+  read2(callback: (data: T) => void): Sequence<T> {
+    if (!this._listener) {
+      this.subscribe(data => callback(data), false);
+      return this;
+    } else {
+      let nextInLine = this.createNextInLine<T>();
+      this._listener = undefined;
+
+      this.subscribe(data => {
+        callback(data);
+        nextInLine.trigger(data);
+      });
+      return nextInLine;
+    }
+  }
+
   map<K>(callback: SequenceTouchFunction<T, K>): Sequence<K> {
     let nextInLine = this.createNextInLine<K>();
 
@@ -273,7 +289,7 @@ export class Sequence<T> extends LightweightAttachable {
   }
 
   /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
+  subscribe(callback: NotifierCallbackFunction<T>, eraseHistory = true): IAttachable {
     if (this.destroyed) {
       throw new Error('Sequence is destroyed');
     }
@@ -285,7 +301,9 @@ export class Sequence<T> extends LightweightAttachable {
       for (let data of this._resolvedBeforeListenerBy) {
         callback(data);
       }
-      this._resolvedBeforeListenerBy = undefined;
+      if (eraseHistory) {
+        this._resolvedBeforeListenerBy = undefined;
+      }
     }
     this._listener = data => callback(data);
     return this;
