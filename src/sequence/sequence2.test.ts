@@ -960,6 +960,26 @@ describe('Sequence', () => {
         sequance.attachToRoot();
       });
 
+      test('directly destroyed sequence callback', () => {
+        let heap: string[] = [];
+        Sequence.create<void>(resolve => {
+          resolve();
+          return () => {
+            heap.push('destroyed');
+          };
+        })
+          .read(() => {
+            heap.push('read1');
+          })
+          .take(1)
+          .read(() => {
+            heap.push('read2');
+          })
+          .attachToRoot();
+
+        expect(heap).toEqual(['read1', 'destroyed', 'read2']);
+      });
+
       test('destroying parent should destroy sequence', () => {
         let parent = new Attachable().attachToRoot();
 
