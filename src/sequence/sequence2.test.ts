@@ -824,6 +824,16 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeFalsy();
       });
 
+      test('instantly finishing the sequence should not block the chain', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => resolve('a'))
+          .take(1)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a']);
+      });
+
       test('taking less then instant triggers', () => {
         let heap: string[] = [];
         Sequence.create<string>(resolve => {
@@ -836,16 +846,6 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(heap).toEqual(['a', 'b']);
-      });
-
-      test('instantly finishing the sequence should not block the chain', () => {
-        let heap: string[] = [];
-        Sequence.create<string>(resolve => resolve('a'))
-          .take(1)
-          .read(data => heap.push(data))
-          .attachToRoot();
-
-        expect(heap).toEqual(['a']);
       });
     });
 

@@ -13,52 +13,50 @@ class SequenceExecuter extends LightweightAttachable {
   private _pendingValues: unknown[] | undefined;
 
   destroy(): void {
-    this._pipeline = undefined as any;
+    if (!this.destroyed) {
+      this._pipeline = undefined as any;
 
-    this.trigger = () => {};
-    this.enterPipeline = () => {};
-    this.destroy = () => {};
+      for (let item of this.onDestroyListeners) {
+        item();
+      }
+      this.onDestroyListeners.clear();
 
-    for (let item of this.onDestroyListeners) {
-      item();
+      super.destroy();
     }
-    this.onDestroyListeners.clear();
-
-    super.destroy();
   }
 
-  trigger(data: unknown): void {
-    this.process(data, 0);
-  }
-
-  enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
-    if (this._attachIsCalled) {
-      throw new Error('After attaching a sequence you cannot add another operation.');
-    }
-
-    this._pipeline.push(item);
-    if (this._pendingValues) {
-      let pendingValues = this._pendingValues;
-      this._pendingValues = [];
-      let itemIndex = this._pipeline.length - 1;
-
-      for (let i = 0; i < pendingValues.length; i++) {
-        let value = pendingValues[i];
-        this.process(value, itemIndex);
+  trigger(data: unknown, index = 0): void {
+    if (!this.destroyed) {
+      if (index < this._pipeline.length) {
+        let item = this._pipeline[index];
+        item(data, returnData => this.trigger(returnData, index + 1));
+      } else {
+        if (!this.attachIsCalled) {
+          if (!this._pendingValues) {
+            this._pendingValues = [];
+          }
+          this._pendingValues.push(data);
+        }
       }
     }
   }
 
-  private process(data: unknown, index: number): void {
-    if (index < this._pipeline.length) {
-      let item = this._pipeline[index];
-      item(data, returnData => this.process(returnData, index + 1));
-    } else {
-      if (!this.attachIsCalled) {
-        if (!this._pendingValues) {
-          this._pendingValues = [];
+  enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
+    if (!this.destroyed) {
+      if (this._attachIsCalled) {
+        throw new Error('After attaching a sequence you cannot add another operation.');
+      }
+
+      this._pipeline.push(item);
+      if (this._pendingValues) {
+        let pendingValues = this._pendingValues;
+        this._pendingValues = [];
+        let itemIndex = this._pipeline.length - 1;
+
+        for (let i = 0; i < pendingValues.length; i++) {
+          let value = pendingValues[i];
+          this.trigger(value, itemIndex);
         }
-        this._pendingValues.push(data);
       }
     }
   }
@@ -127,14 +125,10 @@ export class Sequence2<T> implements IAttachable {
     let taken = 0;
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
-      try {
-        resolve(data);
-        taken++;
-        if (taken >= count) {
-          this.executor.destroy();
-        }
-      } catch (e) {
-        console.error(e);
+      resolve(data);
+      taken++;
+      if (taken >= count) {
+        this.executor.destroy();
       }
     });
     return this;
