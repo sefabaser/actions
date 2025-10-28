@@ -75,7 +75,7 @@ export class Sequence2<T> implements IAttachable {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
-      executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+      executor(data => sequenceExecutor.trigger(data));
     } catch (e) {
       console.error(e);
     }

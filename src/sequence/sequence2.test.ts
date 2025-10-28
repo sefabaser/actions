@@ -348,26 +348,28 @@ describe('Sequence', () => {
     });
 
     describe('Behavior', () => {
-      test('sync data chaining', () => {
-        let heap: unknown[] = [];
+      describe('sync', () => {
+        test('sync data chaining', () => {
+          let heap: unknown[] = [];
 
-        Sequence.create<string>(resolve => resolve('a'))
-          .map(data => {
-            heap.push(data);
-            return 1;
-          })
-          .map(data => {
-            heap.push(data);
-          })
-          .map(data => {
-            heap.push(data);
-          })
-          .attachToRoot();
+          Sequence.create<string>(resolve => resolve('a'))
+            .map(data => {
+              heap.push(data);
+              return 1;
+            })
+            .map(data => {
+              heap.push(data);
+            })
+            .map(data => {
+              heap.push(data);
+            })
+            .attachToRoot();
 
-        expect(heap).toEqual(['a', 1, undefined]);
+          expect(heap).toEqual(['a', 1, undefined]);
+        });
       });
 
-      describe('map returns another sequence', () => {
+      describe('map returns sequence', () => {
         test('sync resolve', () => {
           let heap: unknown[] = [];
 
@@ -499,50 +501,147 @@ describe('Sequence', () => {
         });
       });
     });
-  });
 
-  describe('Edge Cases', () => {
-    test('execution should stop listening notifiers even it is in the middle on destruction', () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
+    describe('Destruction', () => {
+      describe('sync', () => {
+        test('destroying sequence', () => {
+          let sequance = Sequence.create<void>(resolve => resolve())
+            .map(() => {})
+            .map(() => {})
+            .map(() => {})
+            .attachToRoot();
 
-      let triggered = false;
-      let sequence = action1
-        .map(() => action2)
-        .map(() => {
-          triggered = true;
-        })
-        .attachToRoot();
+          expect(sequance.destroyed).toBeFalsy();
+          sequance.destroy();
+          expect(sequance.destroyed).toBeTruthy();
+        });
 
-      action1.trigger('');
+        test('destroying parent should destroy sequence', () => {
+          let parent = new Attachable().attachToRoot();
 
-      expect(triggered).toEqual(false);
-      expect(action2.listenerCount).toEqual(1);
+          let sequance = Sequence.create<void>(resolve => resolve())
+            .map(() => {})
+            .map(() => {})
+            .map(() => {})
+            .attach(parent);
 
-      sequence.destroy();
-      expect(action2.listenerCount).toEqual(0);
+          expect(sequance.destroyed).toBeFalsy();
+          parent.destroy();
+          expect(sequance.destroyed).toBeTruthy();
+        });
+      });
 
-      action2.trigger('');
-      expect(triggered).toEqual(false);
-    });
+      describe('map returns sequence', () => {
+        test(`ongoing execution's subscriptions should be destroyed sequence destroy`, async () => {
+          let triggered = false;
+          let innerSequence: Sequence<string> | undefined;
 
-    test('multiple chain triggers should successfully unsubscribe on destruction', () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
-      let sequence = action1
-        .map(() => action2)
-        .map(() => {})
-        .attachToRoot();
+          let sequence = Sequence.create<void>(resolve => resolve())
+            .map(() => {
+              innerSequence = Sequence.create(r => {
+                delayedCalls.callEachDelayed([''], () => r(''));
+              });
+              expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
+              return innerSequence;
+            })
+            .map(() => {
+              triggered = true;
+            })
+            .attachToRoot();
 
-      action1.trigger('');
-      action1.trigger('');
+          expect(innerSequence).toBeDefined();
+          expect(innerSequence!['executor']['_pipeline'].length).toEqual(1);
 
-      expect(action1.listenerCount).toEqual(1);
-      expect(action2.listenerCount).toEqual(2);
+          sequence.destroy();
+          expect(innerSequence!.destroyed).toBeTruthy();
 
-      sequence.destroy();
-      expect(action1.listenerCount).toEqual(0);
-      expect(action2.listenerCount).toEqual(0);
+          await delayedCalls.waitForAllPromises();
+          expect(triggered).toEqual(false);
+        });
+
+        test(`multiple chain triggers should successfully unsubscribe on destruction`, () => {
+          let triggered = false;
+          let innerSequences: Sequence<string>[] = [];
+          let innerResolves: ((data: string) => void)[] = [];
+
+          let sequence = Sequence.create<void>(resolve => {
+            resolve();
+            resolve();
+          })
+            .map(() => {
+              let innerSequence = Sequence.create<string>(r => innerResolves.push(r));
+              expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
+              innerSequences.push(innerSequence);
+              return innerSequence;
+            })
+            .map(() => {
+              triggered = true;
+            })
+            .attachToRoot();
+
+          expect(innerSequences.length).toEqual(2);
+          expect(innerResolves.length).toEqual(2);
+          innerSequences.forEach(innerSequence => {
+            expect(innerSequence['executor']['_pipeline'].length).toEqual(1);
+          });
+
+          sequence.destroy();
+
+          innerSequences.forEach(innerSequence => {
+            expect(innerSequence.destroyed).toBeTruthy();
+          });
+
+          innerResolves.forEach(resolve => resolve(''));
+          expect(triggered).toEqual(false);
+        });
+      });
+
+      describe('map returns notifier', () => {
+        test(`ongoing execution's subscriptions should be destroyed sequence destroy`, () => {
+          let action = new Action<string>();
+
+          let triggered = false;
+          let sequence = Sequence.create<void>(resolve => resolve())
+            .map(() => action)
+            .map(() => {
+              triggered = true;
+            })
+            .attachToRoot();
+
+          expect(triggered).toEqual(false);
+          expect(action.listenerCount).toEqual(1);
+
+          sequence.destroy();
+          expect(action.listenerCount).toEqual(0);
+
+          action.trigger('');
+          expect(triggered).toEqual(false);
+        });
+
+        test('multiple chain triggers should successfully unsubscribe on destruction', () => {
+          let action = new Action<string>();
+
+          let triggered = false;
+          let sequence = Sequence.create<void>(resolve => {
+            resolve();
+            resolve();
+          })
+            .map(() => action)
+            .map(() => {
+              triggered = true;
+            })
+            .attachToRoot();
+
+          expect(triggered).toEqual(false);
+          expect(action.listenerCount).toEqual(2);
+
+          sequence.destroy();
+          expect(action.listenerCount).toEqual(0);
+
+          action.trigger('');
+          expect(triggered).toEqual(false);
+        });
+      });
     });
   });
 });
