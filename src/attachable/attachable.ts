@@ -45,6 +45,25 @@ export class Attachable extends ClassId {
     }
   }
 
+  /*
+  private _onDestroyListeners: Set<() => void> | undefined;
+  onDestroy2(): Sequence2<void> {
+    if (this._destroyed) {
+      return Sequence2.create<void>(resolve => resolve());
+    } else {
+      if (!this._onDestroyListeners) {
+        this._onDestroyListeners = new Set();
+      }
+
+      return Sequence2.create<void>(resolve => {
+        this._onDestroyListeners!.add(resolve);
+        return () => {
+          this._onDestroyListeners!.delete(resolve);
+        };
+      });
+    }
+  }*/
+
   constructor() {
     super();
     setTimeout(() => {
@@ -69,6 +88,8 @@ export class Attachable extends ClassId {
       this._onDestroy = undefined;
 
       onDestroyListeners.forEach(listener => CallbackHelper.triggerCallback(undefined, listener));
+      // this._onDestroyListeners?.forEach(listener => listener());
+      // this._onDestroyListeners = undefined;
     }
   }
 

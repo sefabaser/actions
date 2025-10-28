@@ -79,17 +79,16 @@ class SequenceExecuter extends LightweightAttachable {
 }
 
 export class Sequence2<T> implements IAttachable {
-  static create<T>(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void): Sequence2<T> {
+  static create<T>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence2<T> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
-      executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+      let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+      if (destroyCallback) {
+        sequenceExecutor.onDestroyListeners.add(destroyCallback);
+      }
     } catch (e) {
       console.error(e);
-    }
-
-    if (onDestroy) {
-      sequenceExecutor.onDestroyListeners.add(onDestroy);
     }
 
     return new Sequence2<T>(sequenceExecutor);

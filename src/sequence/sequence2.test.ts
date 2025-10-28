@@ -78,6 +78,19 @@ describe('Sequence', () => {
         parent.destroy();
         expect(sequance.destroyed).toBeTruthy();
       });
+
+      test('destroy sequence callback', () => {
+        let triggered = false;
+        let sequance = Sequence.create<void>(() => {
+          return () => {
+            triggered = true;
+          };
+        }).attachToRoot();
+
+        expect(triggered).toBeFalsy();
+        sequance.destroy();
+        expect(triggered).toBeTruthy();
+      });
     });
 
     describe('Attachment Errors', () => {
@@ -321,6 +334,24 @@ describe('Sequence', () => {
         parent.destroy();
         expect(sequance.destroyed).toBeTruthy();
       });
+
+      test('destroy sequence callback', () => {
+        let triggered = false;
+        let sequance = Sequence.create<void>(resolve => {
+          resolve();
+          return () => {
+            triggered = true;
+          };
+        })
+          .read(() => {})
+          .read(() => {})
+          .read(() => {})
+          .attachToRoot();
+
+        expect(triggered).toBeFalsy();
+        sequance.destroy();
+        expect(triggered).toBeTruthy();
+      });
     });
   });
 
@@ -519,6 +550,24 @@ describe('Sequence', () => {
     });
 
     describe('Destruction', () => {
+      test('destroy sequence callback', () => {
+        let triggered = false;
+        let sequance = Sequence.create<void>(resolve => {
+          resolve();
+          return () => {
+            triggered = true;
+          };
+        })
+          .map(() => {})
+          .map(() => {})
+          .map(() => {})
+          .attachToRoot();
+
+        expect(triggered).toBeFalsy();
+        sequance.destroy();
+        expect(triggered).toBeTruthy();
+      });
+
       describe('sync', () => {
         test('destroying sequence', () => {
           let sequance = Sequence.create<void>(resolve => resolve())
@@ -585,7 +634,9 @@ describe('Sequence', () => {
             resolve();
           })
             .map(() => {
-              let innerSequence = Sequence.create<string>(r => innerResolves.push(r));
+              let innerSequence = Sequence.create<string>(r => {
+                innerResolves.push(r);
+              });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
@@ -776,6 +827,24 @@ describe('Sequence', () => {
         parent.destroy();
         expect(sequance.destroyed).toBeTruthy();
       });
+
+      test('destroy sequence callback', () => {
+        let triggered = false;
+        let sequance = Sequence.create<void>(resolve => {
+          resolve();
+          return () => {
+            triggered = true;
+          };
+        })
+          .filter(() => true)
+          .filter(() => true)
+          .filter(() => true)
+          .attachToRoot();
+
+        expect(triggered).toBeFalsy();
+        sequance.destroy();
+        expect(triggered).toBeTruthy();
+      });
     });
   });
 
@@ -874,6 +943,21 @@ describe('Sequence', () => {
         expect(sequance.destroyed).toBeFalsy();
         sequance.destroy();
         expect(sequance.destroyed).toBeTruthy();
+      });
+
+      test('destroy sequence callback', () => {
+        let triggered = false;
+        let sequance = Sequence.create<void>(resolve => {
+          resolve();
+          return () => {
+            triggered = true;
+          };
+        });
+
+        expect(triggered).toBeFalsy();
+        sequance.take(1);
+        expect(triggered).toBeTruthy();
+        sequance.attachToRoot();
       });
 
       test('destroying parent should destroy sequence', () => {
