@@ -146,28 +146,19 @@ describe('Sequence', () => {
 
   describe('Read', () => {
     describe('Triggers', () => {
-      test('simple sequence instant trigger', () => {
-        let heap: string[] = [];
-
-        Sequence.create<string>(resolve => resolve('a'))
-          .read(data => heap.push(data))
-          .attachToRoot();
-
-        expect(heap).toEqual(['a']);
-      });
-
-      test('simple sequence trigger after creation', () => {
+      test('simple sequence sync triggers', () => {
         let heap: string[] = [];
 
         let resolve!: (data: string) => void;
         Sequence.create<string>(r => {
           resolve = r;
+          resolve('a');
         })
           .read(data => heap.push(data))
           .attachToRoot();
 
-        resolve('a');
-        expect(heap).toEqual(['a']);
+        resolve('b');
+        expect(heap).toEqual(['a', 'b']);
       });
 
       test('simple sequence mixed triggers', async () => {
@@ -193,21 +184,6 @@ describe('Sequence', () => {
     });
 
     describe('Behavior', () => {
-      test('read should not change the data', () => {
-        let heap: string[] = [];
-        Sequence.create<string>(resolve => resolve('a'))
-          .read(data => {
-            heap.push('1' + data);
-            return 2;
-          })
-          .read(data => {
-            heap.push('2' + data);
-          })
-          .attachToRoot();
-
-        expect(heap).toEqual(['1a', '2a']);
-      });
-
       test('sync read chain', () => {
         let heap: string[] = [];
 
@@ -273,6 +249,32 @@ describe('Sequence', () => {
           '3t'
         ]);
       });
+
+      test('read should not change the data', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => resolve('a'))
+          .read(data => {
+            heap.push('1' + data);
+            return 2;
+          })
+          .read(data => {
+            heap.push('2' + data);
+          })
+          .attachToRoot();
+
+        expect(heap).toEqual(['1a', '2a']);
+      });
+
+      test('resolve undefined should still trigger next link', () => {
+        let heap: unknown[] = [];
+        Sequence.create<void>(resolve => resolve())
+          .read(data => {
+            heap.push(data);
+          })
+          .attachToRoot();
+
+        expect(heap).toEqual([undefined]);
+      });
     });
 
     describe('Destruction', () => {
@@ -302,17 +304,127 @@ describe('Sequence', () => {
         expect(sequance.destroyed).toBeTruthy();
       });
     });
+  });
 
-    describe('Edge Cases', () => {
-      test('resolve undefined should still trigger next link', () => {
+  describe('Map', () => {
+    describe('Triggers', () => {
+      test('simple sequence sync triggers', () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+        })
+          .map(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('b');
+        expect(heap).toEqual(['a', 'b']);
+      });
+
+      test('simple sequence mixed triggers', async () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .map(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
+      });
+    });
+
+    describe('Behavior', () => {
+      test('sync data chaining', () => {
         let heap: unknown[] = [];
-        Sequence.create<void>(resolve => resolve())
-          .read(data => {
+
+        Sequence.create<string>(resolve => resolve('a'))
+          .map(data => {
+            heap.push(data);
+            return 1;
+          })
+          .map(data => {
+            heap.push(data);
+          })
+          .map(data => {
             heap.push(data);
           })
           .attachToRoot();
 
-        expect(heap).toEqual([undefined]);
+        expect(heap).toEqual(['a', 1, undefined]);
+      });
+
+      test('map returns another sequence sync resolve', () => {
+        let heap: unknown[] = [];
+
+        Sequence.create<string>(resolve => resolve('a'))
+          .map(data => Sequence.create<string>(resolveInner => resolveInner(data + '1')))
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a1']);
+      });
+
+      test('map returns another sequence async resolve', async () => {
+        let heap: unknown[] = [];
+
+        Sequence.create<string>(resolve => resolve('a'))
+          .map(data =>
+            Sequence.create<string>(resolveInner => {
+              delayedCalls.callEachDelayed([data + '1'], delayedData => resolveInner(delayedData));
+            })
+          )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+        expect(heap).toEqual(['a1']);
+      });
+
+      test('map returns another sequence mixed resolves', async () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+
+        let innerCount = 0;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .map(data =>
+            Sequence.create<string>(resolveInner => {
+              let response = data + 'I';
+
+              // 1 sync response, 1 async response on each call
+              if (innerCount % 2 === 0) {
+                resolveInner(response);
+              } else {
+                delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
+              }
+            })
+          )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
       });
     });
   });

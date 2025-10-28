@@ -10,7 +10,13 @@ export class DelayedSequentialCallsHelper {
       (async () => {
         for (let value of values) {
           await Wait();
-          callback(value);
+          try {
+            callback(value);
+          } catch (e) {
+            resolve();
+            this.allResolves.delete(resolve);
+            throw e;
+          }
         }
         resolve();
         this.allResolves.delete(resolve);
