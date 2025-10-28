@@ -135,7 +135,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-
     /*
     Min: 3.9265999794006348 -> 2.4036999940872192
     */
@@ -173,13 +172,12 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-
     /*
     Min: 2.4246000051498413 -> 2.3064000606536865
     */
   }, 60000);
 
-  test('to sequence and map', async () => {
+  test('sequence 10x map and resolve', async () => {
     let resolve!: () => void;
     await testPerformance(() => {
       let sequence = new Sequence(r => {
@@ -214,6 +212,44 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     /*
     Min: 9.82260000705719
+    */
+  }, 60000);
+
+  test('sequence2 10x map and resolve', async () => {
+    let resolve!: () => void;
+    await testPerformance(() => {
+      let sequence = Sequence2.create(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .map(() => {})
+        .attach(parent);
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      resolve();
+      parent.destroy();
+    });
+    /*
+    Min: 5.394699931144714
     */
   }, 60000);
 });

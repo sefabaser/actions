@@ -27,8 +27,8 @@ class SequenceExecuter extends LightweightAttachable {
     }
   }
 
-  trigger(data: unknown, index = 0): void {
-    if (!this.destroyed) {
+  trigger(data: unknown, index = 0, checkDestroyed = true): void {
+    if (!this.destroyed || !checkDestroyed) {
       if (index < this._pipeline.length) {
         let item = this._pipeline[index];
         item(data, returnData => this.trigger(returnData, index + 1));
@@ -56,7 +56,7 @@ class SequenceExecuter extends LightweightAttachable {
 
       for (let i = 0; i < pendingValues.length; i++) {
         let value = pendingValues[i];
-        this.trigger(value, itemIndex);
+        this.trigger(value, itemIndex, false);
       }
     }
   }
@@ -131,12 +131,16 @@ export class Sequence2<T> implements IAttachable {
     let taken = 0;
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
-      resolve(data);
-      taken++;
+      if (taken < count) {
+        resolve(data);
+        taken++;
+      }
+
       if (taken >= count) {
         this.executor.destroy();
       }
     });
+
     return this;
   }
 
