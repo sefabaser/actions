@@ -12,18 +12,23 @@ class SequenceExecuter extends LightweightAttachable {
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
   private _pendingValues: unknown[] | undefined;
 
-  trigger(data: unknown, index = 0): void {
-    if (index < this._pipeline.length) {
-      let item = this._pipeline[index];
-      item(data, returnData => this.trigger(returnData, index + 1));
-    } else {
-      if (!this.attachIsCalled) {
-        if (!this._pendingValues) {
-          this._pendingValues = [];
-        }
-        this._pendingValues.push(data);
-      }
+  destroy(): void {
+    this._pipeline = undefined as any;
+
+    this.trigger = () => {};
+    this.enterPipeline = () => {};
+    this.destroy = () => {};
+
+    for (let item of this.onDestroyListeners) {
+      item();
     }
+    this.onDestroyListeners.clear();
+
+    super.destroy();
+  }
+
+  trigger(data: unknown): void {
+    this.process(data, 0);
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
@@ -39,24 +44,23 @@ class SequenceExecuter extends LightweightAttachable {
 
       for (let i = 0; i < pendingValues.length; i++) {
         let value = pendingValues[i];
-        this.trigger(value, itemIndex);
+        this.process(value, itemIndex);
       }
     }
   }
 
-  destroy(): void {
-    this._pipeline = undefined as any;
-
-    this.trigger = () => {};
-    this.enterPipeline = () => {};
-    this.destroy = () => {};
-
-    for (let item of this.onDestroyListeners) {
-      item();
+  private process(data: unknown, index: number): void {
+    if (index < this._pipeline.length) {
+      let item = this._pipeline[index];
+      item(data, returnData => this.process(returnData, index + 1));
+    } else {
+      if (!this.attachIsCalled) {
+        if (!this._pendingValues) {
+          this._pendingValues = [];
+        }
+        this._pendingValues.push(data);
+      }
     }
-    this.onDestroyListeners.clear();
-
-    super.destroy();
   }
 
   attach(parent: string | Attachable): this {

@@ -308,124 +308,6 @@ describe('Sequence', () => {
     });
   });
 
-  describe('Filter', () => {
-    describe('Triggers', () => {
-      test('sync triggers', () => {
-        let heap: string[] = [];
-
-        let resolve!: (data: string) => void;
-        Sequence.create<string>(r => {
-          resolve = r;
-          resolve('a');
-          resolve('b');
-        })
-          .filter(data => {
-            heap.push(data);
-            return true;
-          })
-          .attachToRoot();
-
-        resolve('x');
-        resolve('y');
-        expect(heap).toEqual(['a', 'b', 'x', 'y']);
-      });
-
-      test('mixed triggers', async () => {
-        let heap: string[] = [];
-
-        let resolve!: (data: string) => void;
-        Sequence.create<string>(r => {
-          r('a');
-          r('b');
-          resolve = r;
-        })
-          .filter(data => {
-            heap.push(data);
-            return true;
-          })
-          .attachToRoot();
-
-        resolve('x');
-        resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
-
-        await delayedCalls.waitForAllPromises();
-
-        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
-      });
-    });
-
-    describe('Behavior', () => {
-      test('sync triggers', () => {
-        let heap: string[] = [];
-
-        let resolve!: (data: string) => void;
-        Sequence.create<string>(r => {
-          resolve = r;
-          resolve('a');
-          resolve('b');
-        })
-          .filter(data => data !== 'b' && data !== 'y')
-          .read(data => heap.push(data))
-          .attachToRoot();
-
-        resolve('x');
-        resolve('y');
-        expect(heap).toEqual(['a', 'x']);
-      });
-
-      test('mixed triggers', async () => {
-        let heap: string[] = [];
-
-        let resolve!: (data: string) => void;
-        Sequence.create<string>(r => {
-          r('a');
-          r('b');
-          resolve = r;
-        })
-          .filter(data => data !== 'b' && data !== 'y' && data !== 't')
-          .read(data => heap.push(data))
-          .attachToRoot();
-
-        resolve('x');
-        resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
-
-        await delayedCalls.waitForAllPromises();
-
-        expect(heap).toEqual(['a', 'x', 'k']);
-      });
-    });
-
-    describe('Destruction', () => {
-      test('destroying sequence', () => {
-        let sequance = Sequence.create<void>(resolve => resolve())
-          .filter(() => true)
-          .filter(() => true)
-          .filter(() => true)
-          .attachToRoot();
-
-        expect(sequance.destroyed).toBeFalsy();
-        sequance.destroy();
-        expect(sequance.destroyed).toBeTruthy();
-      });
-
-      test('destroying parent should destroy sequence', () => {
-        let parent = new Attachable().attachToRoot();
-
-        let sequance = Sequence.create<void>(resolve => resolve())
-          .filter(() => true)
-          .filter(() => true)
-          .filter(() => true)
-          .attach(parent);
-
-        expect(sequance.destroyed).toBeFalsy();
-        parent.destroy();
-        expect(sequance.destroyed).toBeTruthy();
-      });
-    });
-  });
-
   describe('Map', () => {
     describe('Triggers', () => {
       test('simple sequence sync triggers', () => {
@@ -759,6 +641,248 @@ describe('Sequence', () => {
           action.trigger('');
           expect(triggered).toEqual(false);
         });
+      });
+    });
+  });
+
+  describe('Filter', () => {
+    describe('Triggers', () => {
+      test('sync triggers', () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .filter(data => {
+            heap.push(data);
+            return true;
+          })
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        expect(heap).toEqual(['a', 'b', 'x', 'y']);
+      });
+
+      test('mixed triggers', async () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          r('a');
+          r('b');
+          resolve = r;
+        })
+          .filter(data => {
+            heap.push(data);
+            return true;
+          })
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
+      });
+    });
+
+    describe('Behavior', () => {
+      test('sync triggers', () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .filter(data => data !== 'b' && data !== 'y')
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        expect(heap).toEqual(['a', 'x']);
+      });
+
+      test('mixed triggers', async () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          r('a');
+          r('b');
+          resolve = r;
+        })
+          .filter(data => data !== 'b' && data !== 'y' && data !== 't')
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'x', 'k']);
+      });
+    });
+
+    describe('Destruction', () => {
+      test('destroying sequence', () => {
+        let sequance = Sequence.create<void>(resolve => resolve())
+          .filter(() => true)
+          .filter(() => true)
+          .filter(() => true)
+          .attachToRoot();
+
+        expect(sequance.destroyed).toBeFalsy();
+        sequance.destroy();
+        expect(sequance.destroyed).toBeTruthy();
+      });
+
+      test('destroying parent should destroy sequence', () => {
+        let parent = new Attachable().attachToRoot();
+
+        let sequance = Sequence.create<void>(resolve => resolve())
+          .filter(() => true)
+          .filter(() => true)
+          .filter(() => true)
+          .attach(parent);
+
+        expect(sequance.destroyed).toBeFalsy();
+        parent.destroy();
+        expect(sequance.destroyed).toBeTruthy();
+      });
+    });
+  });
+
+  describe('Take', () => {
+    describe('Behavior', () => {
+      test('sync triggers', () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .take(3)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        expect(heap).toEqual(['a', 'b', 'x']);
+      });
+
+      test('mixed triggers', async () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          r('a');
+          r('b');
+          resolve = r;
+        })
+          .take(5)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k']);
+      });
+
+      test('taking more than triggers', () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        let sequence = Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .take(5)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        expect(heap).toEqual(['a', 'b', 'x', 'y']);
+        expect(sequence.destroyed).toBeFalsy();
+      });
+
+      test('taking less then instant triggers', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => {
+          resolve('a');
+          resolve('b');
+          resolve('c');
+        })
+          .take(2)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a', 'b']);
+      });
+
+      test('instantly finishing the sequence should not block the chain', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => resolve('a'))
+          .take(1)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a']);
+      });
+    });
+
+    describe('Destruction', () => {
+      test('destroying sequence', () => {
+        let sequance = Sequence.create<void>(resolve => resolve())
+          .take(2)
+          .attachToRoot();
+
+        expect(sequance.destroyed).toBeFalsy();
+        sequance.destroy();
+        expect(sequance.destroyed).toBeTruthy();
+      });
+
+      test('destroying parent should destroy sequence', () => {
+        let parent = new Attachable().attachToRoot();
+
+        let sequance = Sequence.create<void>(resolve => resolve())
+          .take(2)
+          .attach(parent);
+
+        expect(sequance.destroyed).toBeFalsy();
+        parent.destroy();
+        expect(sequance.destroyed).toBeTruthy();
+      });
+
+      test('completing takes should destroy the sequence', () => {
+        let resolve!: () => void;
+        let sequance = Sequence.create<void>(r => {
+          resolve = r;
+        })
+          .take(1)
+          .attachToRoot();
+
+        expect(sequance.destroyed).toBeFalsy();
+        resolve();
+        expect(sequance.destroyed).toBeTruthy();
       });
     });
   });
