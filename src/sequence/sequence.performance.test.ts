@@ -81,7 +81,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       parent.destroy();
     });
     /*
-    Min:  1.4560999870300293 -> 1.2453999519348145
+    Min:  1.4560999870300293 -> 1.2426999807357788
     */
   }, 60000);
 

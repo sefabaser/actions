@@ -1,9 +1,8 @@
 import { Attachable, IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { Notifier } from '../observables/_notifier/notifier';
+import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
 export type IStream<T> = Notifier<T> | Sequence2<T>;
-export type SequenceTouchFunction<T, K> = (data: T) => K | IStream<K>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
@@ -52,6 +51,7 @@ class SequenceExecuter extends LightweightAttachable {
         item();
       }
       this.onDestroyListeners.clear();
+      super.destroy();
     }
   }
 
@@ -70,7 +70,12 @@ export class Sequence2<T> implements IAttachable {
   static create<T>(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void): Sequence2<T> {
     let sequenceExecutor = new SequenceExecuter();
 
-    executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+    try {
+      executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+    } catch (e) {
+      console.error(e);
+    }
+
     if (onDestroy) {
       sequenceExecutor.onDestroyListeners.add(onDestroy);
     }
@@ -86,10 +91,51 @@ export class Sequence2<T> implements IAttachable {
 
   read(callback: (data: T) => void): Sequence2<T> {
     this.executor.enterPipeline<T, T>((data, resolve) => {
-      callback(data as T);
+      try {
+        callback(data);
+      } catch (e) {
+        console.error(e);
+      }
+
       resolve(data);
     });
     return this;
+  }
+
+  map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
+    this.executor.enterPipeline<T, K>((data, resolve) => {
+      let executionReturn = callback(data);
+
+      if (executionReturn instanceof Sequence2 || executionReturn instanceof Notifier) {
+        let destroyedDirectly = false;
+        let destroyListener = () => subscription.destroy();
+
+        let subscription = executionReturn
+          .subscribe(innerData => {
+            if (subscription) {
+              subscription.destroy();
+              this.executor.onDestroyListeners.delete(destroyListener);
+            } else {
+              destroyedDirectly = true;
+            }
+
+            resolve(innerData);
+          })
+          .attachToRoot();
+        if (!destroyedDirectly) {
+          this.executor.onDestroyListeners.add(destroyListener);
+        }
+      } else {
+        resolve(executionReturn);
+      }
+    });
+
+    return this as unknown as Sequence2<K>;
+  }
+
+  /** @internal */
+  get subscribe(): (callback: NotifierCallbackFunction<T>) => IAttachable {
+    return this.read.bind(this);
   }
 
   destroy(): void {
