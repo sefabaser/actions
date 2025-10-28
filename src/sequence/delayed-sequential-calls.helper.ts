@@ -5,7 +5,7 @@ export class DelayedSequentialCallsHelper {
   private allResolves = new Set<(value: void | PromiseLike<void>) => void>();
 
   callEachDelayed<T>(values: T[], callback: (value: T) => void): void {
-    let promise = new Promise<void>(resolve => {
+    let promise = new Promise<void>((resolve, reject) => {
       this.allResolves.add(resolve);
       (async () => {
         for (let value of values) {
@@ -13,9 +13,9 @@ export class DelayedSequentialCallsHelper {
           try {
             callback(value);
           } catch (e) {
-            resolve();
             this.allResolves.delete(resolve);
-            throw e;
+            reject(e);
+            return;
           }
         }
         resolve();
