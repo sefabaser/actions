@@ -106,6 +106,36 @@ export class Sequence2<T> implements IAttachable {
     return this;
   }
 
+  filter(callback: (data: T) => boolean): Sequence2<T> {
+    this.executor.enterPipeline<T, T>((data, resolve) => {
+      try {
+        if (callback(data)) {
+          resolve(data);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    return this;
+  }
+
+  take(count: number): Sequence2<T> {
+    let taken = 0;
+
+    this.executor.enterPipeline<T, T>((data, resolve) => {
+      try {
+        resolve(data);
+        taken++;
+        if (taken >= count) {
+          this.executor.destroy();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    return this;
+  }
+
   map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
     this.executor.enterPipeline<T, K>((data, resolve) => {
       let executionReturn = callback(data);
