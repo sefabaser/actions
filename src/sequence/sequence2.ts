@@ -13,50 +13,50 @@ class SequenceExecuter extends LightweightAttachable {
   private _pendingValues: unknown[] | undefined;
 
   trigger(data: unknown, index = 0): void {
-    if (!this.destroyed) {
-      if (index < this._pipeline.length) {
-        let item = this._pipeline[index];
-        item(data, returnData => this.trigger(returnData, index + 1));
-      } else {
-        if (!this.attachIsCalled) {
-          if (!this._pendingValues) {
-            this._pendingValues = [];
-          }
-          this._pendingValues.push(data);
+    if (index < this._pipeline.length) {
+      let item = this._pipeline[index];
+      item(data, returnData => this.trigger(returnData, index + 1));
+    } else {
+      if (!this.attachIsCalled) {
+        if (!this._pendingValues) {
+          this._pendingValues = [];
         }
+        this._pendingValues.push(data);
       }
     }
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
-    if (!this.destroyed) {
-      if (this._attachIsCalled) {
-        throw new Error('After attaching a sequence you cannot add another operation.');
-      }
+    if (this._attachIsCalled) {
+      throw new Error('After attaching a sequence you cannot add another operation.');
+    }
 
-      this._pipeline.push(item);
-      if (this._pendingValues) {
-        let pendingValues = this._pendingValues;
-        this._pendingValues = [];
-        let itemIndex = this._pipeline.length - 1;
+    this._pipeline.push(item);
+    if (this._pendingValues) {
+      let pendingValues = this._pendingValues;
+      this._pendingValues = [];
+      let itemIndex = this._pipeline.length - 1;
 
-        for (let i = 0; i < pendingValues.length; i++) {
-          let value = pendingValues[i];
-          this.trigger(value, itemIndex);
-        }
+      for (let i = 0; i < pendingValues.length; i++) {
+        let value = pendingValues[i];
+        this.trigger(value, itemIndex);
       }
     }
   }
 
   destroy(): void {
-    if (!this.destroyed) {
-      this._pipeline = undefined as any;
-      for (let item of this.onDestroyListeners) {
-        item();
-      }
-      this.onDestroyListeners.clear();
-      super.destroy();
+    this._pipeline = undefined as any;
+
+    this.trigger = () => {};
+    this.enterPipeline = () => {};
+    this.destroy = () => {};
+
+    for (let item of this.onDestroyListeners) {
+      item();
     }
+    this.onDestroyListeners.clear();
+
+    super.destroy();
   }
 
   attach(parent: string | Attachable): this {

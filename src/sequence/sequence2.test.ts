@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
+import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
+import { Variable } from '../observables/variable/variable';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
 import { Sequence2 as Sequence } from './sequence2';
 
@@ -365,67 +367,136 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 1, undefined]);
       });
 
-      test('map returns another sequence sync resolve', () => {
-        let heap: unknown[] = [];
+      describe('map returns another sequence', () => {
+        test('sync resolve', () => {
+          let heap: unknown[] = [];
 
-        Sequence.create<string>(resolve => resolve('a'))
-          .map(data => Sequence.create<string>(resolveInner => resolveInner(data + '1')))
-          .read(data => heap.push(data))
-          .attachToRoot();
+          Sequence.create<string>(resolve => resolve('a'))
+            .map(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
+            .read(data => heap.push(data))
+            .attachToRoot();
 
-        expect(heap).toEqual(['a1']);
+          expect(heap).toEqual(['aI']);
+        });
+
+        test('async resolve', async () => {
+          let heap: unknown[] = [];
+
+          Sequence.create<string>(resolve => resolve('a'))
+            .map(data =>
+              Sequence.create<string>(resolveInner => {
+                delayedCalls.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+              })
+            )
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['aI']);
+        });
+
+        test('mixed resolves', async () => {
+          let results = new Set<string>();
+
+          let resolve!: (data: string) => void;
+
+          let innerCount = 0;
+          Sequence.create<string>(r => {
+            resolve = r;
+            resolve('a');
+            resolve('b');
+          })
+            .map(data =>
+              Sequence.create<string>(resolveInner => {
+                let response = data + 'I';
+
+                // 1 sync response, 1 async response on each call
+                if (innerCount % 2 === 0) {
+                  resolveInner(response);
+                } else {
+                  delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                }
+                innerCount++;
+              })
+            )
+            .read(data => results.add(data))
+            .attachToRoot();
+
+          resolve('x');
+          resolve('y');
+          delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+          await delayedCalls.waitForAllPromises();
+
+          expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+        });
       });
 
-      test('map returns another sequence async resolve', async () => {
-        let heap: unknown[] = [];
+      describe('map returns notifier', () => {
+        test('sync resolve', () => {
+          let heap: unknown[] = [];
 
-        Sequence.create<string>(resolve => resolve('a'))
-          .map(data =>
-            Sequence.create<string>(resolveInner => {
-              delayedCalls.callEachDelayed([data + '1'], delayedData => resolveInner(delayedData));
+          Sequence.create<string>(resolve => resolve('a'))
+            .map(data => new Variable<string>(data + 'I'))
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          expect(heap).toEqual(['aI']);
+        });
+
+        test('async resolve', async () => {
+          let heap: unknown[] = [];
+
+          Sequence.create<string>(resolve => resolve('a'))
+            .map(data => {
+              let action = new Action<string>();
+              delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
+              return action;
             })
-          )
-          .read(data => heap.push(data))
-          .attachToRoot();
+            .read(data => heap.push(data))
+            .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
-        expect(heap).toEqual(['a1']);
-      });
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['aI']);
+        });
 
-      test('map returns another sequence mixed resolves', async () => {
-        let results = new Set<string>();
+        test('mixed resolves', async () => {
+          let results = new Set<string>();
 
-        let resolve!: (data: string) => void;
+          let resolve!: (data: string) => void;
 
-        let innerCount = 0;
-        Sequence.create<string>(r => {
-          resolve = r;
-          resolve('a');
-          resolve('b');
-        })
-          .map(data =>
-            Sequence.create<string>(resolveInner => {
-              let response = data + 'I';
+          let innerCount = 0;
+          Sequence.create<string>(r => {
+            resolve = r;
+            resolve('a');
+            resolve('b');
+          })
+            .map(data => {
+              let response: Notifier<string>;
 
               // 1 sync response, 1 async response on each call
               if (innerCount % 2 === 0) {
-                resolveInner(response);
+                response = new Variable<string>(data + 'I');
               } else {
-                delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                let action = new Action<string>();
+                delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
+                response = action;
               }
               innerCount++;
+
+              return response;
             })
-          )
-          .read(data => results.add(data))
-          .attachToRoot();
+            .read(data => results.add(data))
+            .attachToRoot();
 
-        resolve('x');
-        resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+          resolve('x');
+          resolve('y');
+          delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+          await delayedCalls.waitForAllPromises();
 
-        expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+          expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+        });
       });
     });
   });
