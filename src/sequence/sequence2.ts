@@ -14,7 +14,9 @@ class SequenceExecuter extends LightweightAttachable {
 
   destroy(): void {
     if (!this.destroyed) {
-      this._pipeline = undefined as any;
+      if (this.attachIsCalled) {
+        this._pipeline = undefined as any;
+      }
 
       for (let item of this.onDestroyListeners) {
         item();
@@ -42,32 +44,36 @@ class SequenceExecuter extends LightweightAttachable {
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
-    if (!this.destroyed) {
-      if (this._attachIsCalled) {
-        throw new Error('After attaching a sequence you cannot add another operation.');
-      }
+    if (this._attachIsCalled) {
+      throw new Error('After attaching a sequence you cannot add another operation.');
+    }
 
-      this._pipeline.push(item);
-      if (this._pendingValues) {
-        let pendingValues = this._pendingValues;
-        this._pendingValues = [];
-        let itemIndex = this._pipeline.length - 1;
+    this._pipeline.push(item);
+    if (this._pendingValues) {
+      let pendingValues = this._pendingValues;
+      this._pendingValues = [];
+      let itemIndex = this._pipeline.length - 1;
 
-        for (let i = 0; i < pendingValues.length; i++) {
-          let value = pendingValues[i];
-          this.trigger(value, itemIndex);
-        }
+      for (let i = 0; i < pendingValues.length; i++) {
+        let value = pendingValues[i];
+        this.trigger(value, itemIndex);
       }
     }
   }
 
   attach(parent: string | Attachable): this {
     this._pendingValues = undefined;
+    if (this.destroyed) {
+      this._pipeline = undefined as any;
+    }
     return super.attach(parent);
   }
 
   attachToRoot(): this {
     this._pendingValues = undefined;
+    if (this.destroyed) {
+      this._pipeline = undefined as any;
+    }
     return super.attachToRoot();
   }
 }
