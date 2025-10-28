@@ -144,6 +144,22 @@ describe('Sequence', () => {
         }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
       });
     });
+
+    describe('Edge Cases', () => {
+      test(`Executor's functions should not leak into the constructor`, () => {
+        Sequence.create((...args: any[]) => {
+          expect(args.length).toBe(1);
+        }).attachToRoot();
+      });
+
+      test('Each sequence can be linkable once', () => {
+        expect(() => {
+          let sequence = Sequence.create<string>(resolve => resolve('a'));
+          sequence.read(() => {}).attachToRoot();
+          sequence.read(() => {});
+        }).toThrow('A sequence can only be linked once.');
+      });
+    });
   });
 
   describe('Read', () => {

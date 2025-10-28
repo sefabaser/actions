@@ -81,7 +81,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       parent.destroy();
     });
     /*
-    Min:  1.4560999870300293 -> 1.2426999807357788
+    Min:  1.4560999870300293
     */
   }, 60000);
 
@@ -249,7 +249,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       parent.destroy();
     });
     /*
-    Min: 5.394699931144714
+    Min: 5.300999999046326
     */
   }, 60000);
 });

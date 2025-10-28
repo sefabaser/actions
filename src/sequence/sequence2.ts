@@ -83,7 +83,7 @@ export class Sequence2<T> implements IAttachable {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
-      executor(data => sequenceExecutor.trigger(data));
+      executor(sequenceExecutor.trigger.bind(sequenceExecutor));
     } catch (e) {
       console.error(e);
     }
@@ -99,22 +99,28 @@ export class Sequence2<T> implements IAttachable {
     return this.executor.destroyed;
   }
 
+  private linked = false;
   private constructor(private executor: SequenceExecuter) {}
 
   read(callback: (data: T) => void): Sequence2<T> {
+    this.prepareToBeLinked();
+
     this.executor.enterPipeline<T, T>((data, resolve) => {
       try {
         callback(data);
       } catch (e) {
         console.error(e);
+        return;
       }
 
       resolve(data);
     });
-    return this;
+    return new Sequence2<T>(this.executor);
   }
 
   filter(callback: (data: T) => boolean): Sequence2<T> {
+    this.prepareToBeLinked();
+
     this.executor.enterPipeline<T, T>((data, resolve) => {
       try {
         if (callback(data)) {
@@ -122,12 +128,15 @@ export class Sequence2<T> implements IAttachable {
         }
       } catch (e) {
         console.error(e);
+        return;
       }
     });
-    return this;
+    return new Sequence2<T>(this.executor);
   }
 
   take(count: number): Sequence2<T> {
+    this.prepareToBeLinked();
+
     let taken = 0;
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
@@ -141,12 +150,21 @@ export class Sequence2<T> implements IAttachable {
       }
     });
 
-    return this;
+    return new Sequence2<T>(this.executor);
   }
 
   map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
+    this.prepareToBeLinked();
+
     this.executor.enterPipeline<T, K>((data, resolve) => {
-      let executionReturn = callback(data);
+      let executionReturn: K | IStream<K>;
+
+      try {
+        executionReturn = callback(data);
+      } catch (e) {
+        console.error(e);
+        return;
+      }
 
       if (executionReturn instanceof Sequence2 || executionReturn instanceof Notifier) {
         let destroyedDirectly = false;
@@ -173,12 +191,19 @@ export class Sequence2<T> implements IAttachable {
       }
     });
 
-    return this as unknown as Sequence2<K>;
+    return new Sequence2<K>(this.executor);
+  }
+
+  private prepareToBeLinked(): void {
+    if (this.linked) {
+      throw new Error('A sequence can only be linked once.');
+    }
+    this.linked = true;
   }
 
   /** @internal */
-  get subscribe(): (callback: NotifierCallbackFunction<T>) => IAttachable {
-    return this.read.bind(this);
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
+    return this.read(callback);
   }
 
   destroy(): void {
