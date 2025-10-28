@@ -13,33 +13,37 @@ class SequenceExecuter extends LightweightAttachable {
   private _pendingValues: unknown[] | undefined;
 
   trigger(data: unknown, index = 0): void {
-    if (index < this._pipeline.length) {
-      let item = this._pipeline[index];
-      item(data, returnData => this.trigger(returnData, index + 1));
-    } else {
-      if (!this.attachIsCalled) {
-        if (!this._pendingValues) {
-          this._pendingValues = [];
+    if (!this.destroyed) {
+      if (index < this._pipeline.length) {
+        let item = this._pipeline[index];
+        item(data, returnData => this.trigger(returnData, index + 1));
+      } else {
+        if (!this.attachIsCalled) {
+          if (!this._pendingValues) {
+            this._pendingValues = [];
+          }
+          this._pendingValues.push(data);
         }
-        this._pendingValues.push(data);
       }
     }
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
-    if (this._attachIsCalled) {
-      throw new Error('After attaching a sequence you cannot add another operation.');
-    }
+    if (!this.destroyed) {
+      if (this._attachIsCalled) {
+        throw new Error('After attaching a sequence you cannot add another operation.');
+      }
 
-    this._pipeline.push(item);
-    if (this._pendingValues) {
-      let pendingValues = this._pendingValues;
-      this._pendingValues = [];
-      let itemIndex = this._pipeline.length - 1;
+      this._pipeline.push(item);
+      if (this._pendingValues) {
+        let pendingValues = this._pendingValues;
+        this._pendingValues = [];
+        let itemIndex = this._pipeline.length - 1;
 
-      for (let i = 0; i < pendingValues.length; i++) {
-        let value = pendingValues[i];
-        this.trigger(value, itemIndex);
+        for (let i = 0; i < pendingValues.length; i++) {
+          let value = pendingValues[i];
+          this.trigger(value, itemIndex);
+        }
       }
     }
   }
@@ -110,7 +114,8 @@ export class Sequence2<T> implements IAttachable {
         let destroyedDirectly = false;
         let destroyListener = () => subscription.destroy();
 
-        let subscription = executionReturn
+        let subscription: { destroy: () => void } = undefined as any;
+        subscription = executionReturn
           .subscribe(innerData => {
             if (subscription) {
               subscription.destroy();

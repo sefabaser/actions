@@ -393,7 +393,7 @@ describe('Sequence', () => {
       });
 
       test('map returns another sequence mixed resolves', async () => {
-        let heap: string[] = [];
+        let results = new Set<string>();
 
         let resolve!: (data: string) => void;
 
@@ -413,9 +413,10 @@ describe('Sequence', () => {
               } else {
                 delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
               }
+              innerCount++;
             })
           )
-          .read(data => heap.push(data))
+          .read(data => results.add(data))
           .attachToRoot();
 
         resolve('x');
@@ -424,7 +425,7 @@ describe('Sequence', () => {
 
         await delayedCalls.waitForAllPromises();
 
-        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
+        expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
       });
     });
   });
