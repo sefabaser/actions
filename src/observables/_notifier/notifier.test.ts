@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Sequence2 } from '../../sequence/sequence2';
+import { Sequence2 } from '../../sequence/sequence';
 import { Notifier } from './notifier';
 
 class SampleModel {

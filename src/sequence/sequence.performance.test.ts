@@ -3,8 +3,7 @@ import { describe, test } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { Action } from '../observables/action/action';
-import { Sequence } from './sequence';
-import { Sequence2 } from './sequence2';
+import { Sequence2 } from './sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let testPerformance = async (
@@ -46,23 +45,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       attachable.destroy();
     });
     // Min:  0.6854000091552734
-  }, 60000);
-
-  test('sequence only', async () => {
-    await testPerformance(() => {
-      let resolve!: () => void;
-      let sequence = new Sequence(r => {
-        resolve = r as any;
-      });
-
-      let parent = new Attachable().attachToRoot();
-      sequence.attach(parent);
-      resolve();
-      parent.destroy();
-    });
-    /*
-    Min:  0.736299991607666
-    */
   }, 60000);
 
   test('action subscribe', async () => {
@@ -112,43 +94,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     */
   }, 60000);
 
-  test('sequence 10x read and resolve', async () => {
-    await testPerformance(() => {
-      let resolve!: () => void;
-      let sequence = new Sequence(r => {
-        resolve = r as any;
-      });
-
-      let parent = new Attachable().attachToRoot();
-      sequence
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .attach(parent);
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      parent.destroy();
-    });
-    /*
-    Min: 3.9265999794006348 -> 2.4036999940872192
-    */
-  }, 60000);
-
   test('sequence2 10x read and resolve', async () => {
     await testPerformance(() => {
       let resolve!: () => void;
@@ -183,44 +128,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     /*
     Min: 2.4246000051498413 -> 2.3064000606536865
-    */
-  }, 60000);
-
-  test('sequence 10x map and resolve', async () => {
-    await testPerformance(() => {
-      let resolve!: () => void;
-      let sequence = new Sequence(r => {
-        resolve = r as any;
-      });
-
-      let parent = new Attachable().attachToRoot();
-      sequence
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .map(() => {})
-        .attach(parent);
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      resolve();
-      parent.destroy();
-    });
-    /*
-    Min: 9.82260000705719
     */
   }, 60000);
 

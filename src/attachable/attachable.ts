@@ -1,5 +1,5 @@
 import { CallbackHelper } from '../helpers/callback.helper';
-import { Sequence2 } from '../sequence/sequence2';
+import { Sequence2 } from '../sequence/sequence';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
 import { LightweightAttachable } from './lightweight-attachable';

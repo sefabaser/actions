@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 
 import { Action } from '../observables/action/action';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { Sequence } from './sequence';
+import { Sequence2 } from './sequence';
 
 describe('Memory Leak', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
@@ -13,18 +13,17 @@ describe('Memory Leak', () => {
     new Action<string>();
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   });
 
   test('sequence chaining', async () => {
-    let sequence = new Sequence<string>(resolve => {
+    let sequence = Sequence2.create<string>(resolve => {
       delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
-    }).map(
-      data =>
-        new Sequence<string>(resolve => {
-          delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
-        })
+    }).map(data =>
+      Sequence2.create<string>(resolve => {
+        delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+      })
     );
 
     sequence.destroy();
@@ -34,12 +33,12 @@ describe('Memory Leak', () => {
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
   test('destroying sequence in the middle of the chain', async () => {
-    new Sequence<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+    Sequence2.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
       .take(2)
       .map(() => {})
       .attachToRoot();
@@ -47,7 +46,7 @@ describe('Memory Leak', () => {
     await delayedCalls.waitForAllPromises();
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
   }, 30000);
 
   test('map chaining', async () => {
@@ -78,14 +77,14 @@ describe('Memory Leak', () => {
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
   test('sequence waiting for action to complete cut in the middle', async () => {
     let action = new Action<void>();
 
-    let sequence = new Sequence<void>(resolve => resolve())
+    let sequence = Sequence2.create<void>(resolve => resolve())
       .map(() => action) // Action will never resolve
       .attachToRoot();
 
@@ -95,20 +94,19 @@ describe('Memory Leak', () => {
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
   test('sequence waiting for sequence to complete cut in the middle', async () => {
     let resolve!: () => void;
 
-    let sequence = new Sequence<void>(resolve => resolve())
-      .map(
-        () =>
-          // This sequence will never be resolved
-          new Sequence<void>(r => {
-            resolve = r;
-          })
+    let sequence = Sequence2.create<void>(resolve => resolve())
+      .map(() =>
+        // This sequence will never be resolved
+        Sequence2.create<void>(r => {
+          resolve = r;
+        })
       )
       .attachToRoot();
 
@@ -120,7 +118,7 @@ describe('Memory Leak', () => {
     await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 
@@ -133,7 +131,7 @@ describe('Memory Leak', () => {
     let sequence = action1
       .map(a1 => action2.map(a2 => a1 + a2))
       .map(a2 =>
-        new Sequence<string>(resolve => {
+        Sequence2.create<string>(resolve => {
           delayedCalls.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
         }).map(s2 => action3.map(d3 => s2 + d3))
       )
@@ -164,7 +162,7 @@ describe('Memory Leak', () => {
     sequence = undefined as any;
 
     let snapshot = await takeNodeMinimalHeap();
-    expect(snapshot.hasObjectWithClassName(Sequence.name)).toBeFalsy();
+    expect(snapshot.hasObjectWithClassName(Sequence2.name)).toBeFalsy();
     expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
   }, 30000);
 

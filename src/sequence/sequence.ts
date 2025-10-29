@@ -1,38 +1,103 @@
-import { IAttachable } from '../attachable/attachable';
+import { Attachable, IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
-import { CallbackHelper } from '../helpers/callback.helper';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
-export type IStream<T> = Notifier<T> | Sequence<T>;
-export type SequenceTouchFunction<T, K> = (data: T) => K | IStream<K>;
+export type IStream<T> = Notifier<T> | Sequence2<T>;
 
-export class Sequence<T> extends LightweightAttachable {
-  static merge<T>(...streams: IStream<T>[]): Sequence<T> {
+type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
+
+class SequenceExecuter extends LightweightAttachable {
+  onDestroyListeners = new Set<() => void>();
+
+  private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
+  private _pendingValues: unknown[] | undefined;
+
+  destroy(): void {
+    if (!this.destroyed) {
+      if (this.attachIsCalled) {
+        this._pipeline = undefined as any;
+      }
+
+      super.destroy();
+
+      for (let item of this.onDestroyListeners) {
+        item();
+      }
+      this.onDestroyListeners.clear();
+    }
+  }
+
+  trigger(data: unknown, index = 0, checkDestroyed = true): void {
+    if (!this.destroyed || !checkDestroyed) {
+      if (index < this._pipeline.length) {
+        let item = this._pipeline[index];
+        item(data, returnData => this.trigger(returnData, index + 1));
+      } else {
+        if (!this.attachIsCalled) {
+          if (!this._pendingValues) {
+            this._pendingValues = [];
+          }
+          this._pendingValues.push(data);
+        }
+      }
+    }
+  }
+
+  enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
+    if (this._attachIsCalled) {
+      throw new Error('After attaching a sequence you cannot add another operation.');
+    }
+
+    this._pipeline.push(item);
+    if (this._pendingValues) {
+      let pendingValues = this._pendingValues;
+      this._pendingValues = [];
+      let itemIndex = this._pipeline.length - 1;
+
+      for (let i = 0; i < pendingValues.length; i++) {
+        let value = pendingValues[i];
+        this.trigger(value, itemIndex, false);
+      }
+    }
+  }
+
+  attach(parent: string | Attachable): this {
+    this._pendingValues = undefined;
+    if (this.destroyed) {
+      this._pipeline = undefined as any;
+    }
+    return super.attach(parent);
+  }
+
+  attachToRoot(): this {
+    this._pendingValues = undefined;
+    if (this.destroyed) {
+      this._pipeline = undefined as any;
+    }
+    return super.attachToRoot();
+  }
+}
+
+export class Sequence2<T> implements IAttachable {
+  static merge<T>(...streams: IStream<T>[]): Sequence2<T> {
     let activeSequences = this.validateAndConvertToSet(streams);
 
     let subscriptions: IAttachable[] = [];
-    let mergedSequence = new Sequence<T>(
-      resolve => {
-        streams.forEach(stream => {
-          let subscription = stream
-            .subscribe(data => {
-              resolve(data);
-            })
-            .attachToRoot(); // Each handled manually
-          subscriptions.push(subscription);
-        });
-      },
-      () => subscriptions.forEach(subscription => subscription.destroy())
-    );
+    let mergedSequence = Sequence2.create<T>(resolve => {
+      streams.forEach(stream => {
+        let subscription = stream.subscribe(resolve).attachToRoot(); // Each handled manually
+        subscriptions.push(subscription);
+      });
+      return () => subscriptions.forEach(subscription => subscription.destroy());
+    });
 
-    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroyEndOfSequence());
-
+    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroy());
     return mergedSequence;
   }
 
   static combine<T extends Record<string, IStream<any>>>(
     streamsObject: T
-  ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
+  ): Sequence2<{ [K in keyof T]: T[K] extends Sequence2<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
     let streams = Object.values(streamsObject);
     let activeStreams = this.validateAndConvertToSet(streams);
 
@@ -41,30 +106,29 @@ export class Sequence<T> extends LightweightAttachable {
     let unresolvedKeys = new Set(keys);
 
     let subscriptions: IAttachable[] = [];
-    let combinedSequence = new Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(
-      resolve => {
-        keys.forEach(key => {
-          let stream = streamsObject[key];
-          let subscription = stream
-            .subscribe(data => {
-              latestValues[key] = data;
+    let combinedSequence = Sequence2.create<{ [K in keyof T]: T[K] extends Sequence2<infer U> ? U : never }>(resolve => {
+      keys.forEach(key => {
+        let stream = streamsObject[key];
+        let subscription = stream
+          .subscribe(data => {
+            latestValues[key] = data;
+            if (unresolvedKeys.size === 0) {
+              resolve(this.shallowCopy(latestValues));
+            } else {
+              unresolvedKeys.delete(key);
               if (unresolvedKeys.size === 0) {
                 resolve(this.shallowCopy(latestValues));
-              } else {
-                unresolvedKeys.delete(key);
-                if (unresolvedKeys.size === 0) {
-                  resolve(this.shallowCopy(latestValues));
-                }
               }
-            })
-            .attachToRoot(); // Each handled manually
-          subscriptions.push(subscription);
-        });
-      },
-      () => subscriptions.forEach(subscription => subscription.destroy())
-    );
+            }
+          })
+          .attachToRoot(); // Each handled manually
+        subscriptions.push(subscription);
+      });
 
-    this.waitUntilAllSequencedDestroyed(activeStreams, () => combinedSequence.destroyEndOfSequence());
+      return () => subscriptions.forEach(subscription => subscription.destroy());
+    });
+
+    this.waitUntilAllSequencedDestroyed(activeStreams, () => combinedSequence.destroy());
 
     return combinedSequence;
   }
@@ -80,8 +144,8 @@ export class Sequence<T> extends LightweightAttachable {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
       streams.forEach(stream => {
-        if (stream instanceof Sequence) {
-          stream._attachIsCalled = true;
+        if (stream instanceof Sequence2) {
+          stream.executor['_attachIsCalled'] = true;
         }
       });
       throw new Error('Each given sequence to merge or combine has to be diferent.');
@@ -98,9 +162,9 @@ export class Sequence<T> extends LightweightAttachable {
     });
 
     if (!notifierFound) {
-      let sequences = streams as Set<Sequence<unknown>>;
+      let sequences = streams as Set<Sequence2<unknown>>;
 
-      let oneDestroyed = (sequence: Sequence<unknown>) => {
+      let oneDestroyed = (sequence: Sequence2<unknown>) => {
         sequences.delete(sequence);
         if (sequences.size === 0) {
           callback();
@@ -111,201 +175,158 @@ export class Sequence<T> extends LightweightAttachable {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
-          sequence._onDestroyListeners.add(() => oneDestroyed(sequence));
+          sequence.executor.onDestroyListeners.add(() => oneDestroyed(sequence));
         }
       });
     }
   }
 
-  private _nextInLine: Sequence<unknown> | undefined;
-  private _resolvedBeforeListenerBy: T[] | undefined;
-  private _listener: ((data: T) => void) | undefined;
-  private _onDestroyListeners = new Set<() => void>();
+  static create<T = void>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence2<T> {
+    let sequenceExecutor = new SequenceExecuter();
 
-  constructor(executor: (resolve: (data: T) => void) => void, onDestroy?: () => void) {
-    super();
-    executor(data => this.trigger(data));
-    if (onDestroy) {
-      this._onDestroyListeners.add(() => onDestroy());
+    try {
+      let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+      if (destroyCallback) {
+        sequenceExecutor.onDestroyListeners.add(destroyCallback);
+      }
+    } catch (e) {
+      console.error(e);
     }
+
+    return new Sequence2<T>(sequenceExecutor);
   }
 
-  read(callback: (data: T) => void): Sequence<T> {
-    let nextInLine = this.createNextInLine<T>();
-
-    this.subscribe(data => {
-      callback(data);
-      nextInLine.trigger(data);
-    });
-
-    return nextInLine;
+  get destroyed(): boolean {
+    return this.executor.destroyed;
   }
 
-  read2(callback: (data: T) => void): Sequence<T> {
-    if (!this._listener) {
-      this.subscribe(data => callback(data), false);
-      return this;
-    } else {
-      let nextInLine = this.createNextInLine<T>();
-      this._listener = undefined;
+  get attachIsCalled(): boolean {
+    return this.executor.attachIsCalled;
+  }
 
-      this.subscribe(data => {
+  private linked = false;
+  private constructor(private executor: SequenceExecuter) {}
+
+  read(callback: (data: T) => void): Sequence2<T> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, T>((data, resolve) => {
+      try {
         callback(data);
-        nextInLine.trigger(data);
-      });
-      return nextInLine;
-    }
-  }
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
 
-  map<K>(callback: SequenceTouchFunction<T, K>): Sequence<K> {
-    let nextInLine = this.createNextInLine<K>();
-
-    this.subscribe(data => {
-      this.waitUntilExecution(data, callback, executionReturn => {
-        nextInLine.trigger(executionReturn);
-      });
+      resolve(data);
     });
-
-    return nextInLine;
+    return new Sequence2<T>(this.executor);
   }
 
-  filter(callback: (data: T) => boolean): Sequence<T> {
-    let nextInLine = this.createNextInLine<T>();
+  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence2<T> {
+    this.prepareToBeLinked();
 
-    this.subscribe(data => {
-      if (callback(data)) {
-        nextInLine.trigger(data);
+    let previousValue: T | undefined;
+    this.executor.enterPipeline<T, T>((data, resolve) => {
+      let response: boolean;
+      try {
+        response = callback(data, previousValue);
+        previousValue = data;
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      if (response) {
+        resolve(data);
       }
     });
-
-    return nextInLine;
+    return new Sequence2<T>(this.executor);
   }
 
-  take(count: number): Sequence<T> {
-    let nextInLine = this.createNextInLine<T>();
+  take(count: number): Sequence2<T> {
+    this.prepareToBeLinked();
+
     let taken = 0;
 
-    this.subscribe(data => {
-      nextInLine.trigger(data);
-      taken++;
+    this.executor.enterPipeline<T, T>((data, resolve) => {
+      if (taken < count) {
+        resolve(data);
+        taken++;
+      }
+
       if (taken >= count) {
-        this.destroyEndOfSequence();
+        this.executor.destroy();
       }
     });
 
-    return nextInLine;
+    return new Sequence2<T>(this.executor);
   }
 
-  private createNextInLine<K>(): Sequence<K> {
-    if (this._nextInLine) {
+  map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, K>((data, resolve) => {
+      let executionReturn: K | IStream<K>;
+
+      try {
+        executionReturn = callback(data);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      if (executionReturn instanceof Sequence2 || executionReturn instanceof Notifier) {
+        let destroyedDirectly = false;
+        let destroyListener = () => subscription.destroy();
+
+        let subscription: { destroy: () => void } = undefined as any;
+        subscription = executionReturn
+          .subscribe(innerData => {
+            if (subscription) {
+              subscription.destroy();
+              this.executor.onDestroyListeners.delete(destroyListener);
+            } else {
+              destroyedDirectly = true;
+            }
+
+            resolve(innerData);
+          })
+          .attachToRoot();
+        if (!destroyedDirectly) {
+          this.executor.onDestroyListeners.add(destroyListener);
+        }
+      } else {
+        resolve(executionReturn);
+      }
+    });
+
+    return new Sequence2<K>(this.executor);
+  }
+
+  private prepareToBeLinked(): void {
+    if (this.linked) {
       throw new Error('A sequence can only be linked once.');
     }
-    if (this._attachIsCalled) {
-      throw new Error('After attaching a sequence you cannot add another operation.');
-    }
-
-    let nextInLine = new Sequence<K>(
-      () => {},
-      () => this.destroy()
-    );
-    this.attachToRoot(); // Destroying is manually done by listening nextInLine
-    this._nextInLine = nextInLine;
-    return nextInLine;
-  }
-
-  destroy(): void {
-    if (!this.destroyed) {
-      this._listener = undefined;
-      this._resolvedBeforeListenerBy = undefined;
-      this._nextInLine = undefined;
-
-      super.destroy();
-
-      for (let item of this._onDestroyListeners) {
-        item();
-      }
-      this._onDestroyListeners = undefined as any;
-    }
-  }
-
-  private destroyEndOfSequence(): void {
-    let endOfSequence = this.getEndOfSequence();
-    if (endOfSequence._attachIsCalled) {
-      endOfSequence.destroy();
-    } else {
-      // The linking has not complete yet, wait for a microtask to all chain to be ready
-      queueMicrotask(() => {
-        this.getEndOfSequence();
-        endOfSequence.destroy();
-      });
-    }
-  }
-
-  private getEndOfSequence(): Sequence<unknown> {
-    let endOfSequence: Sequence<unknown> = this;
-    while (endOfSequence._nextInLine) {
-      endOfSequence = endOfSequence._nextInLine;
-    }
-    return endOfSequence;
-  }
-
-  private waitUntilExecution<K>(data: T, executionCallback: SequenceTouchFunction<T, K>, callback: (data: K) => void): void {
-    let executionReturn = executionCallback(data);
-    if (executionReturn instanceof Sequence || executionReturn instanceof Notifier) {
-      let destroyedDirectly = false;
-      let destroyListener = () => subscription.destroy();
-
-      let subscription: { destroy: () => void } = undefined as any;
-      subscription = executionReturn
-        .subscribe(innerData => {
-          if (subscription) {
-            subscription.destroy();
-            this._onDestroyListeners.delete(destroyListener);
-          } else {
-            destroyedDirectly = true;
-          }
-          CallbackHelper.triggerCallback(innerData, callback);
-        })
-        .attachToRoot();
-      if (!destroyedDirectly) {
-        this._onDestroyListeners.add(destroyListener);
-      }
-    } else {
-      CallbackHelper.triggerCallback(executionReturn, callback);
-    }
-  }
-
-  private trigger(data: T): void {
-    if (!this.destroyed) {
-      if (this._listener) {
-        this._listener(data);
-      } else {
-        if (!this._resolvedBeforeListenerBy) {
-          this._resolvedBeforeListenerBy = [];
-        }
-        this._resolvedBeforeListenerBy.push(data);
-      }
-    }
+    this.linked = true;
   }
 
   /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>, eraseHistory = true): IAttachable {
-    if (this.destroyed) {
-      throw new Error('Sequence is destroyed');
-    }
-    if (this._listener) {
-      throw new Error('Sequence is already being listened to');
-    }
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
+    return this.read(callback);
+  }
 
-    if (this._resolvedBeforeListenerBy) {
-      for (let data of this._resolvedBeforeListenerBy) {
-        callback(data);
-      }
-      if (eraseHistory) {
-        this._resolvedBeforeListenerBy = undefined;
-      }
-    }
-    this._listener = data => callback(data);
+  destroy(): void {
+    this.executor.destroy();
+  }
+
+  attach(parent: string | Attachable): this {
+    this.executor.attach(parent);
+    return this;
+  }
+
+  attachToRoot(): this {
+    this.executor.attachToRoot();
     return this;
   }
 }

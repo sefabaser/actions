@@ -2,7 +2,7 @@ import { Comparator } from 'helpers-lib';
 
 import { Attachable, IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { IStream, Sequence2 } from '../../sequence/sequence2';
+import { IStream, Sequence2 } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
