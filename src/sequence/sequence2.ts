@@ -92,8 +92,52 @@ export class Sequence2<T> implements IAttachable {
     });
 
     this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroy());
-
     return mergedSequence;
+  }
+
+  static combine<T extends Record<string, IStream<any>>>(
+    streamsObject: T
+  ): Sequence2<{ [K in keyof T]: T[K] extends Sequence2<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
+    let streams = Object.values(streamsObject);
+    let activeStreams = this.validateAndConvertToSet(streams);
+
+    let latestValues: any = {};
+    let keys = Object.keys(streamsObject);
+    let unresolvedKeys = new Set(keys);
+
+    let subscriptions: IAttachable[] = [];
+    let combinedSequence = Sequence2.create<{ [K in keyof T]: T[K] extends Sequence2<infer U> ? U : never }>(resolve => {
+      keys.forEach(key => {
+        let stream = streamsObject[key];
+        let subscription = stream
+          .subscribe(data => {
+            latestValues[key] = data;
+            if (unresolvedKeys.size === 0) {
+              resolve(this.shallowCopy(latestValues));
+            } else {
+              unresolvedKeys.delete(key);
+              if (unresolvedKeys.size === 0) {
+                resolve(this.shallowCopy(latestValues));
+              }
+            }
+          })
+          .attachToRoot(); // Each handled manually
+        subscriptions.push(subscription);
+      });
+
+      return () => subscriptions.forEach(subscription => subscription.destroy());
+    });
+
+    this.waitUntilAllSequencedDestroyed(activeStreams, () => combinedSequence.destroy());
+
+    return combinedSequence;
+  }
+
+  private static shallowCopy<T extends object>(obj: T): T {
+    return Object.keys(obj).reduce((acc, key) => {
+      acc[key] = (obj as any)[key];
+      return acc;
+    }, {} as any);
   }
 
   private static validateAndConvertToSet(streams: IStream<unknown>[]) {
