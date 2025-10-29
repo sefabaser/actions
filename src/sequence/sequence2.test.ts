@@ -1052,4 +1052,123 @@ describe('Sequence', () => {
       });
     });
   });
+
+  describe('Merge', () => {
+    describe('Behavior', () => {
+      test('simple merge', async () => {
+        let heap: string[] = [];
+
+        Sequence.merge(
+          Sequence.create<string>(resolve => resolve('a')),
+          Sequence.create<string>(resolve => resolve('b')),
+          Sequence.create<string>(resolve => resolve('c'))
+        )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'c']);
+      });
+
+      test('using action directly', () => {
+        let action1 = new Action<string>();
+        let action2 = new Action<string>();
+
+        let heap: string[] = [];
+        Sequence.merge(action1, action2)
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        action1.trigger('a');
+        action2.trigger('b');
+        expect(heap).toEqual(['a', 'b']);
+      });
+
+      test('merging instantly destroyed sequences', async () => {
+        let heap: string[] = [];
+
+        let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
+        let s2 = Sequence.create<string>(resolve => resolve('b')).take(1);
+
+        let merged = Sequence.merge(s1, s2);
+        let read = merged.read(data => heap.push(data)).attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b']);
+        expect(s1.destroyed).toBeTruthy();
+        expect(s2.destroyed).toBeTruthy();
+        expect(merged.destroyed).toBeTruthy();
+        expect(read.destroyed).toBeTruthy();
+      });
+
+      test('merge with delayed sequences', async () => {
+        let heap: string[] = [];
+        Sequence.merge(
+          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['1', '2'], resolve)),
+          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
+          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['x', 'y'], resolve))
+        )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+        expect(heap).toEqual(['1', 'a', 'x', '2', 'b', 'y']);
+      });
+    });
+
+    describe('Desctruction', () => {
+      test('merge destroy -> children destroy', async () => {
+        let sequence1 = Sequence.create(() => {});
+        let sequence2 = Sequence.create(() => {});
+        let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
+
+        expect(sequence1.destroyed).toBeFalsy();
+        expect(sequence2.destroyed).toBeFalsy();
+        merged.destroy();
+        expect(sequence1.destroyed).toBeTruthy();
+        expect(sequence2.destroyed).toBeTruthy();
+      });
+
+      test('children destroy -> merge destroy', async () => {
+        let sequence1 = Sequence.create(() => {});
+        let sequence2 = Sequence.create(() => {});
+        let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
+
+        expect(merged.destroyed).toBeFalsy();
+        sequence1.destroy();
+        expect(merged.destroyed).toBeFalsy();
+        sequence2.destroy();
+        expect(merged.destroyed).toBeTruthy();
+      });
+    });
+
+    describe('Edge Cases', () => {
+      test('merged sequances should not need to be attached manually', () => {
+        vi.useFakeTimers();
+        expect(() => {
+          let sequence1 = Sequence.create(() => {});
+          let sequence2 = Sequence.create(() => {});
+          Sequence.merge(sequence1, sequence2).attachToRoot();
+
+          vi.runAllTimers();
+        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+      });
+
+      test('merging same sequence should throw error', () => {
+        let sequence = Sequence.create(() => {});
+        expect(() => Sequence.merge(sequence, sequence).attachToRoot()).toThrow(
+          'Each given sequence to merge or combine has to be diferent.'
+        );
+      });
+
+      test('merging same notifier should throw error', () => {
+        let action = new Action<string>();
+        expect(() => Sequence.merge(action, action).attachToRoot()).toThrow(
+          'Each given sequence to merge or combine has to be diferent.'
+        );
+      });
+    });
+  });
 });

@@ -18,12 +18,12 @@ class SequenceExecuter extends LightweightAttachable {
         this._pipeline = undefined as any;
       }
 
+      super.destroy();
+
       for (let item of this.onDestroyListeners) {
         item();
       }
       this.onDestroyListeners.clear();
-
-      super.destroy();
     }
   }
 
@@ -79,6 +79,64 @@ class SequenceExecuter extends LightweightAttachable {
 }
 
 export class Sequence2<T> implements IAttachable {
+  static merge<T>(...streams: IStream<T>[]): Sequence2<T> {
+    let activeSequences = this.validateAndConvertToSet(streams);
+
+    let subscriptions: IAttachable[] = [];
+    let mergedSequence = Sequence2.create<T>(resolve => {
+      streams.forEach(stream => {
+        let subscription = stream.subscribe(resolve).attachToRoot(); // Each handled manually
+        subscriptions.push(subscription);
+      });
+      return () => subscriptions.forEach(subscription => subscription.destroy());
+    });
+
+    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroy());
+
+    return mergedSequence;
+  }
+
+  private static validateAndConvertToSet(streams: IStream<unknown>[]) {
+    let streamsSet = new Set(streams);
+    if (streamsSet.size !== streams.length) {
+      streams.forEach(stream => {
+        if (stream instanceof Sequence2) {
+          stream.executor['_attachIsCalled'] = true;
+        }
+      });
+      throw new Error('Each given sequence to merge or combine has to be diferent.');
+    }
+    return streamsSet;
+  }
+
+  private static waitUntilAllSequencedDestroyed(streams: Set<IStream<unknown>>, callback: () => void): void {
+    let notifierFound = false;
+    streams.forEach(stream => {
+      if (stream instanceof Notifier) {
+        notifierFound = true;
+      }
+    });
+
+    if (!notifierFound) {
+      let sequences = streams as Set<Sequence2<unknown>>;
+
+      let oneDestroyed = (sequence: Sequence2<unknown>) => {
+        sequences.delete(sequence);
+        if (sequences.size === 0) {
+          callback();
+        }
+      };
+
+      sequences.forEach(sequence => {
+        if (sequence.destroyed) {
+          oneDestroyed(sequence);
+        } else {
+          sequence.executor.onDestroyListeners.add(() => oneDestroyed(sequence));
+        }
+      });
+    }
+  }
+
   static create<T>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence2<T> {
     let sequenceExecutor = new SequenceExecuter();
 
