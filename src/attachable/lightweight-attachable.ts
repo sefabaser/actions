@@ -46,7 +46,7 @@ export class LightweightAttachable implements IAttachable {
 
   constructor() {
     setTimeout(() => {
-      if (!this._destroyed && !this._attachIsCalled) {
+      if (!this._attachIsCalled && !this._destroyed) {
         throw new Error(`LightweightAttachable: The object is not attached to anything!`);
       }
     });

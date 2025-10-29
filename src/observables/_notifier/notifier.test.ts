@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Sequence } from '../../sequence/sequence';
+import { Sequence2 } from '../../sequence/sequence2';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -443,7 +443,7 @@ describe('Notifier', () => {
     test('convert to sequence', () => {
       let notifier = new Notifier<string>();
       let sequence = notifier.toSequence().attachToRoot();
-      expect(sequence).toBeInstanceOf(Sequence);
+      expect(sequence).toBeInstanceOf(Sequence2);
     });
 
     test('triggering notifier should trigger sequence', () => {
@@ -459,31 +459,51 @@ describe('Notifier', () => {
       notifier.forEach(listener => listener());
       expect(triggered).toEqual(true);
     });
+
+    test('destroying sequence should remove the listener', () => {
+      let notifier = new Notifier<void>();
+      let sequence = notifier.toSequence().attachToRoot();
+      expect(notifier.listenerCount).toEqual(1);
+      sequence.destroy();
+      expect(notifier.listenerCount).toEqual(0);
+    });
   });
 
   describe('Create From Sqeuence', () => {
     test('setup', () => {
-      let sequence = new Sequence<string>(() => {}).attachToRoot();
-      let notifier = Notifier.fromSequence(sequence);
+      let sequence = Sequence2.create<string>(() => {});
+      let notifier = Notifier.fromSequence(sequence).attachToRoot();
       expect(notifier.listenerCount).toEqual(0);
     });
 
     test('converting notifier before attaching should throw error', () => {
       vi.useFakeTimers();
       expect(() => {
-        let sequence = new Sequence<string>(() => {});
+        let sequence = Sequence2.create<string>(() => {}).attachToRoot();
         Notifier.fromSequence(sequence);
 
         vi.runAllTimers();
-      }).toThrow('Before converting a sequence to notifier, it must be attached to something!');
+      }).toThrow('Attached sequences cannot be converted to notifier!');
     });
 
     test('converted notifier can be subscribed by many', () => {
-      let sequence = new Sequence<string>(resolve => resolve('a')).attachToRoot();
-      let notifier = Notifier.fromSequence(sequence);
+      let sequence = Sequence2.create<string>(resolve => resolve('a'));
+      let notifier = Notifier.fromSequence(sequence).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       expect(notifier.listenerCount).toEqual(2);
+    });
+
+    test('destroyed attached parent of the sequence, should destroy subscriptions', () => {
+      let externalNotifier = new Notifier<string>();
+
+      let parent = new Attachable().attachToRoot();
+      let sequence = Sequence2.create(resolve => resolve()).map(() => externalNotifier);
+      Notifier.fromSequence(sequence).attach(parent);
+
+      expect(externalNotifier.listenerCount).toEqual(1);
+      parent.destroy();
+      expect(externalNotifier.listenerCount).toEqual(0);
     });
   });
 });

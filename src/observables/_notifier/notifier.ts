@@ -1,21 +1,33 @@
 import { Comparator } from 'helpers-lib';
 
-import { IAttachable } from '../../attachable/attachable';
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Sequence, SequenceTouchFunction } from '../../sequence/sequence';
+import { IStream, Sequence2 } from '../../sequence/sequence2';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
-  static fromSequence<T>(sequence: Sequence<T>): Notifier<T> {
-    if (!sequence.attachIsCalled) {
-      throw new Error('Before converting a sequence to notifier, it must be attached to something!');
+  static fromSequence<T>(sequence: Sequence2<T>): {
+    attach: (parent: Attachable | string) => Notifier<T>;
+    attachToRoot: () => Notifier<T>;
+  } {
+    if (sequence.attachIsCalled) {
+      throw new Error('Attached sequences cannot be converted to notifier!');
     }
 
     let notifier = new Notifier<T>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
-    return notifier;
+    return {
+      attach: (parent: string | Attachable) => {
+        sequence.attach(parent);
+        return notifier;
+      },
+      attachToRoot: () => {
+        sequence.attachToRoot();
+        return notifier;
+      }
+    };
   }
 
   private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
@@ -66,17 +78,15 @@ export class Notifier<T> {
     return subscription;
   }
 
-  toSequence(): Sequence<T> {
+  toSequence(): Sequence2<T> {
     let subscription: IAttachable;
-    return new Sequence<T>(
-      resolve => {
-        subscription = this.subscribe(resolve).attachToRoot();
-      },
-      () => subscription.destroy()
-    );
+    return Sequence2.create<T>(resolve => {
+      subscription = this.subscribe(resolve).attachToRoot();
+      return () => subscription.destroy();
+    });
   }
 
-  map<K>(callback: SequenceTouchFunction<T, K>): Sequence<K> {
+  map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
     return this.toSequence().map(callback);
   }
 

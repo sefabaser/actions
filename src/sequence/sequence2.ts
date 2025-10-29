@@ -181,7 +181,7 @@ export class Sequence2<T> implements IAttachable {
     }
   }
 
-  static create<T>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence2<T> {
+  static create<T = void>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence2<T> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
@@ -198,6 +198,10 @@ export class Sequence2<T> implements IAttachable {
 
   get destroyed(): boolean {
     return this.executor.destroyed;
+  }
+
+  get attachIsCalled(): boolean {
+    return this.executor.attachIsCalled;
   }
 
   private linked = false;

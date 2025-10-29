@@ -6,12 +6,13 @@ import { LightweightAttachable } from './lightweight-attachable';
 
 export interface IAttachable {
   destroyed: boolean;
+  attachIsCalled: boolean;
   destroy(): void;
   attach(parent: Attachable | string): this;
   attachToRoot(): this;
 }
 
-export class Attachable extends ClassId {
+export class Attachable extends ClassId implements IAttachable {
   static validateId(this: typeof Attachable, id: string): boolean {
     return AttachmentTargetStore.validateIdForClass(id, this);
   }
@@ -24,12 +25,16 @@ export class Attachable extends ClassId {
     return this._attachedParent;
   }
 
-  private _attachIsCalled = false;
   private attachments: IAttachable[] = [];
 
   private _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;
+  }
+
+  private _attachIsCalled = false;
+  get attachIsCalled(): boolean {
+    return this._attachIsCalled;
   }
 
   private _onDestroyListeners: Set<() => void> | undefined;
