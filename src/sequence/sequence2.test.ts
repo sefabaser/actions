@@ -783,9 +783,9 @@ describe('Sequence', () => {
 
         let resolve!: (data: string) => void;
         Sequence.create<string>(r => {
-          r('a');
-          r('b');
           resolve = r;
+          resolve('a');
+          resolve('b');
         })
           .filter(data => data !== 'b' && data !== 'y' && data !== 't')
           .read(data => heap.push(data))
@@ -794,6 +794,52 @@ describe('Sequence', () => {
         resolve('x');
         resolve('y');
         delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'x', 'k']);
+      });
+
+      test('previous value calls', async () => {
+        let heap: unknown[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .filter((data, previousData) => {
+            heap.push(previousData);
+            return true;
+          })
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual([undefined, 'a', 'b', 'x', 'y', 'k']);
+      });
+
+      test('filter on change', async () => {
+        let heap: unknown[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('a');
+        })
+          .filter((data, previousData) => data !== previousData)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('x');
+        delayedCalls.callEachDelayed(['k', 'k'], data => resolve(data));
 
         await delayedCalls.waitForAllPromises();
 

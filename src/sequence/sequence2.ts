@@ -117,13 +117,15 @@ export class Sequence2<T> implements IAttachable {
     return new Sequence2<T>(this.executor);
   }
 
-  filter(callback: (data: T) => boolean): Sequence2<T> {
+  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence2<T> {
     this.prepareToBeLinked();
 
+    let previousValue: T | undefined;
     this.executor.enterPipeline<T, T>((data, resolve) => {
       let response: boolean;
       try {
-        response = callback(data);
+        response = callback(data, previousValue);
+        previousValue = data;
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;
