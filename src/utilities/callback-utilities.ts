@@ -1,5 +1,6 @@
-import { Attachable, IAttachable } from '../attachable/attachable';
+import { Attachable } from '../attachable/attachable';
 import { Reducer } from '../observables/reducer/reducer';
+import { Sequence } from '../sequence/sequence';
 
 export class CallbackUtilities {
   /**
@@ -12,9 +13,15 @@ export class CallbackUtilities {
    *    // All entities are destroyed
    *  }).attachToRoot();
    */
-  static untilAllDestroyed(attachables: Attachable[], callback: () => void): IAttachable {
+  static untilAllDestroyed(attachables: Attachable[]): Sequence {
     let all = Reducer.createExistenceChecker();
     attachables.forEach(attachable => all.effect().attach(attachable));
-    return all.waitUntil(false, callback);
+    return Sequence.create(resolve => {
+      // TODO: get an attachable or return and attachable to be destroyed
+      let subscription = all.waitUntil(false, () => resolve()).attachToRoot();
+      return () => {
+        subscription.destroy();
+      };
+    });
   }
 }

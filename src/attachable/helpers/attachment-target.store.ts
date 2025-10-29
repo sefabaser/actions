@@ -10,17 +10,15 @@ export class AttachmentTargetStore {
   private static idToAttachmentTargetClass = new Map<string, typeof Attachable>();
 
   static findAttachmentTarget(attachableCandidate: Attachable | string): Attachable {
-    let attachmentTarget: Attachable;
     if (Comparator.isString(attachableCandidate)) {
-      let attachableId: string = attachableCandidate as string;
-      attachmentTarget = this.idToAttachmentTarget.get(attachableId) as Attachable;
+      let attachmentTarget = this.idToAttachmentTarget.get(attachableCandidate);
       if (!attachmentTarget) {
-        throw new Error(`Attachable: attachable not found by id! id: ${attachableId}`);
+        throw new Error(`Attachable: attachable not found by id! id: ${attachableCandidate}`);
       }
+      return attachmentTarget;
     } else {
-      attachmentTarget = attachableCandidate as Attachable;
+      return attachableCandidate;
     }
-    return attachmentTarget;
   }
 
   static registerAttachmentTarget(attachmentTarget: Attachable): string {
