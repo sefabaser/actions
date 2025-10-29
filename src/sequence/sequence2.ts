@@ -108,7 +108,7 @@ export class Sequence2<T> implements IAttachable {
       try {
         callback(data);
       } catch (e) {
-        console.error(e);
+        console.error('Sequence callback function error: ', e);
         return;
       }
 
@@ -121,13 +121,16 @@ export class Sequence2<T> implements IAttachable {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
+      let response: boolean;
       try {
-        if (callback(data)) {
-          resolve(data);
-        }
+        response = callback(data);
       } catch (e) {
-        console.error(e);
+        console.error('Sequence callback function error: ', e);
         return;
+      }
+
+      if (response) {
+        resolve(data);
       }
     });
     return new Sequence2<T>(this.executor);
@@ -161,7 +164,7 @@ export class Sequence2<T> implements IAttachable {
       try {
         executionReturn = callback(data);
       } catch (e) {
-        console.error(e);
+        console.error('Sequence callback function error: ', e);
         return;
       }
 

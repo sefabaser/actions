@@ -39,9 +39,18 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     console.log('Median: ', median);
   };
 
-  test('sequence only', async () => {
-    let resolve!: () => void;
+  test('onDestroy callback', async () => {
     await testPerformance(() => {
+      let attachable = new Attachable().attachToRoot();
+      attachable.onDestroy(() => {}).attachToRoot();
+      attachable.destroy();
+    });
+    // Min:  0.6854000091552734
+  }, 60000);
+
+  test('sequence only', async () => {
+    await testPerformance(() => {
+      let resolve!: () => void;
       let sequence = new Sequence(r => {
         resolve = r as any;
       });
@@ -86,8 +95,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence single read', async () => {
-    let resolve!: () => void;
     await testPerformance(() => {
+      let resolve!: () => void;
       let sequence = Sequence2.create(r => {
         resolve = r as any;
       });
@@ -104,8 +113,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
-    let resolve!: () => void;
     await testPerformance(() => {
+      let resolve!: () => void;
       let sequence = new Sequence(r => {
         resolve = r as any;
       });
@@ -141,8 +150,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence2 10x read and resolve', async () => {
-    let resolve!: () => void;
     await testPerformance(() => {
+      let resolve!: () => void;
       let sequence = Sequence2.create(r => {
         resolve = r as any;
       });
@@ -178,8 +187,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
-    let resolve!: () => void;
     await testPerformance(() => {
+      let resolve!: () => void;
       let sequence = new Sequence(r => {
         resolve = r as any;
       });
@@ -216,8 +225,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence2 10x map and resolve', async () => {
-    let resolve!: () => void;
     await testPerformance(() => {
+      let resolve!: () => void;
       let sequence = Sequence2.create(r => {
         resolve = r as any;
       });

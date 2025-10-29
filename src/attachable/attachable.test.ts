@@ -271,6 +271,22 @@ describe('Attachable', () => {
       sample.destroy();
       expect(callbackInvoked).toBeTruthy();
     });
+
+    test('onDestroy should be triggered if it is listened by take(1)', () => {
+      let callbackInvoked = false;
+      let sample = new Attachable().attachToRoot();
+
+      sample
+        .onDestroy()
+        .take(1)
+        .read(() => {
+          callbackInvoked = true;
+        })
+        .attachToRoot();
+
+      sample.destroy();
+      expect(callbackInvoked).toBeTruthy();
+    });
   });
 
   describe('validateId', () => {

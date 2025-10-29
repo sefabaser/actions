@@ -1,5 +1,5 @@
 import { CallbackHelper } from '../helpers/callback.helper';
-import { Action } from '../observables/action/action';
+import { Sequence2 } from '../sequence/sequence2';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
 import { LightweightAttachable } from './lightweight-attachable';
@@ -32,23 +32,12 @@ export class Attachable extends ClassId {
     return this._destroyed;
   }
 
-  private _onDestroy: Action<void> | undefined;
-  onDestroy(callback: () => void): IAttachable {
-    if (this._destroyed) {
-      CallbackHelper.triggerCallback(undefined, callback);
-      return LightweightAttachable.getDestroyed();
-    } else {
-      if (!this._onDestroy) {
-        this._onDestroy = new Action<void>();
-      }
-      return this._onDestroy.subscribe(callback);
-    }
-  }
-
-  /*
   private _onDestroyListeners: Set<() => void> | undefined;
-  onDestroy2(): Sequence2<void> {
+  onDestroy(callback?: () => void): Sequence2<void> {
     if (this._destroyed) {
+      if (callback) {
+        CallbackHelper.triggerCallback(undefined, callback);
+      }
       return Sequence2.create<void>(resolve => resolve());
     } else {
       if (!this._onDestroyListeners) {
@@ -56,13 +45,19 @@ export class Attachable extends ClassId {
       }
 
       return Sequence2.create<void>(resolve => {
-        this._onDestroyListeners!.add(resolve);
+        let listener = () => {
+          if (callback) {
+            CallbackHelper.triggerCallback(undefined, callback);
+          }
+          resolve();
+        };
+        this._onDestroyListeners!.add(listener);
         return () => {
-          this._onDestroyListeners!.delete(resolve);
+          this._onDestroyListeners?.delete(listener);
         };
       });
     }
-  }*/
+  }
 
   constructor() {
     super();
@@ -79,17 +74,14 @@ export class Attachable extends ClassId {
       this._attachedParent = undefined;
       AttachmentTargetStore.unregisterAttachmentTarget(this);
 
-      let onDestroyListeners = this._onDestroy?.listeners ?? [];
+      this._onDestroyListeners?.forEach(listener => listener());
+      this._onDestroyListeners = undefined;
 
       let attachedEntities = [...this.attachments];
       attachedEntities.forEach(item => item.destroy());
       this.attachments = [];
-      this._destroyed = true;
-      this._onDestroy = undefined;
 
-      onDestroyListeners.forEach(listener => CallbackHelper.triggerCallback(undefined, listener));
-      // this._onDestroyListeners?.forEach(listener => listener());
-      // this._onDestroyListeners = undefined;
+      this._destroyed = true;
     }
   }
 
