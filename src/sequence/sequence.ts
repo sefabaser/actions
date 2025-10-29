@@ -2,7 +2,7 @@ import { Attachable, IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
-export type IStream<T> = Notifier<T> | Sequence<T>;
+export type IStream<T = void> = Notifier<T> | Sequence<T>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 

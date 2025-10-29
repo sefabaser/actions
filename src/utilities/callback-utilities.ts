@@ -1,6 +1,6 @@
 import { Attachable } from '../attachable/attachable';
 import { Reducer } from '../observables/reducer/reducer';
-import { Sequence } from '../sequence/sequence';
+import { IStream, Sequence } from '../sequence/sequence';
 
 export class CallbackUtilities {
   /**
@@ -16,6 +16,7 @@ export class CallbackUtilities {
   static untilAllDestroyed(attachables: Attachable[]): Sequence {
     let all = Reducer.createExistenceChecker();
     attachables.forEach(attachable => all.effect().attach(attachable));
+
     return Sequence.create(resolve => {
       // TODO: get an attachable or return and attachable to be destroyed
       let subscription = all.waitUntil(false, () => resolve()).attachToRoot();
@@ -23,5 +24,20 @@ export class CallbackUtilities {
         subscription.destroy();
       };
     });
+  }
+
+  // TODO: performance comparison
+  static untilAllDestroyed2(attachables: Attachable[]): Sequence {
+    return Sequence.combine(
+      attachables.reduce(
+        (acc, item, index) => {
+          acc[index] = item.onDestroy();
+          return acc;
+        },
+        {} as Record<string, IStream>
+      )
+    )
+      .take(1)
+      .map(() => {});
   }
 }
