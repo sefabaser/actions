@@ -3,7 +3,7 @@ import { describe, test } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { Action } from '../observables/action/action';
-import { Sequence2 } from './sequence';
+import { Sequence } from './sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let testPerformance = async (
@@ -55,9 +55,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    /*
-    Min:  0.9406000375747681
-    */
+    // Min:  0.9406000375747681
   }, 60000);
 
   test('action to sequence read', async () => {
@@ -71,15 +69,13 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    /*
-    Min:  1.4560999870300293
-    */
+    // Min:  1.4560999870300293
   }, 60000);
 
   test('sequence single read', async () => {
     await testPerformance(() => {
       let resolve!: () => void;
-      let sequence = Sequence2.create(r => {
+      let sequence = Sequence.create(r => {
         resolve = r as any;
       });
 
@@ -88,16 +84,13 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    /*
-    Min:  0.9735000133514404 -> 0.7195000648498535
-    S2:  0.8589999675750732 -> 0.7418999671936035
-    */
+    // Min:  0.7418999671936035
   }, 60000);
 
-  test('sequence2 10x read and resolve', async () => {
+  test('sequence 10x read and resolve', async () => {
     await testPerformance(() => {
       let resolve!: () => void;
-      let sequence = Sequence2.create(r => {
+      let sequence = Sequence.create(r => {
         resolve = r as any;
       });
 
@@ -126,15 +119,13 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    /*
-    Min: 2.4246000051498413 -> 2.3064000606536865
-    */
+    // Min: 2.4246000051498413 -> 2.3064000606536865
   }, 60000);
 
-  test('sequence2 10x map and resolve', async () => {
+  test('sequence 10x map and resolve', async () => {
     await testPerformance(() => {
       let resolve!: () => void;
-      let sequence = Sequence2.create(r => {
+      let sequence = Sequence.create(r => {
         resolve = r as any;
       });
 
@@ -164,8 +155,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    /*
-    Min: 5.300999999046326
-    */
+    // Min: 5.300999999046326
   }, 60000);
 });

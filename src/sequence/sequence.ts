@@ -2,7 +2,7 @@ import { Attachable, IAttachable } from '../attachable/attachable';
 import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
-export type IStream<T> = Notifier<T> | Sequence2<T>;
+export type IStream<T> = Notifier<T> | Sequence<T>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
@@ -44,7 +44,7 @@ class SequenceExecuter extends LightweightAttachable {
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
-    if (this._attachIsCalled) {
+    if (this.attachIsCalled) {
       throw new Error('After attaching a sequence you cannot add another operation.');
     }
 
@@ -78,12 +78,12 @@ class SequenceExecuter extends LightweightAttachable {
   }
 }
 
-export class Sequence2<T> implements IAttachable {
-  static merge<T>(...streams: IStream<T>[]): Sequence2<T> {
+export class Sequence<T = void> implements IAttachable {
+  static merge<T>(...streams: IStream<T>[]): Sequence<T> {
     let activeSequences = this.validateAndConvertToSet(streams);
 
     let subscriptions: IAttachable[] = [];
-    let mergedSequence = Sequence2.create<T>(resolve => {
+    let mergedSequence = Sequence.create<T>(resolve => {
       streams.forEach(stream => {
         let subscription = stream.subscribe(resolve).attachToRoot(); // Each handled manually
         subscriptions.push(subscription);
@@ -97,7 +97,7 @@ export class Sequence2<T> implements IAttachable {
 
   static combine<T extends Record<string, IStream<any>>>(
     streamsObject: T
-  ): Sequence2<{ [K in keyof T]: T[K] extends Sequence2<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
+  ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
     let streams = Object.values(streamsObject);
     let activeStreams = this.validateAndConvertToSet(streams);
 
@@ -106,7 +106,7 @@ export class Sequence2<T> implements IAttachable {
     let unresolvedKeys = new Set(keys);
 
     let subscriptions: IAttachable[] = [];
-    let combinedSequence = Sequence2.create<{ [K in keyof T]: T[K] extends Sequence2<infer U> ? U : never }>(resolve => {
+    let combinedSequence = Sequence.create<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(resolve => {
       keys.forEach(key => {
         let stream = streamsObject[key];
         let subscription = stream
@@ -144,7 +144,7 @@ export class Sequence2<T> implements IAttachable {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
       streams.forEach(stream => {
-        if (stream instanceof Sequence2) {
+        if (stream instanceof Sequence) {
           stream.executor['_attachIsCalled'] = true;
         }
       });
@@ -162,9 +162,9 @@ export class Sequence2<T> implements IAttachable {
     });
 
     if (!notifierFound) {
-      let sequences = streams as Set<Sequence2<unknown>>;
+      let sequences = streams as Set<Sequence<unknown>>;
 
-      let oneDestroyed = (sequence: Sequence2<unknown>) => {
+      let oneDestroyed = (sequence: Sequence<unknown>) => {
         sequences.delete(sequence);
         if (sequences.size === 0) {
           callback();
@@ -181,7 +181,7 @@ export class Sequence2<T> implements IAttachable {
     }
   }
 
-  static create<T = void>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence2<T> {
+  static create<T = void>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence<T> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
@@ -193,7 +193,7 @@ export class Sequence2<T> implements IAttachable {
       console.error(e);
     }
 
-    return new Sequence2<T>(sequenceExecutor);
+    return new Sequence<T>(sequenceExecutor);
   }
 
   get destroyed(): boolean {
@@ -207,7 +207,7 @@ export class Sequence2<T> implements IAttachable {
   private linked = false;
   private constructor(private executor: SequenceExecuter) {}
 
-  read(callback: (data: T) => void): Sequence2<T> {
+  read(callback: (data: T) => void): Sequence<T> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
@@ -220,10 +220,10 @@ export class Sequence2<T> implements IAttachable {
 
       resolve(data);
     });
-    return new Sequence2<T>(this.executor);
+    return new Sequence<T>(this.executor);
   }
 
-  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence2<T> {
+  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {
     this.prepareToBeLinked();
 
     let previousValue: T | undefined;
@@ -241,10 +241,10 @@ export class Sequence2<T> implements IAttachable {
         resolve(data);
       }
     });
-    return new Sequence2<T>(this.executor);
+    return new Sequence<T>(this.executor);
   }
 
-  take(count: number): Sequence2<T> {
+  take(count: number): Sequence<T> {
     this.prepareToBeLinked();
 
     let taken = 0;
@@ -260,10 +260,10 @@ export class Sequence2<T> implements IAttachable {
       }
     });
 
-    return new Sequence2<T>(this.executor);
+    return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
+  map<K>(callback: (data: T) => K | IStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, resolve) => {
@@ -276,7 +276,7 @@ export class Sequence2<T> implements IAttachable {
         return;
       }
 
-      if (executionReturn instanceof Sequence2 || executionReturn instanceof Notifier) {
+      if (executionReturn instanceof Sequence || executionReturn instanceof Notifier) {
         let destroyedDirectly = false;
         let destroyListener = () => subscription.destroy();
 
@@ -301,7 +301,7 @@ export class Sequence2<T> implements IAttachable {
       }
     });
 
-    return new Sequence2<K>(this.executor);
+    return new Sequence<K>(this.executor);
   }
 
   private prepareToBeLinked(): void {

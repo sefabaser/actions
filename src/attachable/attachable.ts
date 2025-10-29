@@ -1,5 +1,5 @@
 import { CallbackHelper } from '../helpers/callback.helper';
-import { Sequence2 } from '../sequence/sequence';
+import { Sequence } from '../sequence/sequence';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassId } from './helpers/class-id';
 import { LightweightAttachable } from './lightweight-attachable';
@@ -38,18 +38,18 @@ export class Attachable extends ClassId implements IAttachable {
   }
 
   private _onDestroyListeners: Set<() => void> | undefined;
-  onDestroy(callback?: () => void): Sequence2<void> {
+  onDestroy(callback?: () => void): Sequence<void> {
     if (this._destroyed) {
       if (callback) {
         CallbackHelper.triggerCallback(undefined, callback);
       }
-      return Sequence2.create<void>(resolve => resolve());
+      return Sequence.create<void>(resolve => resolve());
     } else {
       if (!this._onDestroyListeners) {
         this._onDestroyListeners = new Set();
       }
 
-      return Sequence2.create<void>(resolve => {
+      return Sequence.create<void>(resolve => {
         let listener = () => {
           if (callback) {
             CallbackHelper.triggerCallback(undefined, callback);

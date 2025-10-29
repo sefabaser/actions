@@ -2,13 +2,13 @@ import { Comparator } from 'helpers-lib';
 
 import { Attachable, IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { IStream, Sequence2 } from '../../sequence/sequence';
+import { IStream, Sequence } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
-  static fromSequence<T>(sequence: Sequence2<T>): {
+  static fromSequence<T>(sequence: Sequence<T>): {
     attach: (parent: Attachable | string) => Notifier<T>;
     attachToRoot: () => Notifier<T>;
   } {
@@ -78,15 +78,15 @@ export class Notifier<T> {
     return subscription;
   }
 
-  toSequence(): Sequence2<T> {
+  toSequence(): Sequence<T> {
     let subscription: IAttachable;
-    return Sequence2.create<T>(resolve => {
+    return Sequence.create<T>(resolve => {
       subscription = this.subscribe(resolve).attachToRoot();
       return () => subscription.destroy();
     });
   }
 
-  map<K>(callback: (data: T) => K | IStream<K>): Sequence2<K> {
+  map<K>(callback: (data: T) => K | IStream<K>): Sequence<K> {
     return this.toSequence().map(callback);
   }
 

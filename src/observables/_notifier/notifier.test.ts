@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Sequence2 } from '../../sequence/sequence';
+import { Sequence } from '../../sequence/sequence';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -443,7 +443,7 @@ describe('Notifier', () => {
     test('convert to sequence', () => {
       let notifier = new Notifier<string>();
       let sequence = notifier.toSequence().attachToRoot();
-      expect(sequence).toBeInstanceOf(Sequence2);
+      expect(sequence).toBeInstanceOf(Sequence);
     });
 
     test('triggering notifier should trigger sequence', () => {
@@ -471,7 +471,7 @@ describe('Notifier', () => {
 
   describe('Create From Sqeuence', () => {
     test('setup', () => {
-      let sequence = Sequence2.create<string>(() => {});
+      let sequence = Sequence.create<string>(() => {});
       let notifier = Notifier.fromSequence(sequence).attachToRoot();
       expect(notifier.listenerCount).toEqual(0);
     });
@@ -479,7 +479,7 @@ describe('Notifier', () => {
     test('converting notifier before attaching should throw error', () => {
       vi.useFakeTimers();
       expect(() => {
-        let sequence = Sequence2.create<string>(() => {}).attachToRoot();
+        let sequence = Sequence.create<string>(() => {}).attachToRoot();
         Notifier.fromSequence(sequence);
 
         vi.runAllTimers();
@@ -487,7 +487,7 @@ describe('Notifier', () => {
     });
 
     test('converted notifier can be subscribed by many', () => {
-      let sequence = Sequence2.create<string>(resolve => resolve('a'));
+      let sequence = Sequence.create<string>(resolve => resolve('a'));
       let notifier = Notifier.fromSequence(sequence).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
@@ -498,7 +498,7 @@ describe('Notifier', () => {
       let externalNotifier = new Notifier<string>();
 
       let parent = new Attachable().attachToRoot();
-      let sequence = Sequence2.create(resolve => resolve()).map(() => externalNotifier);
+      let sequence = Sequence.create(resolve => resolve()).map(() => externalNotifier);
       Notifier.fromSequence(sequence).attach(parent);
 
       expect(externalNotifier.listenerCount).toEqual(1);
