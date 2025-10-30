@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachable, LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';
@@ -68,7 +68,7 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
   waitUntil(expectedData: T, callback: (data: T) => void): IAttachable {
     if (Comparator.isEqual(this.currentValue, expectedData)) {
       CallbackHelper.triggerCallback(expectedData, callback);
-      return LightweightAttachable.getDestroyed();
+      return Attachable.getDestroyed();
     } else {
       return super.waitUntil(expectedData, callback);
     }

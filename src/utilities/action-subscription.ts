@@ -1,11 +1,11 @@
-import { LightweightAttachable } from '../attachable/lightweight-attachable';
+import { Attachable } from '../attachable/attachable';
 
 export interface IDestroyable {
   destroy(): void;
   readonly destroyed: boolean;
 }
 
-export class ActionSubscription extends LightweightAttachable {
+export class ActionSubscription extends Attachable {
   constructor(private destroyCallback: () => void) {
     super();
   }

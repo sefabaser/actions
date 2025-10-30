@@ -1,7 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
-import { IAttachable, LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T> {
@@ -13,7 +13,7 @@ export interface StringReferenceOptions<T> {
   readonly initialValue?: T;
 }
 
-export class Reference<T = string> extends LightweightAttachable implements IVariable<T | undefined> {
+export class Reference<T = string> extends Attachable implements IVariable<T | undefined> {
   get value(): T | undefined {
     if (this.destroyed) {
       return undefined;
@@ -102,7 +102,7 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
     return this.variable.waitUntil(data, callback);
   }
 
-  attach(parent: LightweightAttachable | string): this {
+  attach(parent: Attachable | string): this {
     super.attach(parent);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;

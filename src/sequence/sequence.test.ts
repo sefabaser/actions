@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { LightweightAttachable } from '../attachable/lightweight-attachable';
+import { Attachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
@@ -70,7 +70,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new LightweightAttachable().attachToRoot();
+        let parent = new Attachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve()).attach(parent);
 
@@ -109,7 +109,7 @@ describe('Sequence', () => {
         expect(() => {
           Sequence.create<void>(resolve => resolve())
             .read(() => {})
-            .attach(new LightweightAttachable().attachToRoot());
+            .attach(new Attachable().attachToRoot());
 
           vi.runAllTimers();
         }).not.toThrow('Attachable: The object is not attached to anything!');
@@ -140,7 +140,7 @@ describe('Sequence', () => {
           Sequence.create<void>(resolve => resolve())
             .read(() => {})
             .read(() => {})
-            .attach(new LightweightAttachable().attachToRoot());
+            .attach(new Attachable().attachToRoot());
 
           vi.runAllTimers();
         }).not.toThrow('Attachable: The object is not attached to anything!');
@@ -322,7 +322,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new LightweightAttachable().attachToRoot();
+        let parent = new Attachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve())
           .read(() => {})
@@ -582,7 +582,7 @@ describe('Sequence', () => {
         });
 
         test('destroying parent should destroy sequence', () => {
-          let parent = new LightweightAttachable().attachToRoot();
+          let parent = new Attachable().attachToRoot();
 
           let sequance = Sequence.create<void>(resolve => resolve())
             .map(() => {})
@@ -887,7 +887,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new LightweightAttachable().attachToRoot();
+        let parent = new Attachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve())
           .filter(() => true)
@@ -1053,7 +1053,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new LightweightAttachable().attachToRoot();
+        let parent = new Attachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve())
           .take(2)

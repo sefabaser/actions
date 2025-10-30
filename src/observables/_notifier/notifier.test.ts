@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../sequence/sequence';
 import { Notifier } from './notifier';
@@ -431,7 +431,7 @@ describe('Notifier', () => {
   describe('Attached Parent', () => {
     test('should destroy the subscription when it is destroyed', () => {
       let notifier = new Notifier<string>();
-      let parent = new LightweightAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       let subscription = notifier.subscribe(_ => {}).attach(parent);
       expect(subscription.destroyed).toEqual(false);
       parent.destroy();
@@ -497,7 +497,7 @@ describe('Notifier', () => {
     test('destroyed attached parent of the sequence, should destroy subscriptions', () => {
       let externalNotifier = new Notifier<string>();
 
-      let parent = new LightweightAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       let sequence = Sequence.create(resolve => resolve()).map(() => externalNotifier);
       Notifier.fromSequence(sequence).attach(parent);
 

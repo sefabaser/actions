@@ -1,10 +1,10 @@
 import { CallbackHelper } from '../helpers/callback.helper';
 import { Sequence } from '../sequence/sequence';
+import { Attachable } from './attachable';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassID } from './helpers/class-id';
-import { LightweightAttachable } from './lightweight-attachable';
 
-export class IDAttachable extends LightweightAttachable {
+export class IDAttachable extends Attachable {
   // ----------------------------- CLASSID -----------------------------
   static get id(): string {
     return ClassID.getClassID(this);

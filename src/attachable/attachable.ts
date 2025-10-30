@@ -6,25 +6,25 @@ export interface IAttachable {
   destroyed: boolean;
   attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: LightweightAttachable | string): this;
+  attach(parent: Attachable | string): this;
   attachToRoot(): this;
 }
 
-export class LightweightAttachable implements IAttachable {
+export class Attachable implements IAttachable {
   /**
    * @returns IAttachable that is already destroyed
    */
   static getDestroyed(): IAttachable {
-    let destroyedSubscription = new LightweightAttachable();
+    let destroyedSubscription = new Attachable();
     destroyedSubscription.destroy();
     return destroyedSubscription;
   }
 
   private _attachments: Set<IAttachable> | undefined;
 
-  private _attachedParent: LightweightAttachable | undefined;
+  private _attachedParent: Attachable | undefined;
   /** @internal */
-  get attachedParent(): LightweightAttachable | undefined {
+  get attachedParent(): Attachable | undefined {
     return this._attachedParent;
   }
 
@@ -62,7 +62,7 @@ export class LightweightAttachable implements IAttachable {
     }
   }
 
-  attach(parent: LightweightAttachable | string): this {
+  attach(parent: Attachable | string): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
@@ -71,7 +71,7 @@ export class LightweightAttachable implements IAttachable {
     if (!this._destroyed) {
       let parentEntity = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
 
-      let currentParent: LightweightAttachable | undefined = parentEntity;
+      let currentParent: Attachable | undefined = parentEntity;
       while (currentParent) {
         if (currentParent === this) {
           throw new Error(`Circular attachment detected!`);

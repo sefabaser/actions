@@ -1,6 +1,6 @@
 import { Comparator } from 'helpers-lib';
 
-import { IAttachable, LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { IStream, Sequence } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';
@@ -9,7 +9,7 @@ export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
   static fromSequence<T>(sequence: Sequence<T>): {
-    attach: (parent: LightweightAttachable | string) => Notifier<T>;
+    attach: (parent: Attachable | string) => Notifier<T>;
     attachToRoot: () => Notifier<T>;
   } {
     if (sequence.attachIsCalled) {
@@ -19,7 +19,7 @@ export class Notifier<T> {
     let notifier = new Notifier<T>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
     return {
-      attach: (parent: LightweightAttachable | string) => {
+      attach: (parent: Attachable | string) => {
         sequence.attach(parent);
         return notifier;
       },

@@ -1,21 +1,21 @@
 import { describe, expect, test, vi } from 'vitest';
 
-import { LightweightAttachable } from './lightweight-attachable';
+import { Attachable } from './attachable';
 
-describe('LightweightAttachable', () => {
+describe('Attachable', () => {
   test('creates instance successfully', () => {
-    let instance = new LightweightAttachable().attachToRoot();
-    expect(instance).toBeInstanceOf(LightweightAttachable);
+    let instance = new Attachable().attachToRoot();
+    expect(instance).toBeInstanceOf(Attachable);
   });
 
   test('destroyed property is false initially', () => {
-    let instance = new LightweightAttachable().attachToRoot();
+    let instance = new Attachable().attachToRoot();
     expect(instance.destroyed).toBe(false);
   });
 
   test('not attaching to anything should throw error', () => {
     let operation = async (): Promise<void> => {
-      new LightweightAttachable();
+      new Attachable();
     };
 
     vi.useFakeTimers();
@@ -27,7 +27,7 @@ describe('LightweightAttachable', () => {
 
   test('attachment is not necessary if attachable is destroyed right after creation', () => {
     let operation = async (): Promise<void> => {
-      let sample = new LightweightAttachable();
+      let sample = new Attachable();
       sample.destroy();
     };
 
@@ -39,8 +39,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('attach returns this for chaining', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     let result = child.attach(parent);
 
@@ -48,7 +48,7 @@ describe('LightweightAttachable', () => {
   });
 
   test('attachToRoot returns this for chaining', () => {
-    let instance = new LightweightAttachable();
+    let instance = new Attachable();
 
     let result = instance.attachToRoot();
 
@@ -56,8 +56,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('attach throws if already attached', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.attach(parent);
 
@@ -67,7 +67,7 @@ describe('LightweightAttachable', () => {
   });
 
   test('attachToRoot throws if already attached', () => {
-    let instance = new LightweightAttachable();
+    let instance = new Attachable();
 
     instance.attachToRoot();
 
@@ -77,8 +77,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('attach throws if attachToRoot was called first', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.attachToRoot();
 
@@ -88,8 +88,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('attachToRoot throws if attach was called first', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.attach(parent);
 
@@ -99,7 +99,7 @@ describe('LightweightAttachable', () => {
   });
 
   test('destroy sets destroyed to true', () => {
-    let instance = new LightweightAttachable();
+    let instance = new Attachable();
 
     instance.destroy();
 
@@ -107,7 +107,7 @@ describe('LightweightAttachable', () => {
   });
 
   test('destroy can be called multiple times', () => {
-    let instance = new LightweightAttachable();
+    let instance = new Attachable();
 
     instance.destroy();
     instance.destroy();
@@ -117,8 +117,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('destroy removes from parent', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.attach(parent);
     child.destroy();
@@ -127,8 +127,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('attach by parent reference', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.attach(parent);
 
@@ -136,8 +136,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('parent destroy also destroys child', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.attach(parent);
     parent.destroy();
@@ -147,10 +147,10 @@ describe('LightweightAttachable', () => {
   });
 
   test('multiple children destroyed when parent destroys', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child1 = new LightweightAttachable().attach(parent);
-    let child2 = new LightweightAttachable().attach(parent);
-    let child3 = new LightweightAttachable().attach(parent);
+    let parent = new Attachable().attachToRoot();
+    let child1 = new Attachable().attach(parent);
+    let child2 = new Attachable().attach(parent);
+    let child3 = new Attachable().attach(parent);
 
     parent.destroy();
 
@@ -160,8 +160,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('attach when already destroyed does not throw', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable();
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable();
 
     child.destroy();
 
@@ -171,7 +171,7 @@ describe('LightweightAttachable', () => {
   });
 
   test('attachToRoot when already destroyed does not throw', () => {
-    let child = new LightweightAttachable();
+    let child = new Attachable();
 
     child.destroy();
 
@@ -181,9 +181,9 @@ describe('LightweightAttachable', () => {
   });
 
   test('nested attachment hierarchy', () => {
-    let root = new LightweightAttachable().attachToRoot();
-    let parent = new LightweightAttachable().attach(root);
-    let child = new LightweightAttachable().attach(parent);
+    let root = new Attachable().attachToRoot();
+    let parent = new Attachable().attach(root);
+    let child = new Attachable().attach(parent);
 
     expect(child.destroyed).toBe(false);
     expect(parent.destroyed).toBe(false);
@@ -191,9 +191,9 @@ describe('LightweightAttachable', () => {
   });
 
   test('nested destroy propagates down', () => {
-    let root = new LightweightAttachable().attachToRoot();
-    let parent = new LightweightAttachable().attach(root);
-    let child = new LightweightAttachable().attach(parent);
+    let root = new Attachable().attachToRoot();
+    let parent = new Attachable().attach(root);
+    let child = new Attachable().attach(parent);
 
     root.destroy();
 
@@ -203,9 +203,9 @@ describe('LightweightAttachable', () => {
   });
 
   test('middle level destroy does not affect root', () => {
-    let root = new LightweightAttachable().attachToRoot();
-    let parent = new LightweightAttachable().attach(root);
-    let child = new LightweightAttachable().attach(parent);
+    let root = new Attachable().attachToRoot();
+    let parent = new Attachable().attach(root);
+    let child = new Attachable().attach(parent);
 
     parent.destroy();
 
@@ -215,8 +215,8 @@ describe('LightweightAttachable', () => {
   });
 
   test('child destroy does not affect parent', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child = new LightweightAttachable().attach(parent);
+    let parent = new Attachable().attachToRoot();
+    let child = new Attachable().attach(parent);
 
     child.destroy();
 
@@ -225,9 +225,9 @@ describe('LightweightAttachable', () => {
   });
 
   test('sibling attachments are independent', () => {
-    let parent = new LightweightAttachable().attachToRoot();
-    let child1 = new LightweightAttachable().attach(parent);
-    let child2 = new LightweightAttachable().attach(parent);
+    let parent = new Attachable().attachToRoot();
+    let child1 = new Attachable().attach(parent);
+    let child2 = new Attachable().attach(parent);
 
     child1.destroy();
 
@@ -237,12 +237,12 @@ describe('LightweightAttachable', () => {
   });
 
   test('complex hierarchy with multiple levels', () => {
-    let root = new LightweightAttachable().attachToRoot();
-    let level1a = new LightweightAttachable().attach(root);
-    let level1b = new LightweightAttachable().attach(root);
-    let level2a = new LightweightAttachable().attach(level1a);
-    let level2b = new LightweightAttachable().attach(level1a);
-    let level2c = new LightweightAttachable().attach(level1b);
+    let root = new Attachable().attachToRoot();
+    let level1a = new Attachable().attach(root);
+    let level1b = new Attachable().attach(root);
+    let level2a = new Attachable().attach(level1a);
+    let level2b = new Attachable().attach(level1a);
+    let level2c = new Attachable().attach(level1b);
 
     level1a.destroy();
 
@@ -255,10 +255,10 @@ describe('LightweightAttachable', () => {
   });
 
   test('attach to destroyed parent immediately destroys child', () => {
-    let parent = new LightweightAttachable().attachToRoot();
+    let parent = new Attachable().attachToRoot();
     parent.destroy();
 
-    let child = new LightweightAttachable().attach(parent);
+    let child = new Attachable().attach(parent);
 
     expect(child.destroyed).toBe(true);
   });

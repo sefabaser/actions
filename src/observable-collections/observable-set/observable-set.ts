@@ -1,4 +1,4 @@
-import { IAttachable } from '../../attachable/lightweight-attachable';
+import { IAttachable } from '../../attachable/attachable';
 import { ObservableMap } from '../observable-map/observable-map';
 
 export class ObservableSet<KeyType extends number | string> {

@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachable, LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { Attachable, IAttachable } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
@@ -20,7 +20,7 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   readonly type: 'initial' | 'effect' | 'update' | 'destroy';
 }) => ResponseType;
 
-export class ReducerEffectChannel<EffectType, ResponseType> extends LightweightAttachable {
+export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   private static nextAvailableId = 1;
 
   private id: number;
@@ -260,7 +260,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   waitUntil(data: ResponseType, callback: NotifierCallbackFunction<ResponseType>): IAttachable {
     if (Comparator.isEqual(this.previousBroadcast, data)) {
       CallbackHelper.triggerCallback(data, callback);
-      return LightweightAttachable.getDestroyed();
+      return Attachable.getDestroyed();
     } else {
       return super.waitUntil(data, callback);
     }

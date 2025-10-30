@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { IAttachable, LightweightAttachable } from '../attachable/lightweight-attachable';
+import { Attachable, IAttachable } from '../attachable/attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Reducer } from '../observables/reducer/reducer';
 
 class CallbackUtilities {
-  static untilAllDestroyed(attachables: LightweightAttachable[], callback: () => void): IAttachable {
+  static untilAllDestroyed(attachables: Attachable[], callback: () => void): IAttachable {
     let all = Reducer.createExistenceChecker();
     attachables.forEach(attachable => all.effect().attach(attachable));
     return all.waitUntil(false, callback);
@@ -19,9 +19,9 @@ describe('UntilAllDestroyed', () => {
 
   test('sample', () => {
     // -------------------------------------------------------------
-    let obj1 = new LightweightAttachable().attachToRoot();
-    let obj2 = new LightweightAttachable().attachToRoot();
-    let obj3 = new LightweightAttachable().attachToRoot();
+    let obj1 = new Attachable().attachToRoot();
+    let obj2 = new Attachable().attachToRoot();
+    let obj3 = new Attachable().attachToRoot();
 
     let triggered = false;
     CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3], () => {
@@ -42,9 +42,9 @@ describe('With reducer', () => {
   test('sample', () => {
     let triggered = false;
     // -------------------------------------------------------------
-    let obj1 = new LightweightAttachable().attachToRoot();
-    let obj2 = new LightweightAttachable().attachToRoot();
-    let obj3 = new LightweightAttachable().attachToRoot();
+    let obj1 = new Attachable().attachToRoot();
+    let obj2 = new Attachable().attachToRoot();
+    let obj3 = new Attachable().attachToRoot();
 
     let all = Reducer.createExistenceChecker();
     all.effect().attach(obj1);
@@ -70,10 +70,10 @@ describe('With reducer', () => {
     let triggered = false;
     // -------------------------------------------------------------
 
-    let obj1 = new LightweightAttachable().attachToRoot();
+    let obj1 = new Attachable().attachToRoot();
     obj1.destroy();
-    let obj2 = new LightweightAttachable().attachToRoot();
-    let obj3 = new LightweightAttachable().attachToRoot();
+    let obj2 = new Attachable().attachToRoot();
+    let obj3 = new Attachable().attachToRoot();
 
     let all = Reducer.createExistenceChecker();
     all.effect().attach(obj1);
