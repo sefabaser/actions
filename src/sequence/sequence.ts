@@ -19,10 +19,11 @@ class SequenceExecuter extends Attachable {
 
       super.destroy();
 
-      for (let item of this.onDestroyListeners) {
-        item();
-      }
+      let listeners = [...this.onDestroyListeners];
       this.onDestroyListeners.clear();
+      for (let i = 0; i < listeners.length; i++) {
+        listeners[i]();
+      }
     }
   }
 
@@ -180,11 +181,11 @@ export class Sequence<T = void> implements IAttachable {
     }
   }
 
-  static create<T = void>(executor: (resolve: (data: T) => void) => (() => void) | void): Sequence<T> {
+  static create<T = void>(executor: (resolve: (data: T) => void, attachable: Attachable) => (() => void) | void): Sequence<T> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
-      let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor));
+      let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor), sequenceExecutor);
       if (destroyCallback) {
         sequenceExecutor.onDestroyListeners.add(destroyCallback);
       }

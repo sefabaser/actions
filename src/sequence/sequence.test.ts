@@ -159,12 +159,6 @@ describe('Sequence', () => {
     });
 
     describe('Edge Cases', () => {
-      test(`Executor's functions should not leak into the constructor`, () => {
-        Sequence.create((...args: any[]) => {
-          expect(args.length).toBe(1);
-        }).attachToRoot();
-      });
-
       test('Each sequence can be linkable once', () => {
         expect(() => {
           let sequence = Sequence.create<string>(resolve => resolve('a'));

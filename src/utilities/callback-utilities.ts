@@ -1,3 +1,4 @@
+import { Attachable } from '../attachable/attachable';
 import { IDAttachable } from '../attachable/id-attachable';
 import { Reducer } from '../observables/reducer/reducer';
 import { IStream, Sequence } from '../sequence/sequence';
@@ -13,16 +14,13 @@ export class CallbackUtilities {
    *    // All entities are destroyed
    *  }).attachToRoot();
    */
-  static untilAllDestroyed(attachables: IDAttachable[]): Sequence {
-    let all = Reducer.createExistenceChecker();
-    attachables.forEach(attachable => all.effect().attach(attachable));
+  static untilAllDestroyed(attachables: Attachable[]): Sequence {
+    let allReducer = Reducer.createExistenceChecker();
+    let allEffectChannels = attachables.map(attachable => allReducer.effect().attach(attachable));
 
-    return Sequence.create(resolve => {
-      // TODO: get an attachable or return and attachable to be destroyed
-      let subscription = all.waitUntil(false, () => resolve()).attachToRoot();
-      return () => {
-        subscription.destroy();
-      };
+    return Sequence.create((resolve, attachable) => {
+      allReducer.waitUntil(false, () => resolve()).attach(attachable);
+      return () => allEffectChannels.forEach(channel => channel.destroy());
     });
   }
 
