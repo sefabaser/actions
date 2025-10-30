@@ -5,7 +5,7 @@ export default defineConfig(({ mode }) => ({
   test: {
     setupFiles: ['./vitest.setup.ts'],
     env: {
-      QUICK: mode === 'quick' ? '1' : '0'
+      QUICK: mode === 'quick' ? '1' : undefined
     }
   },
 }));
