@@ -49,8 +49,10 @@ export class Notifier<T> {
 
   /** @internal */
   forEach(callback: (listenerCallbackFunction: NotifierCallbackFunction<T>) => void): Notifier<T> {
-    let newMap = new Map<number, NotifierCallbackFunction<T>>(this.listenersMap);
-    newMap.forEach(data => CallbackHelper.triggerCallback(data, callback));
+    let listeners = [...this.listenersMap.values()];
+    for (let i = 0; i < listeners.length; i++) {
+      CallbackHelper.triggerCallback(listeners[i], callback);
+    }
     return this;
   }
 

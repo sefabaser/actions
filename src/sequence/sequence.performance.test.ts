@@ -47,7 +47,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  0.6854000091552734
   }, 60000);
 
-  test('action subscribe', async () => {
+  test('action subscribe single', async () => {
     let action = new Action<void>();
     await testPerformance(() => {
       let parent = new IDAttachable().attachToRoot();
@@ -55,7 +55,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    // Min:  0.9406000375747681
+    // Min:  0.9406000375747681 -> 0.8449001312255859
   }, 60000);
 
   test('action to sequence read', async () => {
@@ -69,7 +69,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    // Min:  1.2650001049041748
+    // Min:  1.2650001049041748 -> 1.1787998676300049
   }, 60000);
 
   test('sequence single read', async () => {
@@ -117,6 +117,36 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  1.1162998676300049
   }, 60000);
 
+  test('action subscribe 10x', async () => {
+    let action = new Action<void>();
+    await testPerformance(() => {
+      let parent = new IDAttachable().attachToRoot();
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.subscribe(() => {}).attach(parent);
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      action.trigger();
+      parent.destroy();
+    });
+    // Min:  18.58870005607605 -> 9.106199979782104 -> 8.138400077819824
+  }, 60000);
+
   test('sequence 10x read and resolve', async () => {
     await testPerformance(() => {
       let resolve!: () => void;
@@ -149,7 +179,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    // Min: 2.4227001667022705
+    // Min: 2.370800018310547
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -185,7 +215,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    // Min: 2.725099802017212
+    // Min: 2.625300168991089
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
