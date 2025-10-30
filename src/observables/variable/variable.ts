@@ -1,6 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
+import { IAttachable } from '../../attachable/base-attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';

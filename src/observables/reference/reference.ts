@@ -1,6 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
+import { BaseAttachable, IAttachable } from '../../attachable/base-attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
@@ -60,16 +61,21 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
 
       if (data) {
         let referenceId = this.getReferenceId(data, this.options.path);
-        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceId).onDestroy(() => {
-          !this.destroyed && this.set(undefined);
-        });
+        let reference = AttachmentTargetStore.findAttachmentTarget(referenceId);
+        if (reference instanceof Attachable) {
+          this.destroySubscription = reference.onDestroy(() => {
+            !this.destroyed && this.set(undefined);
+          });
 
-        if (this.attachIsCalled) {
-          if (this.attachedParent) {
-            this.destroySubscription.attach(this.attachedParent);
-          } else {
-            this.destroySubscription.attachToRoot();
+          if (this.attachIsCalled) {
+            if (this.attachedParent) {
+              this.destroySubscription.attach(this.attachedParent);
+            } else {
+              this.destroySubscription.attachToRoot();
+            }
           }
+        } else {
+          throw new Error('Reference: The reference has to be Attachable.');
         }
       }
 
@@ -102,7 +108,7 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
     return this.variable.waitUntil(data, callback);
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: BaseAttachable | string): this {
     super.attach(parent);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;

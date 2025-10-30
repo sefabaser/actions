@@ -1,4 +1,5 @@
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
+import { IAttachable } from '../../attachable/base-attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { NotifierCallbackFunction } from '../../observables/_notifier/notifier';
 import { ActionSubscription } from '../../utilities/action-subscription';

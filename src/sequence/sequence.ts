@@ -1,11 +1,11 @@
-import { Attachable, IAttachable } from '../attachable/attachable';
+import { BaseAttachable, IAttachable } from '../attachable/base-attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
 export type IStream<T = void> = Notifier<T> | Sequence<T>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
-class SequenceExecuter extends Attachable {
+class SequenceExecuter extends BaseAttachable {
   onDestroyListeners = new Set<() => void>();
 
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
@@ -60,7 +60,7 @@ class SequenceExecuter extends Attachable {
     }
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: BaseAttachable | string): this {
     this._pendingValues = undefined;
     if (this.destroyed) {
       this._pipeline = undefined as any;
@@ -324,7 +324,7 @@ export class Sequence<T = void> implements IAttachable {
     this.executor.destroy();
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: BaseAttachable | string): this {
     this.executor.attach(parent);
     return this;
   }

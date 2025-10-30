@@ -1,16 +1,8 @@
-import { Comparator } from 'helpers-lib';
+import { CallbackHelper } from '../helpers/callback.helper';
+import { Sequence } from '../sequence/sequence';
+import { BaseAttachable, IAttachable } from './base-attachable';
 
-import { AttachmentTargetStore } from './helpers/attachment-target.store';
-
-export interface IAttachable {
-  destroyed: boolean;
-  attachIsCalled: boolean;
-  destroy(): void;
-  attach(parent: Attachable | string): this;
-  attachToRoot(): this;
-}
-
-export class Attachable implements IAttachable {
+export class Attachable extends BaseAttachable {
   /**
    * @returns IAttachable that is already destroyed
    */
@@ -20,94 +12,41 @@ export class Attachable implements IAttachable {
     return destroyedSubscription;
   }
 
-  private _attachments: Set<IAttachable> | undefined;
+  private _onDestroyListeners: Set<() => void> | undefined;
 
-  private _attachedParent: Attachable | undefined;
-  /** @internal */
-  get attachedParent(): Attachable | undefined {
-    return this._attachedParent;
-  }
-
-  private _destroyed = false;
-  get destroyed(): boolean {
-    return this._destroyed;
-  }
-
-  private _attachIsCalled = false;
-  /** @internal */
-  get attachIsCalled(): boolean {
-    return this._attachIsCalled;
-  }
-
-  constructor() {
-    setTimeout(() => {
-      if (!this._attachIsCalled && !this._destroyed) {
-        throw new Error(`Attachable: The object is not attached to anything!`);
+  onDestroy(callback?: () => void): Sequence<void> {
+    if (this.destroyed) {
+      if (callback) {
+        CallbackHelper.triggerCallback(undefined, callback);
       }
-    });
+      return Sequence.create<void>(resolve => resolve());
+    } else {
+      if (!this._onDestroyListeners) {
+        this._onDestroyListeners = new Set();
+      }
+
+      return Sequence.create<void>(resolve => {
+        let listener = () => {
+          if (callback) {
+            CallbackHelper.triggerCallback(undefined, callback);
+          }
+          resolve();
+        };
+        this._onDestroyListeners!.add(listener);
+        return () => {
+          this._onDestroyListeners?.delete(listener);
+        };
+      });
+    }
   }
 
   destroy(): void {
-    if (!this._destroyed) {
-      if (this._attachedParent) {
-        this._attachedParent.removeAttachment(this);
-        this._attachedParent = undefined;
-      }
+    if (!this.destroyed) {
+      let listeners = this._onDestroyListeners;
+      this._onDestroyListeners = undefined;
+      listeners?.forEach(listener => listener());
 
-      let attachedEntities = this._attachments;
-      this._attachments = undefined;
-      attachedEntities?.forEach(item => item.destroy());
-
-      this._destroyed = true;
+      super.destroy();
     }
-  }
-
-  attach(parent: Attachable | string): this {
-    if (this._attachIsCalled) {
-      throw new Error(`Attachable: The object is already attached to something!`);
-    }
-
-    this._attachIsCalled = true;
-    if (!this._destroyed) {
-      let parentEntity = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
-
-      let currentParent: Attachable | undefined = parentEntity;
-      while (currentParent) {
-        if (currentParent === this) {
-          throw new Error(`Circular attachment detected!`);
-        }
-        currentParent = currentParent.attachedParent;
-      }
-
-      parentEntity.setAttachment(this);
-      this._attachedParent = parentEntity;
-    }
-    return this;
-  }
-
-  attachToRoot(): this {
-    if (this._attachIsCalled) {
-      throw new Error(`Attachable: The object is already attached to something!`);
-    }
-
-    this._attachIsCalled = true;
-    return this;
-  }
-
-  /** @internal */
-  setAttachment(child: IAttachable): void {
-    if (this.destroyed) {
-      child.destroy();
-    } else {
-      if (!this._attachments) {
-        this._attachments = new Set();
-      }
-      this._attachments.add(child);
-    }
-  }
-
-  /** @internal */
-  removeAttachment(child: IAttachable): void {
-    this._attachments?.delete(child);
   }
 }

@@ -44,7 +44,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       attachable.onDestroy(() => {}).attachToRoot();
       attachable.destroy();
     });
-    // Min:  0.6854000091552734
+    // Min:  0.6347999572753906
   }, 60000);
 
   test('action subscribe', async () => {

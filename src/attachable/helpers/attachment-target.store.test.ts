@@ -83,7 +83,7 @@ describe('AttachmentTargetStore', () => {
       let instance = new TestClass().attachToRoot();
       let id = instance.id;
 
-      AttachmentTargetStore.unregisterIDAttachable(instance);
+      AttachmentTargetStore.unregisterID(instance.id);
 
       expect(() => {
         AttachmentTargetStore.findAttachmentTarget(id);
@@ -95,7 +95,7 @@ describe('AttachmentTargetStore', () => {
 
       let instance1 = new TestClass().attachToRoot();
       let firstId = instance1.id;
-      AttachmentTargetStore.unregisterIDAttachable(instance1);
+      AttachmentTargetStore.unregisterID(instance1.id);
 
       AttachmentTargetStore.hardReset();
 
@@ -243,7 +243,7 @@ describe('AttachmentTargetStore', () => {
 
       let instance1 = new TestClass().attachToRoot();
       let id1 = instance1.id;
-      AttachmentTargetStore.unregisterIDAttachable(instance1);
+      AttachmentTargetStore.unregisterID(instance1.id);
 
       let instance2 = new TestClass().attachToRoot();
       let id2 = instance2.id;
@@ -260,7 +260,7 @@ describe('AttachmentTargetStore', () => {
       let instance1 = new TestClass().attachToRoot();
       let instance2 = new TestClass().attachToRoot();
 
-      AttachmentTargetStore.unregisterIDAttachable(instance1);
+      AttachmentTargetStore.unregisterID(instance1.id);
 
       let isValid1 = AttachmentTargetStore.validateIdForClass(instance1.id, TestClass);
       let isValid2 = AttachmentTargetStore.validateIdForClass(instance2.id, TestClass);
