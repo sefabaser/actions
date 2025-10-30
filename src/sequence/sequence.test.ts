@@ -550,24 +550,6 @@ describe('Sequence', () => {
     });
 
     describe('Destruction', () => {
-      test('destroy sequence callback', () => {
-        let triggered = false;
-        let sequance = Sequence.create<void>(resolve => {
-          resolve();
-          return () => {
-            triggered = true;
-          };
-        })
-          .map(() => {})
-          .map(() => {})
-          .map(() => {})
-          .attachToRoot();
-
-        expect(triggered).toBeFalsy();
-        sequance.destroy();
-        expect(triggered).toBeTruthy();
-      });
-
       describe('sync', () => {
         test('destroying sequence', () => {
           let sequance = Sequence.create<void>(resolve => resolve())
@@ -579,6 +561,24 @@ describe('Sequence', () => {
           expect(sequance.destroyed).toBeFalsy();
           sequance.destroy();
           expect(sequance.destroyed).toBeTruthy();
+        });
+
+        test('destroy sequence callback', () => {
+          let triggered = false;
+          let sequance = Sequence.create<void>(resolve => {
+            resolve();
+            return () => {
+              triggered = true;
+            };
+          })
+            .map(() => {})
+            .map(() => {})
+            .map(() => {})
+            .attachToRoot();
+
+          expect(triggered).toBeFalsy();
+          sequance.destroy();
+          expect(triggered).toBeTruthy();
         });
 
         test('destroying parent should destroy sequence', () => {
@@ -708,6 +708,32 @@ describe('Sequence', () => {
           action.trigger('');
           expect(triggered).toEqual(false);
         });
+      });
+    });
+
+    describe('Edge Cases', () => {
+      test('object with subscribe property should not fool the map', () => {
+        let heap: unknown[] = [];
+        let fakeStream = { subscribe: 'hello' };
+
+        Sequence.create<void>(resolve => resolve())
+          .map(() => fakeStream)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([fakeStream]);
+      });
+
+      test('object with subscribe function should not fool the map', () => {
+        let heap: unknown[] = [];
+        let fakeStream = { subscribe: () => {} };
+
+        Sequence.create<void>(resolve => resolve())
+          .map(() => fakeStream)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([fakeStream]);
       });
     });
   });

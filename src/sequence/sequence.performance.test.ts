@@ -69,7 +69,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    // Min:  1.4560999870300293
+    // Min:  1.2650001049041748
   }, 60000);
 
   test('sequence single read', async () => {
@@ -119,7 +119,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    // Min: 2.4246000051498413 -> 2.3064000606536865
+    // Min: 2.4227001667022705
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -155,6 +155,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    // Min: 5.300999999046326
+    // Min: 2.7512998580932617
   }, 60000);
 });

@@ -276,25 +276,30 @@ export class Sequence<T = void> implements IAttachable {
         return;
       }
 
-      if (executionReturn instanceof Sequence || executionReturn instanceof Notifier) {
-        let destroyedDirectly = false;
-        let destroyListener = () => subscription.destroy();
+      if (executionReturn && typeof executionReturn === 'object' && 'subscribe' in executionReturn) {
+        // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
+        if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
+          let destroyedDirectly = false;
+          let destroyListener = () => subscription.destroy();
 
-        let subscription: { destroy: () => void } = undefined as any;
-        subscription = executionReturn
-          .subscribe(innerData => {
-            if (subscription) {
-              subscription.destroy();
-              this.executor.onDestroyListeners.delete(destroyListener);
-            } else {
-              destroyedDirectly = true;
-            }
+          let subscription: { destroy: () => void } = undefined as any;
+          subscription = executionReturn
+            .subscribe(innerData => {
+              if (subscription) {
+                subscription.destroy();
+                this.executor.onDestroyListeners.delete(destroyListener);
+              } else {
+                destroyedDirectly = true;
+              }
 
-            resolve(innerData);
-          })
-          .attachToRoot();
-        if (!destroyedDirectly) {
-          this.executor.onDestroyListeners.add(destroyListener);
+              resolve(innerData);
+            })
+            .attachToRoot();
+          if (!destroyedDirectly) {
+            this.executor.onDestroyListeners.add(destroyListener);
+          }
+        } else {
+          resolve(executionReturn);
         }
       } else {
         resolve(executionReturn);

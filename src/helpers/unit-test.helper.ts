@@ -1,9 +1,9 @@
-import { ClassId } from '..';
+import { ClassID } from '..';
 import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
 
 export class ActionLibUnitTestHelper {
   static hardReset(): void {
-    ClassId.hardReset();
+    ClassID.hardReset();
     AttachmentTargetStore.hardReset();
   }
 }
