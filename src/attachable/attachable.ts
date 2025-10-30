@@ -25,8 +25,6 @@ export class Attachable extends ClassId implements IAttachable {
     return this._attachedParent;
   }
 
-  private attachments: IAttachable[] = [];
-
   private _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;
@@ -38,6 +36,35 @@ export class Attachable extends ClassId implements IAttachable {
   }
 
   private _onDestroyListeners: Set<() => void> | undefined;
+  private _attachments: Set<IAttachable> | undefined;
+
+  constructor() {
+    super();
+    setTimeout(() => {
+      if (!this._destroyed && !this._attachIsCalled) {
+        throw new Error(`Attachable: The object is not attached to anything!`);
+      }
+    });
+  }
+
+  destroy(): void {
+    if (!this._destroyed) {
+      this._attachedParent?.removeAttachment(this);
+      this._attachedParent = undefined;
+      AttachmentTargetStore.unregisterAttachmentTarget(this);
+
+      let listeners = this._onDestroyListeners;
+      this._onDestroyListeners = undefined;
+      listeners?.forEach(listener => listener());
+
+      let attachedEntities = this._attachments;
+      this._attachments = undefined;
+      attachedEntities?.forEach(item => item.destroy());
+
+      this._destroyed = true;
+    }
+  }
+
   onDestroy(callback?: () => void): Sequence<void> {
     if (this._destroyed) {
       if (callback) {
@@ -61,32 +88,6 @@ export class Attachable extends ClassId implements IAttachable {
           this._onDestroyListeners?.delete(listener);
         };
       });
-    }
-  }
-
-  constructor() {
-    super();
-    setTimeout(() => {
-      if (!this._destroyed && !this._attachIsCalled) {
-        throw new Error(`Attachable: The object is not attached to anything!`);
-      }
-    });
-  }
-
-  destroy(): void {
-    if (!this._destroyed) {
-      this._attachedParent?.removeAttachment(this);
-      this._attachedParent = undefined;
-      AttachmentTargetStore.unregisterAttachmentTarget(this);
-
-      this._onDestroyListeners?.forEach(listener => listener());
-      this._onDestroyListeners = undefined;
-
-      let attachedEntities = [...this.attachments];
-      attachedEntities.forEach(item => item.destroy());
-      this.attachments = [];
-
-      this._destroyed = true;
     }
   }
 
@@ -117,15 +118,15 @@ export class Attachable extends ClassId implements IAttachable {
     if (this._destroyed) {
       child.destroy();
     } else {
-      this.attachments.push(child);
+      if (!this._attachments) {
+        this._attachments = new Set();
+      }
+      this._attachments.add(child);
     }
   }
 
   /** @internal */
   removeAttachment(child: IAttachable): void {
-    let index = this.attachments.indexOf(child);
-    if (index >= 0) {
-      this.attachments.splice(index, 1);
-    }
+    this._attachments?.delete(child);
   }
 }
