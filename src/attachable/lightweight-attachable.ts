@@ -1,5 +1,13 @@
-import { Attachable, IAttachable } from './attachable';
+import { Attachable } from './attachable';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
+
+export interface IAttachable {
+  destroyed: boolean;
+  attachIsCalled: boolean;
+  destroy(): void;
+  attach(parent: Attachable | string): this;
+  attachToRoot(): this;
+}
 
 export class LightweightAttachable implements IAttachable {
   /**

@@ -61,7 +61,7 @@ class SequenceExecuter extends LightweightAttachable {
     }
   }
 
-  attach(parent: string | Attachable): this {
+  attach(parent: Attachable | string): this {
     this._pendingValues = undefined;
     if (this.destroyed) {
       this._pipeline = undefined as any;
@@ -325,7 +325,7 @@ export class Sequence<T = void> implements IAttachable {
     this.executor.destroy();
   }
 
-  attach(parent: string | Attachable): this {
+  attach(parent: Attachable | string): this {
     this.executor.attach(parent);
     return this;
   }

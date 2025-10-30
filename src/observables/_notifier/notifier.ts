@@ -20,7 +20,7 @@ export class Notifier<T> {
     let notifier = new Notifier<T>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
     return {
-      attach: (parent: string | Attachable) => {
+      attach: (parent: Attachable | string) => {
         sequence.attach(parent);
         return notifier;
       },
