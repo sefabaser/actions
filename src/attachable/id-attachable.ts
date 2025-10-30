@@ -2,39 +2,34 @@ import { CallbackHelper } from '../helpers/callback.helper';
 import { Sequence } from '../sequence/sequence';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassID } from './helpers/class-id';
-import { IAttachable, LightweightAttachable } from './lightweight-attachable';
+import { LightweightAttachable } from './lightweight-attachable';
 
-export class Attachable extends LightweightAttachable implements IAttachable {
+export class IDAttachable extends LightweightAttachable {
   // ----------------------------- CLASSID -----------------------------
   static get id(): string {
     return ClassID.getClassID(this);
   }
 
   get classId(): string {
-    return (this.constructor as typeof Attachable).id;
+    return (this.constructor as typeof IDAttachable).id;
   }
   // ----------------------------- END CLASSID -----------------------------
 
-  readonly id: string = AttachmentTargetStore.registerAttachmentTarget(this);
+  readonly id: string = AttachmentTargetStore.registerIDAttachable(this);
 
-  static validateId(this: typeof Attachable, id: string): boolean {
+  static validateId(this: typeof IDAttachable, id: string): boolean {
     return AttachmentTargetStore.validateIdForClass(id, this);
   }
 
   private _onDestroyListeners: Set<() => void> | undefined;
-  private _attachments: Set<IAttachable> | undefined;
 
   destroy(): void {
     if (!this.destroyed) {
-      AttachmentTargetStore.unregisterAttachmentTarget(this);
+      AttachmentTargetStore.unregisterIDAttachable(this);
 
       let listeners = this._onDestroyListeners;
       this._onDestroyListeners = undefined;
       listeners?.forEach(listener => listener());
-
-      let attachedEntities = this._attachments;
-      this._attachments = undefined;
-      attachedEntities?.forEach(item => item.destroy());
 
       super.destroy();
     }
@@ -64,22 +59,5 @@ export class Attachable extends LightweightAttachable implements IAttachable {
         };
       });
     }
-  }
-
-  /** @internal */
-  setAttachment(child: IAttachable): void {
-    if (this.destroyed) {
-      child.destroy();
-    } else {
-      if (!this._attachments) {
-        this._attachments = new Set();
-      }
-      this._attachments.add(child);
-    }
-  }
-
-  /** @internal */
-  removeAttachment(child: IAttachable): void {
-    this._attachments?.delete(child);
   }
 }

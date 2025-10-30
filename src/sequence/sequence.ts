@@ -1,4 +1,3 @@
-import { Attachable } from '../attachable/attachable';
 import { IAttachable, LightweightAttachable } from '../attachable/lightweight-attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
@@ -61,7 +60,7 @@ class SequenceExecuter extends LightweightAttachable {
     }
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: LightweightAttachable | string): this {
     this._pendingValues = undefined;
     if (this.destroyed) {
       this._pipeline = undefined as any;
@@ -325,7 +324,7 @@ export class Sequence<T = void> implements IAttachable {
     this.executor.destroy();
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: LightweightAttachable | string): this {
     this.executor.attach(parent);
     return this;
   }

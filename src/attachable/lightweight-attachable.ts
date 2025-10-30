@@ -1,11 +1,12 @@
-import { Attachable } from './attachable';
+import { Comparator } from 'helpers-lib';
+
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 
 export interface IAttachable {
   destroyed: boolean;
   attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: Attachable | string): this;
+  attach(parent: LightweightAttachable | string): this;
   attachToRoot(): this;
 }
 
@@ -19,25 +20,11 @@ export class LightweightAttachable implements IAttachable {
     return destroyedSubscription;
   }
 
+  private _attachments: Set<IAttachable> | undefined;
+
+  private _attachedParent: LightweightAttachable | undefined;
   /** @internal */
-  static attach(parent: Attachable | string, child: IAttachable): Attachable {
-    let parentEntity = AttachmentTargetStore.findAttachmentTarget(parent);
-
-    let currentParent: Attachable | undefined = parentEntity;
-    while (currentParent) {
-      if (currentParent === child) {
-        throw new Error(`Circular attachment detected!`);
-      }
-      currentParent = currentParent.attachedParent;
-    }
-
-    parentEntity.setAttachment(child);
-    return parentEntity;
-  }
-
-  private _attachedParent: Attachable | undefined;
-  /** @internal */
-  get attachedParent(): Attachable | undefined {
+  get attachedParent(): LightweightAttachable | undefined {
     return this._attachedParent;
   }
 
@@ -55,7 +42,7 @@ export class LightweightAttachable implements IAttachable {
   constructor() {
     setTimeout(() => {
       if (!this._attachIsCalled && !this._destroyed) {
-        throw new Error(`LightweightAttachable: The object is not attached to anything!`);
+        throw new Error(`Attachable: The object is not attached to anything!`);
       }
     });
   }
@@ -66,18 +53,33 @@ export class LightweightAttachable implements IAttachable {
         this._attachedParent.removeAttachment(this);
         this._attachedParent = undefined;
       }
+
+      let attachedEntities = this._attachments;
+      this._attachments = undefined;
+      attachedEntities?.forEach(item => item.destroy());
+
       this._destroyed = true;
     }
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: LightweightAttachable | string): this {
     if (this._attachIsCalled) {
-      throw new Error(`LightweightAttachable: The object is already attached to something!`);
+      throw new Error(`Attachable: The object is already attached to something!`);
     }
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      let parentEntity = LightweightAttachable.attach(parent, this);
+      let parentEntity = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
+
+      let currentParent: LightweightAttachable | undefined = parentEntity;
+      while (currentParent) {
+        if (currentParent === this) {
+          throw new Error(`Circular attachment detected!`);
+        }
+        currentParent = currentParent.attachedParent;
+      }
+
+      parentEntity.setAttachment(this);
       this._attachedParent = parentEntity;
     }
     return this;
@@ -85,10 +87,27 @@ export class LightweightAttachable implements IAttachable {
 
   attachToRoot(): this {
     if (this._attachIsCalled) {
-      throw new Error(`LightweightAttachable: The object is already attached to something!`);
+      throw new Error(`Attachable: The object is already attached to something!`);
     }
 
     this._attachIsCalled = true;
     return this;
+  }
+
+  /** @internal */
+  setAttachment(child: IAttachable): void {
+    if (this.destroyed) {
+      child.destroy();
+    } else {
+      if (!this._attachments) {
+        this._attachments = new Set();
+      }
+      this._attachments.add(child);
+    }
+  }
+
+  /** @internal */
+  removeAttachment(child: IAttachable): void {
+    this._attachments?.delete(child);
   }
 }

@@ -1,28 +1,27 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ActionLibUnitTestHelper } from '..';
-import { Attachable } from './attachable';
+import { ActionLibUnitTestHelper, IDAttachable } from '..';
 
-describe('Attachable', () => {
+describe('IDAttachable', () => {
   beforeEach(() => {
     ActionLibUnitTestHelper.hardReset();
   });
 
   describe('basic', () => {
     test('attachable should have an id', () => {
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
       expect(sample.id).toBeDefined();
     });
 
     test('ids should be unique', () => {
-      let sample1 = new Attachable().attachToRoot();
-      let sample2 = new Attachable().attachToRoot();
+      let sample1 = new IDAttachable().attachToRoot();
+      let sample2 = new IDAttachable().attachToRoot();
       expect(sample1.id !== sample2.id).toBeTruthy();
     });
 
     test('not attaching to anything should throw error', () => {
       let operation = async (): Promise<void> => {
-        new Attachable();
+        new IDAttachable();
       };
 
       vi.useFakeTimers();
@@ -34,7 +33,7 @@ describe('Attachable', () => {
 
     test('attachment is not necessary if attachable is destroyed right after creation', () => {
       let operation = async (): Promise<void> => {
-        let sample = new Attachable();
+        let sample = new IDAttachable();
         sample.destroy();
       };
 
@@ -46,8 +45,8 @@ describe('Attachable', () => {
     });
 
     test('when attachment target is destroyed, it should destroy its attachments', () => {
-      let target = new Attachable();
-      let attachment = new Attachable().attach(target);
+      let target = new IDAttachable();
+      let attachment = new IDAttachable().attach(target);
       target.destroy();
 
       expect(attachment.destroyed).toBeTruthy();
@@ -56,7 +55,7 @@ describe('Attachable', () => {
     test('onDestroy should be triggered when destroy is called', () => {
       let destroyCalled = false;
 
-      class Sample extends Attachable {
+      class Sample extends IDAttachable {
         destroy(): void {
           super.destroy();
           destroyCalled = true;
@@ -68,11 +67,20 @@ describe('Attachable', () => {
 
       expect(destroyCalled).toBeTruthy();
     });
+
+    test('attach by parent id string', () => {
+      let parent = new IDAttachable().attachToRoot();
+      let child = new IDAttachable();
+
+      child.attach(parent.id);
+
+      expect(child.destroyed).toBe(false);
+    });
   });
 
   describe('edge cases', () => {
     test('destroy calls should be executed attached first then parent', () => {
-      class Sample extends Attachable {
+      class Sample extends IDAttachable {
         constructor(private destroyCallback: () => void) {
           super();
         }
@@ -95,14 +103,14 @@ describe('Attachable', () => {
     test('when attachment target is destroyed, it should destroy its the attachments that are attached in constructor', () => {
       let child: Attachment | undefined;
 
-      class Target extends Attachable {
+      class Target extends IDAttachable {
         constructor() {
           super();
           child = new Attachment().attach(this);
         }
       }
 
-      class Attachment extends Attachable {}
+      class Attachment extends IDAttachable {}
 
       let parent = new Target().attachToRoot();
       parent.destroy();
@@ -111,14 +119,14 @@ describe('Attachable', () => {
     });
 
     test('attach to self should throw error', () => {
-      let sample = new Attachable();
+      let sample = new IDAttachable();
       expect(() => {
         sample.attach(sample);
       }).toThrow('Circular attachment detected!');
     });
 
     test('circular attachment should throw error', () => {
-      class Sample extends Attachable {}
+      class Sample extends IDAttachable {}
 
       let sample1 = new Sample();
       let sample2 = new Sample();
@@ -133,7 +141,7 @@ describe('Attachable', () => {
   describe('onDestroy', () => {
     test('callback is invoked when attachable is destroyed', () => {
       let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample
         .onDestroy(() => {
@@ -147,7 +155,7 @@ describe('Attachable', () => {
 
     test('callback is invoked immediately if attachable is already destroyed', () => {
       let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample.destroy();
 
@@ -164,7 +172,7 @@ describe('Attachable', () => {
       let callback1Invoked = false;
       let callback2Invoked = false;
       let callback3Invoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample
         .onDestroy(() => {
@@ -189,7 +197,7 @@ describe('Attachable', () => {
 
     test('subscription can be unsubscribed', () => {
       let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       let subscription = sample
         .onDestroy(() => {
@@ -205,7 +213,7 @@ describe('Attachable', () => {
 
     test('error in callback is caught and logged when attachable is already destroyed', () => {
       let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample.destroy();
 
@@ -223,7 +231,7 @@ describe('Attachable', () => {
     test('callback is not invoked after unsubscribe even if other callbacks exist', () => {
       let callback1Invoked = false;
       let callback2Invoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       let subscription1 = sample
         .onDestroy(() => {
@@ -244,7 +252,7 @@ describe('Attachable', () => {
 
     test('triggereding destroy multiple times should not take effect multiply', () => {
       let triggerCount = 0;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample
         .onDestroy(() => {
@@ -260,7 +268,7 @@ describe('Attachable', () => {
 
     test('onDestroy should be triggered when destroy listener is attached to the attachable that owns the onDestroy', () => {
       let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample
         .onDestroy(() => {
@@ -274,7 +282,7 @@ describe('Attachable', () => {
 
     test('onDestroy should be triggered if it is listened by take(1)', () => {
       let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+      let sample = new IDAttachable().attachToRoot();
 
       sample
         .onDestroy()
@@ -291,14 +299,14 @@ describe('Attachable', () => {
 
   describe('validateId', () => {
     test('valid target valid id', () => {
-      class Child extends Attachable {}
+      class Child extends IDAttachable {}
       let child = new Child().attachToRoot();
       expect(Child.validateId(child.id)).toBe(true);
     });
 
     test('invalid target valid id', () => {
-      class Child1 extends Attachable {}
-      class Child2 extends Attachable {}
+      class Child1 extends IDAttachable {}
+      class Child2 extends IDAttachable {}
 
       let child1 = new Child1().attachToRoot();
 
@@ -306,7 +314,7 @@ describe('Attachable', () => {
     });
 
     test('invalid id', () => {
-      class Child extends Attachable {}
+      class Child extends IDAttachable {}
       expect(Child.validateId('invalidId')).toBe(false);
     });
   });

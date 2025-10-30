@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
+import { LightweightAttachable } from '../attachable/lightweight-attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
@@ -70,7 +70,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new Attachable().attachToRoot();
+        let parent = new LightweightAttachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve()).attach(parent);
 
@@ -102,17 +102,17 @@ describe('Sequence', () => {
         expect(() => {
           Sequence.create<void>(resolve => resolve());
           vi.runAllTimers();
-        }).toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('attaching to a target should not throw error', () => {
         expect(() => {
           Sequence.create<void>(resolve => resolve())
             .read(() => {})
-            .attach(new Attachable().attachToRoot());
+            .attach(new LightweightAttachable().attachToRoot());
 
           vi.runAllTimers();
-        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).not.toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('attaching to root should not throw error', () => {
@@ -122,7 +122,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           vi.runAllTimers();
-        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).not.toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('not attaching the chain to a target should throw error', () => {
@@ -132,7 +132,7 @@ describe('Sequence', () => {
             .read(() => {});
 
           vi.runAllTimers();
-        }).toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('attaching the chain to a target should not throw error', () => {
@@ -140,10 +140,10 @@ describe('Sequence', () => {
           Sequence.create<void>(resolve => resolve())
             .read(() => {})
             .read(() => {})
-            .attach(new Attachable().attachToRoot());
+            .attach(new LightweightAttachable().attachToRoot());
 
           vi.runAllTimers();
-        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).not.toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('attaching the chain to root should not throw error', () => {
@@ -154,7 +154,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           vi.runAllTimers();
-        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).not.toThrow('Attachable: The object is not attached to anything!');
       });
     });
 
@@ -322,7 +322,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new Attachable().attachToRoot();
+        let parent = new LightweightAttachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve())
           .read(() => {})
@@ -582,7 +582,7 @@ describe('Sequence', () => {
         });
 
         test('destroying parent should destroy sequence', () => {
-          let parent = new Attachable().attachToRoot();
+          let parent = new LightweightAttachable().attachToRoot();
 
           let sequance = Sequence.create<void>(resolve => resolve())
             .map(() => {})
@@ -887,7 +887,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new Attachable().attachToRoot();
+        let parent = new LightweightAttachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve())
           .filter(() => true)
@@ -1053,7 +1053,7 @@ describe('Sequence', () => {
       });
 
       test('destroying parent should destroy sequence', () => {
-        let parent = new Attachable().attachToRoot();
+        let parent = new LightweightAttachable().attachToRoot();
 
         let sequance = Sequence.create<void>(resolve => resolve())
           .take(2)
@@ -1179,7 +1179,7 @@ describe('Sequence', () => {
           Sequence.merge(sequence1, sequence).attachToRoot();
 
           vi.runAllTimers();
-        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).not.toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('merging same sequence should throw error', () => {
@@ -1297,7 +1297,7 @@ describe('Sequence', () => {
           Sequence.combine({ a: sequence1, b: sequence }).attachToRoot();
 
           vi.runAllTimers();
-        }).not.toThrow('LightweightAttachable: The object is not attached to anything!');
+        }).not.toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('combining same sequence should throw error', () => {

@@ -1,7 +1,7 @@
 import { Wait } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
+import { IDAttachable } from '../attachable/id-attachable';
 import { Action } from '../observables/action/action';
 import { Sequence } from './sequence';
 
@@ -40,7 +40,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('onDestroy callback', async () => {
     await testPerformance(() => {
-      let attachable = new Attachable().attachToRoot();
+      let attachable = new IDAttachable().attachToRoot();
       attachable.onDestroy(() => {}).attachToRoot();
       attachable.destroy();
     });
@@ -50,7 +50,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('action subscribe', async () => {
     let action = new Action<void>();
     await testPerformance(() => {
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       action.subscribe(() => {}).attach(parent);
       action.trigger();
       parent.destroy();
@@ -61,7 +61,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('action to sequence read', async () => {
     let action = new Action<void>();
     await testPerformance(() => {
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       action
         .toSequence()
         .read(() => {})
@@ -79,7 +79,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       sequence.read(() => {}).attach(parent);
       resolve();
       parent.destroy();
@@ -94,7 +94,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       sequence.map(() => {}).attach(parent);
       resolve();
       parent.destroy();
@@ -109,7 +109,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       sequence.map(() => Sequence.create(resolve => resolve())).attach(parent);
       resolve();
       parent.destroy();
@@ -124,7 +124,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       sequence
         .read(() => {})
         .read(() => {})
@@ -159,7 +159,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new Attachable().attachToRoot();
+      let parent = new IDAttachable().attachToRoot();
       sequence
         .map(() => {})
         .map(() => {})
@@ -185,7 +185,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       parent.destroy();
     });
-    // Min: 2.7512998580932617
+    // Min: 2.725099802017212
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
@@ -196,7 +196,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
           resolve = r as any;
         });
 
-        let parent = new Attachable().attachToRoot();
+        let parent = new IDAttachable().attachToRoot();
         sequence
           .map(() => Sequence.create(resolve => resolve()))
           .map(() => Sequence.create(resolve => resolve()))

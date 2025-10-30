@@ -1,5 +1,5 @@
-export { Attachable } from './attachable/attachable';
 export { ClassID } from './attachable/helpers/class-id';
+export { IDAttachable } from './attachable/id-attachable';
 export { IAttachable, LightweightAttachable } from './attachable/lightweight-attachable';
 export { ActionLibDefaults } from './config';
 export { ActionLibUnitTestHelper } from './helpers/unit-test.helper';

@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Attachable } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
+import { IDAttachable } from '../../attachable/id-attachable';
 import { Reference } from './reference';
 
 describe('Reference', () => {
-  let parent: Attachable;
+  let parent: IDAttachable;
 
   beforeEach(() => {
     AttachmentTargetStore.hardReset();
-    parent = new Attachable().attachToRoot();
+    parent = new IDAttachable().attachToRoot();
   });
 
   describe('Basics', () => {
@@ -25,7 +25,7 @@ describe('Reference', () => {
 
     test('can set and get value', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       expect(refVar.value).toBe(target.id);
@@ -33,7 +33,7 @@ describe('Reference', () => {
 
     test('can set value to undefined', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       refVar.value = undefined;
@@ -58,7 +58,7 @@ describe('Reference', () => {
 
     test('destroyed reference returns undefined for value', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       expect(refVar.value).toBe(target.id);
@@ -81,7 +81,7 @@ describe('Reference', () => {
   describe('Reference behavior', () => {
     test('when referenced attachable is destroyed, value becomes undefined', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       expect(refVar.value).toBe(target.id);
@@ -92,8 +92,8 @@ describe('Reference', () => {
 
     test('changing reference cleans up old subscription', () => {
       let refVar = new Reference().attach(parent);
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attachToRoot();
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attachToRoot();
 
       refVar.value = target1.id;
       refVar.value = target2.id;
@@ -107,7 +107,7 @@ describe('Reference', () => {
 
     test('setting to undefined cleans up subscription', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -121,7 +121,7 @@ describe('Reference', () => {
 
     test('setting same value does not create duplicate subscriptions', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       refVar.value = target.id;
@@ -135,7 +135,7 @@ describe('Reference', () => {
   describe('Subscription', () => {
     test('subscribe receives initial value', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -151,8 +151,8 @@ describe('Reference', () => {
 
     test('subscribe notified when value changes', () => {
       let refVar = new Reference().attach(parent);
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attachToRoot();
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attachToRoot();
 
       let receivedValues: (string | undefined)[] = [];
       refVar
@@ -169,7 +169,7 @@ describe('Reference', () => {
 
     test('subscribe notified when referenced attachable is destroyed', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -187,7 +187,7 @@ describe('Reference', () => {
 
     test('multiple subscribers all notified', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let received1: string | undefined;
       let received2: string | undefined;
@@ -211,7 +211,7 @@ describe('Reference', () => {
 
     test('unsubscribed listeners not notified', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let callCount = 0;
       let subscription = refVar
@@ -230,7 +230,7 @@ describe('Reference', () => {
   describe('Wait until', () => {
     test('wait until specific value', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let triggered = false;
       refVar
@@ -246,7 +246,7 @@ describe('Reference', () => {
 
     test('wait until undefined', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -264,7 +264,7 @@ describe('Reference', () => {
 
     test('wait until triggered immediately if already at value', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -280,7 +280,7 @@ describe('Reference', () => {
 
     test('wait until next', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let receivedValue: string | undefined;
       refVar
@@ -296,8 +296,8 @@ describe('Reference', () => {
 
     test('wait until next only triggers once', () => {
       let refVar = new Reference().attach(parent);
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attachToRoot();
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attachToRoot();
 
       let callCount = 0;
       refVar
@@ -316,7 +316,7 @@ describe('Reference', () => {
   describe('Edge cases', () => {
     test('destroyed parent cleans up reference subscription', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       expect(target['_onDestroyListeners']?.size).toBe(1);
@@ -336,8 +336,8 @@ describe('Reference', () => {
 
     test('notify on change behavior', () => {
       let refVar = new Reference().attach(parent);
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attachToRoot();
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attachToRoot();
 
       let callCount = 0;
       refVar
@@ -360,8 +360,8 @@ describe('Reference', () => {
       let refVar1 = new Reference().attach(parent);
       let refVar2 = new Reference().attach(parent);
 
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attach(target1);
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attach(target1);
 
       refVar1.value = target1.id;
       refVar2.value = target2.id;
@@ -387,7 +387,7 @@ describe('Reference', () => {
 
       expect(() => {
         refVar.attach(parent);
-      }).toThrow('LightweightAttachable: The object is already attached to something!');
+      }).toThrow('Attachable: The object is already attached to something!');
     });
 
     test('cannot call attachToRoot after attach', () => {
@@ -395,12 +395,12 @@ describe('Reference', () => {
 
       expect(() => {
         refVar.attachToRoot();
-      }).toThrow('LightweightAttachable: The object is already attached to something!');
+      }).toThrow('Attachable: The object is already attached to something!');
     });
 
     test('onDestroyed subscription inherits attachment from Reference', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -411,8 +411,8 @@ describe('Reference', () => {
 
     test('changing value after reference attached properly reattaches onDestroyed subscription', () => {
       let refVar = new Reference().attach(parent);
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attachToRoot();
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attachToRoot();
 
       refVar.value = target1.id;
       refVar.value = target2.id;
@@ -428,7 +428,7 @@ describe('Reference', () => {
   describe('Reference path', () => {
     test('can use path to extract id from object', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = { id: target.id };
       expect(refVar.value).toEqual({ id: target.id });
@@ -439,7 +439,7 @@ describe('Reference', () => {
 
     test('can use nested path to extract id from object', () => {
       let refVar = new Reference<{ user: { profile: { id: string } } }>({ path: 'user.profile.id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = {
         user: {
@@ -462,7 +462,7 @@ describe('Reference', () => {
     });
 
     test('initial value with path works correctly', () => {
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
       let refVar = new Reference<{ id: string }>({
         path: 'id',
         initialValue: { id: target.id }
@@ -476,8 +476,8 @@ describe('Reference', () => {
 
     test('can change from one object to another', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target1 = new Attachable().attachToRoot();
-      let target2 = new Attachable().attachToRoot();
+      let target1 = new IDAttachable().attachToRoot();
+      let target2 = new IDAttachable().attachToRoot();
 
       refVar.value = { id: target1.id };
       refVar.value = { id: target2.id };
@@ -491,7 +491,7 @@ describe('Reference', () => {
 
     test('throws error when using object without path', () => {
       let refVar = new Reference<{ id: string }>(undefined as any).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       expect(() => {
         refVar.value = { id: target.id };
@@ -500,7 +500,7 @@ describe('Reference', () => {
 
     test('throws error when using string with path', () => {
       let refVar = new Reference<string>({ path: 'id' } as any).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       expect(() => {
         refVar.value = target.id;
@@ -509,7 +509,7 @@ describe('Reference', () => {
 
     test('subscribers notified when object reference destroyed', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let heap: ({ id: string } | undefined)[] = [];
       refVar
@@ -532,7 +532,7 @@ describe('Reference', () => {
       }
 
       let refVar = new Reference<UserData>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let userData: UserData = {
         id: target.id,
@@ -549,7 +549,7 @@ describe('Reference', () => {
 
     test('can set to undefined to clear object reference', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = { id: target.id };
       expect(refVar.value).toEqual({ id: target.id });
@@ -563,7 +563,7 @@ describe('Reference', () => {
 
     test('waitUntil works with object values', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let triggered = false;
       let targetValue = { id: target.id };
@@ -581,7 +581,7 @@ describe('Reference', () => {
 
     test('waitUntilNext works with object values', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let receivedValue: { id: string } | undefined;
       refVar
@@ -597,7 +597,7 @@ describe('Reference', () => {
 
     test('setting same object value does not create duplicate subscriptions', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let obj = { id: target.id };
       refVar.value = obj;
@@ -614,7 +614,7 @@ describe('Reference', () => {
       }
 
       let refVar = new Reference<DataWithArray>({ path: 'items.0.id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       let data: DataWithArray = {
         items: [{ id: target.id }, { id: 'other-id' }],
@@ -630,7 +630,7 @@ describe('Reference', () => {
 
     test('destroyed reference with path cannot be set', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.destroy();
 
@@ -654,7 +654,7 @@ describe('Reference', () => {
   describe('Destroyed state behavior', () => {
     test('cannot set value on destroyed reference', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.destroy();
 
@@ -695,7 +695,7 @@ describe('Reference', () => {
 
     test('destroy cleans up internal destroy subscription', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       expect(refVar['destroySubscription']).toBeDefined();
@@ -709,7 +709,7 @@ describe('Reference', () => {
 
     test('destroy can be called multiple times safely', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
 
@@ -723,7 +723,7 @@ describe('Reference', () => {
 
     test('destroying reference with value does not affect target attachable', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       refVar.destroy();
@@ -733,7 +733,7 @@ describe('Reference', () => {
 
     test('getting value after destroy does not throw', () => {
       let refVar = new Reference().attach(parent);
-      let target = new Attachable().attachToRoot();
+      let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
       refVar.destroy();
@@ -770,8 +770,8 @@ describe('Reference', () => {
     test('circular referencing', () => {
       let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      let base = new Attachable().attachToRoot();
-      let componentOfTheBase = new Attachable().attach(base);
+      let base = new IDAttachable().attachToRoot();
+      let componentOfTheBase = new IDAttachable().attach(base);
 
       // They hold each other's reference
       let ref1 = new Reference({ initialValue: componentOfTheBase.id }).attach(base);

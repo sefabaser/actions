@@ -1,6 +1,5 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { IAttachable, LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
@@ -103,7 +102,7 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
     return this.variable.waitUntil(data, callback);
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: LightweightAttachable | string): this {
     super.attach(parent);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;
