@@ -87,6 +87,36 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  0.7418999671936035
   }, 60000);
 
+  test('sequence single map', async () => {
+    await testPerformance(() => {
+      let resolve!: () => void;
+      let sequence = Sequence.create(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence.map(() => {}).attach(parent);
+      resolve();
+      parent.destroy();
+    });
+    // Min:  0.8095998764038086
+  }, 60000);
+
+  test('sequence single async map', async () => {
+    await testPerformance(() => {
+      let resolve!: () => void;
+      let sequence = Sequence.create(r => {
+        resolve = r as any;
+      });
+
+      let parent = new Attachable().attachToRoot();
+      sequence.map(() => Sequence.create(resolve => resolve())).attach(parent);
+      resolve();
+      parent.destroy();
+    });
+    // Min:  1.1162998676300049
+  }, 60000);
+
   test('sequence 10x read and resolve', async () => {
     await testPerformance(() => {
       let resolve!: () => void;
@@ -156,5 +186,44 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       parent.destroy();
     });
     // Min: 2.7512998580932617
+  }, 60000);
+
+  test('sequence 10x async map and resolve', async () => {
+    await testPerformance(
+      () => {
+        let resolve!: () => void;
+        let sequence = Sequence.create(r => {
+          resolve = r as any;
+        });
+
+        let parent = new Attachable().attachToRoot();
+        sequence
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(resolve => resolve()))
+          .attach(parent);
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        parent.destroy();
+      },
+      { sampleCount: 10, repetationPerSample: 1000 }
+    );
+    // Min: 101.85249996185303
   }, 60000);
 });
