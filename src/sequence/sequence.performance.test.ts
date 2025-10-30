@@ -1,45 +1,13 @@
-import { Wait } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
 import { IDAttachable } from '../attachable/id-attachable';
 import { Action } from '../observables/action/action';
+import { PerformanceUnitTestHelper } from './performance-unit-test.helper';
 import { Sequence } from './sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
-  let testPerformance = async (
-    callback: () => void,
-    options: {
-      sampleCount: number;
-      repetationPerSample: number;
-    } = { sampleCount: 500, repetationPerSample: 1000 }
-  ) => {
-    let start: number;
-    let end: number;
-    let durations: number[] = [];
-
-    for (let v = 0; v < options.sampleCount; v++) {
-      start = performance.now();
-      for (let i = 0; i < options.repetationPerSample; i++) {
-        callback();
-      }
-      end = performance.now();
-      durations.push(end - start);
-
-      await Wait();
-      global.gc?.();
-      await Wait();
-    }
-
-    durations = durations.sort((a, b) => a - b);
-    let min = durations[0];
-    let median = durations[Math.floor(durations.length / 2)];
-
-    console.log('Min: ', min);
-    console.log('Median: ', median);
-  };
-
   test('onDestroy callback', async () => {
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let attachable = new IDAttachable().attachToRoot();
       attachable.onDestroy(() => {}).attachToRoot();
       attachable.destroy();
@@ -49,7 +17,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('action subscribe single', async () => {
     let action = new Action<void>();
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let parent = new IDAttachable().attachToRoot();
       action.subscribe(() => {}).attach(parent);
       action.trigger();
@@ -60,7 +28,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('action to sequence read', async () => {
     let action = new Action<void>();
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let parent = new IDAttachable().attachToRoot();
       action
         .toSequence()
@@ -73,7 +41,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence single read', async () => {
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
         resolve = r as any;
@@ -88,7 +56,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence single map', async () => {
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
         resolve = r as any;
@@ -103,7 +71,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence single async map', async () => {
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
         resolve = r as any;
@@ -119,7 +87,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('action subscribe 10x', async () => {
     let action = new Action<void>();
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let parent = new IDAttachable().attachToRoot();
       action.subscribe(() => {}).attach(parent);
       action.subscribe(() => {}).attach(parent);
@@ -148,7 +116,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
         resolve = r as any;
@@ -183,7 +151,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
-    await testPerformance(() => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
         resolve = r as any;
@@ -219,7 +187,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
-    await testPerformance(
+    await PerformanceUnitTestHelper.testPerformance(
       () => {
         let resolve!: () => void;
         let sequence = Sequence.create(r => {

@@ -40,19 +40,19 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
     this.id = ReducerEffectChannel.nextAvailableId++;
     this.reducer = reducer;
 
-    let reducerResponse = this.reducer['reduceFunction']({
+    let reducerResponse = this.reducer.reduceFunction({
       id: this.id,
       current: value,
       type: 'effect'
     });
 
     this.effectValue = value;
-    this.reducer['broadcast'](reducerResponse);
+    this.reducer.broadcast(reducerResponse);
   }
 
   update(value: EffectType): void {
     if (!this.destroyed) {
-      let reducerResponse = this.reducer['reduceFunction']({
+      let reducerResponse = this.reducer.reduceFunction({
         id: this.id,
         previous: this.effectValue,
         current: value,
@@ -60,7 +60,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
       });
 
       this.effectValue = value;
-      this.reducer['broadcast'](reducerResponse);
+      this.reducer.broadcast(reducerResponse);
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
     }
@@ -68,13 +68,13 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
 
   destroy(): void {
     if (!this.destroyed) {
-      let reducerResponse = this.reducer['reduceFunction']({
+      let reducerResponse = this.reducer.reduceFunction({
         id: this.id,
         previous: this.effectValue,
         type: 'destroy'
       });
 
-      this.reducer['broadcast'](reducerResponse);
+      this.reducer.broadcast(reducerResponse);
 
       this.reducer['effects'].delete(this);
 
@@ -222,7 +222,8 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   private options: ReducerOptions;
 
   private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
-  private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
+  /** @internal */
+  reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
   constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, partialOptions: Partial<ReducerOptions> = {}) {
     super();
@@ -266,7 +267,8 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     }
   }
 
-  private broadcast(value: ResponseType): void {
+  /** @internal */
+  broadcast(value: ResponseType): void {
     if (!Comparator.isEqual(this.previousBroadcast, value)) {
       if (this.options.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);

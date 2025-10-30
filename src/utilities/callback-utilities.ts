@@ -1,7 +1,6 @@
 import { Attachable } from '../attachable/attachable';
-import { IDAttachable } from '../attachable/id-attachable';
 import { Reducer } from '../observables/reducer/reducer';
-import { IStream, Sequence } from '../sequence/sequence';
+import { Sequence } from '../sequence/sequence';
 
 export class CallbackUtilities {
   /**
@@ -22,20 +21,5 @@ export class CallbackUtilities {
       allReducer.waitUntil(false, () => resolve()).attach(attachable);
       return () => allEffectChannels.forEach(channel => channel.destroy());
     });
-  }
-
-  // TODO: performance comparison
-  static untilAllDestroyed2(attachables: IDAttachable[]): Sequence {
-    return Sequence.combine(
-      attachables.reduce(
-        (acc, item, index) => {
-          acc[index] = item.onDestroy();
-          return acc;
-        },
-        {} as Record<string, IStream>
-      )
-    )
-      .take(1)
-      .map(() => {});
   }
 }
