@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { ActionLibUnitTestHelper } from '../../helpers/unit-test.helper';
 import { Attachable } from '../attachable';
 import { AttachmentTargetStore } from './attachment-target.store';
-import { ClassId } from './class-id';
 
 describe('AttachmentTargetStore', () => {
   beforeEach(() => {
@@ -165,8 +164,7 @@ describe('AttachmentTargetStore', () => {
       new TestClass1().attachToRoot();
       new TestClass2().attachToRoot();
 
-      ClassId.hardReset();
-      AttachmentTargetStore.hardReset();
+      ActionLibUnitTestHelper.hardReset();
 
       class TestClass3 extends Attachable {}
       let instance = new TestClass3().attachToRoot();

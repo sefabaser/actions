@@ -1,18 +1,24 @@
-export class ClassId {
-  private static nextClassId = 1;
-  private static classToClassId = new WeakMap<typeof ClassId, string>();
+export type AnyClass = abstract new (...args: any[]) => any;
+
+export class ClassID {
+  private static nextClassID = 1;
+  private static classToClassID = new WeakMap<AnyClass, string>();
 
   static get id(): string {
-    let id = ClassId.classToClassId.get(this);
+    return this.getClassID(this);
+  }
+
+  static getClassID(Class: AnyClass): string {
+    let id = ClassID.classToClassID.get(Class);
     if (!id) {
-      id = `${ClassId.nextClassId++}`;
-      ClassId.classToClassId.set(this, id);
+      id = `${ClassID.nextClassID++}`;
+      ClassID.classToClassID.set(Class, id);
     }
     return id;
   }
 
   get classId(): string {
-    return (this.constructor as typeof ClassId).id;
+    return (this.constructor as typeof ClassID).id;
   }
 
   /**
@@ -20,7 +26,7 @@ export class ClassId {
    * @internal
    */
   static hardReset(): void {
-    this.nextClassId = 1;
-    this.classToClassId = new WeakMap<typeof ClassId, string>();
+    this.nextClassID = 1;
+    this.classToClassID = new WeakMap<typeof ClassID, string>();
   }
 }
