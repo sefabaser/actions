@@ -1,4 +1,4 @@
-import { IDAttachable } from '../attachable/id-attachable';
+import { Attachable } from '../attachable/attachable';
 import { Reducer } from '../observables/reducer/reducer';
 import { IStream, Sequence } from '../sequence/sequence';
 
@@ -13,7 +13,7 @@ export class CallbackUtilities {
    *    // All entities are destroyed
    *  }).attachToRoot();
    */
-  static untilAllDestroyed(attachables: IDAttachable[]): Sequence {
+  static untilAllDestroyed(attachables: Attachable[]): Sequence {
     let all = Reducer.createExistenceChecker();
     attachables.forEach(attachable => all.effect().attach(attachable));
 
@@ -27,7 +27,7 @@ export class CallbackUtilities {
   }
 
   // TODO: performance comparison
-  static untilAllDestroyed2(attachables: IDAttachable[]): Sequence {
+  static untilAllDestroyed2(attachables: Attachable[]): Sequence {
     return Sequence.combine(
       attachables.reduce(
         (acc, item, index) => {
