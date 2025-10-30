@@ -6,7 +6,7 @@ import { Action } from '../observables/action/action';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
 import { Sequence } from './sequence';
 
-describe('Memory Leak', () => {
+describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
 
   test('no instance', async () => {

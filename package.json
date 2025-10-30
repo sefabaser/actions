@@ -26,6 +26,7 @@
     "i": "npm cache clean --force && npm install",
     "pretest": "clear",
     "test": "vitest run",
+    "test-quick": "vitest run --mode=quick",
     "start": "npm run build && node dist",
     "build": "tsc",
     "lint": "biome check . --write --max-diagnostics=1",
