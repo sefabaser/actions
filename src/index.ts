@@ -1,5 +1,5 @@
 export { Attachable } from './attachable/attachable';
-export { IAttachable } from './attachable/base-attachable';
+export { BaseAttachable, IAttachable } from './attachable/base-attachable';
 export { ClassID } from './attachable/helpers/class-id';
 export { IDAttachable } from './attachable/id-attachable';
 export { ActionLibDefaults } from './config';
