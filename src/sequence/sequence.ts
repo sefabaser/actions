@@ -1,5 +1,5 @@
-import { Attachable, IAttachable } from '../attachable/attachable';
-import { LightweightAttachable } from '../attachable/lightweight-attachable';
+import { Attachable } from '../attachable/attachable';
+import { IAttachable, LightweightAttachable } from '../attachable/lightweight-attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
 export type IStream<T = void> = Notifier<T> | Sequence<T>;

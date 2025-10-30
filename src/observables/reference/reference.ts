@@ -1,8 +1,8 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
-import { LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { IAttachable, LightweightAttachable } from '../../attachable/lightweight-attachable';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T> {
@@ -65,7 +65,7 @@ export class Reference<T = string> extends LightweightAttachable implements IVar
           !this.destroyed && this.set(undefined);
         });
 
-        if (this._attachIsCalled) {
+        if (this.attachIsCalled) {
           if (this.attachedParent) {
             this.destroySubscription.attach(this.attachedParent);
           } else {

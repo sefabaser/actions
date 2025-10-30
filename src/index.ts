@@ -1,6 +1,6 @@
-export { Attachable, IAttachable } from './attachable/attachable';
+export { Attachable } from './attachable/attachable';
 export { ClassID } from './attachable/helpers/class-id';
-export { LightweightAttachable } from './attachable/lightweight-attachable';
+export { IAttachable, LightweightAttachable } from './attachable/lightweight-attachable';
 export { ActionLibDefaults } from './config';
 export { ActionLibUnitTestHelper } from './helpers/unit-test.helper';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';

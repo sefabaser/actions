@@ -2,15 +2,7 @@ import { CallbackHelper } from '../helpers/callback.helper';
 import { Sequence } from '../sequence/sequence';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassID } from './helpers/class-id';
-import { LightweightAttachable } from './lightweight-attachable';
-
-export interface IAttachable {
-  destroyed: boolean;
-  attachIsCalled: boolean;
-  destroy(): void;
-  attach(parent: Attachable | string): this;
-  attachToRoot(): this;
-}
+import { IAttachable, LightweightAttachable } from './lightweight-attachable';
 
 export class Attachable extends LightweightAttachable implements IAttachable {
   // ----------------------------- CLASSID -----------------------------

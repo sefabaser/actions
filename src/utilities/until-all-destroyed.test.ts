@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Attachable, IAttachable } from '../attachable/attachable';
+import { Attachable } from '../attachable/attachable';
+import { IAttachable } from '../attachable/lightweight-attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Reducer } from '../observables/reducer/reducer';
 

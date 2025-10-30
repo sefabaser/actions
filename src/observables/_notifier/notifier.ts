@@ -1,6 +1,7 @@
 import { Comparator } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
+import { IAttachable } from '../../attachable/lightweight-attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { IStream, Sequence } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';

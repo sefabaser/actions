@@ -6,7 +6,7 @@ export class CallbackUtilities {
   /**
    * @param attachables Entities that will be waited until all of them to be destroyed
    * @param callback Called after all given entities are destroyed
-   * @returns IAttachable to cancel the operation early if needed.
+   * @returns Sequence
    *
    * Sample:
    *  CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3], () => {
