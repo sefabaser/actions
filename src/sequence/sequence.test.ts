@@ -242,6 +242,27 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b', 'c']);
       });
 
+      test('instantly destroyed sequence chain', () => {
+        let heap: string[] = [];
+
+        Sequence.create<void>((resolve, attachable) => {
+          resolve();
+          attachable.destroy();
+        })
+          .read(() => {
+            heap.push('a');
+          })
+          .read(() => {
+            heap.push('b');
+          })
+          .read(() => {
+            heap.push('c');
+          })
+          .attachToRoot();
+
+        expect(heap).toEqual(['a', 'b', 'c']);
+      });
+
       test('mixed read chain', async () => {
         let heap: string[] = [];
 
@@ -1503,7 +1524,7 @@ describe('Sequence', () => {
       expect(action2.listenerCount).toEqual(0);
     });
 
-    test('complex merge and combine', async () => {
+    test('complex merge and combine destroy after all complete', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
       }).map(value =>
@@ -1569,5 +1590,55 @@ describe('Sequence', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
     });
+
+    test('complex merge and combine instantly destroyed sequences', async () => {
+      let sequence1 = Sequence.create<string>((resolve, attachable) => {
+        resolve('1');
+        attachable.destroy();
+      })
+        .map(value => value + '1')
+        .read(value => console.log(value));
+
+      let sequence2 = Sequence.create<string>((resolve, attachable) => {
+        resolve('2');
+        attachable.destroy();
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          resolve(value + '2');
+          attachable.destroy();
+        })
+      );
+
+      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          resolve(value + 'm');
+          attachable.destroy();
+        })
+      );
+
+      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+        resolve('a');
+        attachable.destroy();
+      }).map(value => value + 's3');
+
+      let heap: unknown[] = [];
+      let combined = Sequence.combine({
+        m: merged,
+        s3: sequence3
+      })
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      combined.destroy();
+      await delayedCalls.waitForAllPromises();
+
+      sequence1 = undefined as any;
+      sequence2 = undefined as any;
+      sequence3 = undefined as any;
+      combined = undefined as any;
+      merged = undefined as any;
+
+      expect(heap).toEqual(['a']);
+    }, 30000);
   });
 });

@@ -209,10 +209,138 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
     }, 30000);
 
-    test('complex merge and combine destroyed in the middle of process', async () => {}, 30000);
+    test('complex merge and combine destroyed in the middle of process', async () => {
+      let sequence1 = Sequence.create<number>(resolve => {
+        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+      }).map(value =>
+        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+      );
 
-    test('complex merge and combine destroyed by sequences', async () => {}, 30000);
+      let sequence2 = Sequence.create<number>(resolve => {
+        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
+      }).map(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-    test('complex merge and combine instantly destroyed sequences', async () => {}, 30000);
+      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+        })
+      );
+
+      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+        })
+      );
+
+      let combined = Sequence.combine({
+        m: merged,
+        s3: sequence3,
+        s4: sequence4
+      }).attachToRoot();
+
+      combined.destroy();
+      await delayedCalls.waitForAllPromises();
+
+      sequence1 = undefined as any;
+      sequence2 = undefined as any;
+      sequence3 = undefined as any;
+      sequence4 = undefined as any;
+      combined = undefined as any;
+      merged = undefined as any;
+
+      let snapshot = await takeNodeMinimalHeap();
+      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+    }, 30000);
+
+    test('complex merge and combine destroyed by sequences', async () => {
+      let sequence1 = Sequence.create<number>(resolve => {
+        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+      }).map(value =>
+        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+      );
+
+      let sequence2 = Sequence.create<number>(resolve => {
+        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
+      }).map(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+
+      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+        })
+      );
+
+      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+        })
+      );
+
+      let combined = Sequence.combine({
+        m: merged,
+        s3: sequence3,
+        s4: sequence4
+      }).attachToRoot();
+
+      combined.destroy();
+      await delayedCalls.waitForAllPromises();
+
+      sequence1 = undefined as any;
+      sequence2 = undefined as any;
+      sequence3 = undefined as any;
+      sequence4 = undefined as any;
+      combined = undefined as any;
+      merged = undefined as any;
+
+      let snapshot = await takeNodeMinimalHeap();
+      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+    }, 30000);
+
+    test('complex merge and combine instantly destroyed sequences', async () => {
+      let sequence1 = Sequence.create<string>((resolve, attachable) => {
+        resolve('1');
+        attachable.destroy();
+      }).map(value => value + '1');
+
+      let sequence2 = Sequence.create<string>((resolve, attachable) => {
+        resolve('2');
+        attachable.destroy();
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          resolve(value + '2');
+          attachable.destroy();
+        })
+      );
+
+      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          resolve(value + 'm');
+          attachable.destroy();
+        })
+      );
+
+      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+        resolve('a');
+        attachable.destroy();
+      }).map(value => value + 's3');
+
+      let combined = Sequence.combine({
+        m: merged,
+        s3: sequence3
+      }).attachToRoot();
+
+      combined.destroy();
+      await delayedCalls.waitForAllPromises();
+
+      sequence1 = undefined as any;
+      sequence2 = undefined as any;
+      sequence3 = undefined as any;
+      combined = undefined as any;
+      merged = undefined as any;
+
+      let snapshot = await takeNodeMinimalHeap();
+      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+    }, 30000);
   });
 });
