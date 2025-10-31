@@ -69,6 +69,21 @@ describe('Sequence', () => {
         expect(sequance.destroyed).toBeTruthy();
       });
 
+      test('destroying after resolve', () => {
+        let triggered = false;
+        let sequance = Sequence.create<void>((resolve, attachable) => {
+          resolve();
+          attachable.destroy();
+        })
+          .read(() => {
+            triggered = true;
+          })
+          .attachToRoot();
+
+        expect(sequance.destroyed).toBeTruthy();
+        expect(triggered).toBeTruthy();
+      });
+
       test('destroying parent should destroy sequence', () => {
         let parent = new Attachable().attachToRoot();
 
@@ -728,6 +743,61 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(heap).toEqual([fakeStream]);
+      });
+
+      test('destroying subscriptions via attachmet, instantly destroyed sequence', () => {
+        let variable = new Variable<number>(1);
+        let triggered = false;
+
+        let sequance = Sequence.create<void>((resolve, attachable) => {
+          resolve();
+          attachable.destroy();
+        })
+          .map((_, attachable) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
+              })
+              .attach(attachable);
+          })
+          .attachToRoot();
+
+        expect(sequance.destroyed).toBeTruthy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+      });
+
+      test('destroying subscriptions via attachmet, async sequence', () => {
+        let variable = new Variable<number>(1);
+        let triggered = false;
+
+        let resolve!: () => void;
+        let sequance = Sequence.create<void>(r => {
+          resolve = r;
+        })
+          .map((_, attachable) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
+              })
+              .attach(attachable);
+          })
+          .attachToRoot();
+
+        expect(sequance.destroyed).toBeFalsy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
+
+        resolve();
+
+        expect(sequance.destroyed).toBeFalsy();
+        expect(variable.listenerCount).toEqual(1);
+        expect(triggered).toBeTruthy();
+
+        sequance.destroy();
+
+        expect(sequance.destroyed).toBeTruthy();
+        expect(variable.listenerCount).toEqual(0);
       });
     });
   });

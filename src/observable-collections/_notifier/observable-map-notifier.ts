@@ -1,7 +1,4 @@
-import { Attachable, IAttachable } from '../../attachable/attachable';
-import { CallbackHelper } from '../../helpers/callback.helper';
-import { NotifierCallbackFunction } from '../../observables/_notifier/notifier';
-import { ActionSubscription } from '../../utilities/action-subscription';
+import { Sequence } from '../../sequence/sequence';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
@@ -52,46 +49,51 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     return this.map.get(key);
   }
 
-  waitUntilAdded(value: KeyType, callback: NotifierCallbackFunction<ValueType>): IAttachable {
-    let triggerCallback = () => {
-      CallbackHelper.triggerCallback(this.map.get(value), callback);
-    };
+  waitUntilAdded(value: KeyType): Sequence<ValueType> {
+    return Sequence.create<ValueType>((resolve, attachable) => {
+      let resolveAndDestroy = () => {
+        resolve(this.map.get(value)!);
+        attachable.destroy();
+      };
 
-    if (this.map.has(value)) {
-      triggerCallback();
-      return Attachable.getDestroyed();
-    } else {
-      let untilAddedListenerSet = this.untilAddedListeners.get(value);
-      if (!untilAddedListenerSet) {
-        untilAddedListenerSet = new Set();
-        this.untilAddedListeners.set(value, untilAddedListenerSet);
+      if (this.map.has(value)) {
+        resolveAndDestroy();
+      } else {
+        let untilAddedListenerSet = this.untilAddedListeners.get(value);
+        if (!untilAddedListenerSet) {
+          untilAddedListenerSet = new Set();
+          this.untilAddedListeners.set(value, untilAddedListenerSet);
+        }
+
+        untilAddedListenerSet.add(resolveAndDestroy);
+        return () => {
+          this._untilAddedListeners?.get(value)?.delete(resolveAndDestroy);
+        };
       }
-
-      untilAddedListenerSet.add(triggerCallback);
-      return new ActionSubscription(() => {
-        this._untilAddedListeners?.get(value)?.delete(triggerCallback);
-      });
-    }
+    });
   }
 
-  waitUntilRemoved(value: KeyType, callback: NotifierCallbackFunction<void>): IAttachable {
-    if (!this.map.has(value)) {
-      CallbackHelper.triggerCallback(undefined, callback);
-      return Attachable.getDestroyed();
-    } else {
-      let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
-      if (!untilRemovedListenerSet) {
-        untilRemovedListenerSet = new Set();
-        this.untilRemovedListeners.set(value, untilRemovedListenerSet);
-      }
-
-      let item = () => {
-        CallbackHelper.triggerCallback(undefined, callback);
+  waitUntilRemoved(value: KeyType): Sequence<void> {
+    return Sequence.create((resolve, attachable) => {
+      let resolveAndDestroy = () => {
+        resolve();
+        attachable.destroy();
       };
-      untilRemovedListenerSet.add(item);
-      return new ActionSubscription(() => {
-        this._untilRemovedListeners?.get(value)?.delete(item);
-      });
-    }
+
+      if (!this.map.has(value)) {
+        resolveAndDestroy();
+      } else {
+        let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
+        if (!untilRemovedListenerSet) {
+          untilRemovedListenerSet = new Set();
+          this.untilRemovedListeners.set(value, untilRemovedListenerSet);
+        }
+
+        untilRemovedListenerSet.add(resolveAndDestroy);
+        return () => {
+          this._untilRemovedListeners?.get(value)?.delete(resolveAndDestroy);
+        };
+      }
+    });
   }
 }

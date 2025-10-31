@@ -1,4 +1,4 @@
-import { IAttachable } from '../../attachable/attachable';
+import { Sequence } from '../../sequence/sequence';
 import { ObservableMap } from '../observable-map/observable-map';
 
 export class ObservableSet<KeyType extends number | string> {
@@ -31,11 +31,11 @@ export class ObservableSet<KeyType extends number | string> {
     return this;
   }
 
-  waitUntilAdded(value: KeyType, callback: () => void): IAttachable {
-    return this.observableMap.waitUntilAdded(value, callback);
+  waitUntilAdded(value: KeyType): Sequence<void> {
+    return this.observableMap.waitUntilAdded(value);
   }
 
-  waitUntilRemoved(value: KeyType, callback: () => void): IAttachable {
-    return this.observableMap.waitUntilRemoved(value, callback);
+  waitUntilRemoved(value: KeyType): Sequence<void> {
+    return this.observableMap.waitUntilRemoved(value);
   }
 }

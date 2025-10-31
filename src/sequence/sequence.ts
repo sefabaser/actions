@@ -263,14 +263,14 @@ export class Sequence<T = void> implements IAttachable {
     return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T) => K | IStream<K>): Sequence<K> {
+  map<K>(callback: (data: T, attachable: Attachable) => K | IStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, resolve) => {
       let executionReturn: K | IStream<K>;
 
       try {
-        executionReturn = callback(data);
+        executionReturn = callback(data, this.executor);
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;

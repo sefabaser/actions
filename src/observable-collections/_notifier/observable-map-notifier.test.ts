@@ -61,7 +61,7 @@ describe('ObservableMapNotifier', () => {
       notifier['map'].set(1, 'test');
       let triggeredWith: string | undefined;
 
-      let subscription = notifier.waitUntilAdded(1, value => {
+      let subscription = notifier.waitUntilAdded(1).read(value => {
         triggeredWith = value;
       });
 
@@ -73,7 +73,8 @@ describe('ObservableMapNotifier', () => {
       let triggeredWith: string | undefined;
 
       let subscription = notifier
-        .waitUntilAdded(1, value => {
+        .waitUntilAdded(1)
+        .read(value => {
           triggeredWith = value;
         })
         .attachToRoot();
@@ -88,7 +89,7 @@ describe('ObservableMapNotifier', () => {
     });
 
     test('subscription cleanup removes listener', () => {
-      let subscription = notifier.waitUntilAdded(1, () => {}).attachToRoot();
+      let subscription = notifier.waitUntilAdded(1).attachToRoot();
 
       expect(notifier['_untilAddedListeners']?.get(1)?.size).toBe(1);
 
@@ -101,7 +102,8 @@ describe('ObservableMapNotifier', () => {
       let triggered = false;
 
       let subscription = notifier
-        .waitUntilAdded(1, () => {
+        .waitUntilAdded(1)
+        .read(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -119,13 +121,15 @@ describe('ObservableMapNotifier', () => {
       let triggered2 = false;
 
       notifier
-        .waitUntilAdded(1, () => {
+        .waitUntilAdded(1)
+        .read(() => {
           triggered1 = true;
         })
         .attachToRoot();
 
       notifier
-        .waitUntilAdded(1, () => {
+        .waitUntilAdded(1)
+        .read(() => {
           triggered2 = true;
         })
         .attachToRoot();
@@ -145,14 +149,15 @@ describe('ObservableMapNotifier', () => {
 
       notifier['map'].set(1, 'test');
 
-      notifier.waitUntilAdded(1, () => {
+      notifier.waitUntilAdded(1).read(() => {
         throw new Error('Test error');
       });
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Sequence callback function error: ', expect.any(Error));
 
       notifier
-        .waitUntilAdded(2, () => {
+        .waitUntilAdded(2)
+        .read(() => {
           subscription2Called = true;
         })
         .attachToRoot();
@@ -176,7 +181,7 @@ describe('ObservableMapNotifier', () => {
     test('immediate callback if item does not exist', () => {
       let triggered = false;
 
-      let subscription = notifier.waitUntilRemoved(1, () => {
+      let subscription = notifier.waitUntilRemoved(1).read(() => {
         triggered = true;
       });
 
@@ -189,7 +194,8 @@ describe('ObservableMapNotifier', () => {
       let triggered = false;
 
       let subscription = notifier
-        .waitUntilRemoved(1, () => {
+        .waitUntilRemoved(1)
+        .read(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -206,7 +212,7 @@ describe('ObservableMapNotifier', () => {
     test('subscription cleanup removes listener', () => {
       notifier['map'].set(1, 'test');
 
-      let subscription = notifier.waitUntilRemoved(1, () => {}).attachToRoot();
+      let subscription = notifier.waitUntilRemoved(1).attachToRoot();
 
       expect(notifier['_untilRemovedListeners']?.get(1)?.size).toBe(1);
 
@@ -220,7 +226,8 @@ describe('ObservableMapNotifier', () => {
       let triggered = false;
 
       let subscription = notifier
-        .waitUntilRemoved(1, () => {
+        .waitUntilRemoved(1)
+        .read(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -239,13 +246,15 @@ describe('ObservableMapNotifier', () => {
       let triggered2 = false;
 
       notifier
-        .waitUntilRemoved(1, () => {
+        .waitUntilRemoved(1)
+        .read(() => {
           triggered1 = true;
         })
         .attachToRoot();
 
       notifier
-        .waitUntilRemoved(1, () => {
+        .waitUntilRemoved(1)
+        .read(() => {
           triggered2 = true;
         })
         .attachToRoot();
@@ -263,16 +272,17 @@ describe('ObservableMapNotifier', () => {
       let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       let subscription2Called = false;
 
-      notifier.waitUntilRemoved(1, () => {
+      notifier.waitUntilRemoved(1).read(() => {
         throw new Error('Test error');
       });
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Sequence callback function error: ', expect.any(Error));
 
       notifier['map'].set(2, 'test2');
 
       notifier
-        .waitUntilRemoved(2, () => {
+        .waitUntilRemoved(2)
+        .read(() => {
           subscription2Called = true;
         })
         .attachToRoot();
@@ -301,11 +311,11 @@ describe('ObservableMapNotifier', () => {
       let map = new Map<number, string>();
       let notifier = new ObservableMapNotifier(map);
 
-      notifier.waitUntilAdded(1, () => {}).attachToRoot();
+      notifier.waitUntilAdded(1).attachToRoot();
 
       let notifier2 = notifier.notifier;
 
-      notifier2.waitUntilAdded(2, () => {}).attachToRoot();
+      notifier2.waitUntilAdded(2).attachToRoot();
 
       expect(notifier['_untilAddedListeners']).toBe(notifier2['_untilAddedListeners']);
       expect(notifier['_untilAddedListeners']?.size).toBe(2);
@@ -315,14 +325,15 @@ describe('ObservableMapNotifier', () => {
       let map = new Map<number, string>();
       let notifier = new ObservableMapNotifier(map);
 
-      notifier.waitUntilAdded(2, () => {}).attachToRoot();
+      notifier.waitUntilAdded(2).attachToRoot();
 
       let notifier2 = notifier.notifier;
 
       let triggered = false;
 
       let subscription = notifier2
-        .waitUntilAdded(1, () => {
+        .waitUntilAdded(1)
+        .read(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -371,7 +382,7 @@ describe('ObservableMapNotifier', () => {
       let notifier = new ObservableMapNotifier(new Map());
       expect(notifier['_untilAddedListeners']).toBeUndefined();
 
-      notifier.waitUntilAdded(1, () => {}).attachToRoot();
+      notifier.waitUntilAdded(1).attachToRoot();
 
       expect(notifier['_untilAddedListeners']).toBeDefined();
       expect(notifier['_untilAddedListeners']).toBeInstanceOf(Map);
@@ -382,7 +393,7 @@ describe('ObservableMapNotifier', () => {
       let notifier = new ObservableMapNotifier(map);
       expect(notifier['_untilRemovedListeners']).toBeUndefined();
 
-      notifier.waitUntilRemoved(1, () => {}).attachToRoot();
+      notifier.waitUntilRemoved(1).attachToRoot();
 
       expect(notifier['_untilRemovedListeners']).toBeDefined();
       expect(notifier['_untilRemovedListeners']).toBeInstanceOf(Map);
