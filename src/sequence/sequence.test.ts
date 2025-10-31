@@ -1595,9 +1595,7 @@ describe('Sequence', () => {
       let sequence1 = Sequence.create<string>((resolve, attachable) => {
         resolve('1');
         attachable.destroy();
-      })
-        .map(value => value + '1')
-        .read(value => console.log(value));
+      }).map(value => value + '1');
 
       let sequence2 = Sequence.create<string>((resolve, attachable) => {
         resolve('2');
@@ -1623,8 +1621,8 @@ describe('Sequence', () => {
 
       let heap: unknown[] = [];
       let combined = Sequence.combine({
-        m: merged,
-        s3: sequence3
+        s3: sequence3,
+        m: merged
       })
         .read(value => heap.push(value))
         .attachToRoot();
@@ -1638,7 +1636,16 @@ describe('Sequence', () => {
       combined = undefined as any;
       merged = undefined as any;
 
-      expect(heap).toEqual(['a']);
+      expect(heap).toEqual([
+        {
+          m: '11m',
+          s3: 'as3'
+        },
+        {
+          m: '22m',
+          s3: 'as3'
+        }
+      ]);
     }, 30000);
   });
 });

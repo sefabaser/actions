@@ -31,7 +31,7 @@ class SequenceExecuter extends Attachable {
     if (!this.destroyed || !checkDestroyed) {
       if (index < this._pipeline.length) {
         let item = this._pipeline[index];
-        item(data, returnData => this.trigger(returnData, index + 1));
+        item(data, returnData => this.trigger(returnData, index + 1, checkDestroyed));
       } else {
         if (!this.attachIsCalled) {
           if (!this._pendingValues) {
