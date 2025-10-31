@@ -6,7 +6,10 @@ export interface PerformanceUnitTestHelperOptions {
 }
 
 export class PerformanceUnitTestHelper {
-  static async testPerformance(callback: () => void, partialOptions?: Partial<PerformanceUnitTestHelperOptions>): Promise<void> {
+  static async testPerformance(
+    callback: () => void,
+    partialOptions?: Partial<PerformanceUnitTestHelperOptions>
+  ): Promise<number> {
     let options: PerformanceUnitTestHelperOptions = {
       sampleCount: 500,
       repetationPerSample: 1000,
@@ -32,9 +35,8 @@ export class PerformanceUnitTestHelper {
 
     durations = durations.sort((a, b) => a - b);
     let min = durations[0];
-    let median = durations[Math.floor(durations.length / 2)];
 
     console.log('Min: ', min);
-    console.log('Median: ', median);
+    return min;
   }
 }

@@ -1161,6 +1161,31 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b', 'c']);
       });
 
+      test('instantly destroyed sequences', async () => {
+        let heap: string[] = [];
+
+        Sequence.merge(
+          Sequence.create<string>((resolve, attachable) => {
+            resolve('a');
+            attachable.destroy();
+          }),
+          Sequence.create<string>((resolve, attachable) => {
+            resolve('b');
+            attachable.destroy();
+          }),
+          Sequence.create<string>((resolve, attachable) => {
+            resolve('c');
+            attachable.destroy();
+          })
+        )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'c']);
+      });
+
       test('using action directly', () => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
@@ -1266,10 +1291,28 @@ describe('Sequence', () => {
     describe('Behavior', () => {
       test('simple combine', () => {
         let sequence1 = Sequence.create<string>(resolve => resolve('a'));
-        let sequence = Sequence.create<number>(resolve => resolve(1));
+        let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
         let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: sequence1, b: sequence })
+        Sequence.combine({ a: sequence1, b: sequence2 })
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([{ a: 'a', b: 1 }]);
+      });
+
+      test('instantly destroyed sequences', () => {
+        let sequence1 = Sequence.create<string>((resolve, attachable) => {
+          resolve('a');
+          attachable.destroy();
+        });
+        let sequence2 = Sequence.create<number>((resolve, attachable) => {
+          resolve(1);
+          attachable.destroy();
+        });
+
+        let heap: { a: string; b: number }[] = [];
+        Sequence.combine({ a: sequence1, b: sequence2 })
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -1458,6 +1501,73 @@ describe('Sequence', () => {
       expect(sequence.destroyed).toBeTruthy();
       expect(action1.listenerCount).toEqual(0);
       expect(action2.listenerCount).toEqual(0);
+    });
+
+    test('complex merge and combine', async () => {
+      let sequence1 = Sequence.create<number>(resolve => {
+        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+      }).map(value =>
+        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+      );
+
+      let sequence2 = Sequence.create<number>(resolve => {
+        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
+      }).map(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+
+      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+        })
+      ); // 20s2m 10s1m 21s2m 11s1m
+
+      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+        })
+      );
+
+      let heap: unknown[] = [];
+      let combined = Sequence.combine({
+        m: merged,
+        s3: sequence3,
+        s4: sequence4
+      })
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+
+      expect(heap).toEqual([
+        {
+          m: '20s2m',
+          s3: 'as3',
+          s4: 'bs4'
+        },
+        {
+          m: '10s1m',
+          s3: 'as3',
+          s4: 'bs4'
+        },
+        {
+          m: '21s2m',
+          s3: 'as3',
+          s4: 'bs4'
+        },
+        {
+          m: '11s1m',
+          s3: 'as3',
+          s4: 'bs4'
+        }
+      ]);
+
+      combined.destroy();
+      expect(sequence1.destroyed).toBeTruthy();
+      expect(sequence2.destroyed).toBeTruthy();
+      expect(sequence3.destroyed).toBeTruthy();
+      expect(sequence4.destroyed).toBeTruthy();
+      expect(merged.destroyed).toBeTruthy();
+      expect(combined.destroyed).toBeTruthy();
     });
   });
 });
