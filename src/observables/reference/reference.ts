@@ -13,6 +13,7 @@ export interface StringReferenceOptions<T> {
   readonly initialValue?: T;
 }
 
+// TODO should extend variable
 export class Reference<T = string> extends Attachable implements IVariable<T | undefined> {
   get value(): T | undefined {
     if (this.destroyed) {
@@ -84,22 +85,6 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
     }
 
     return this.variable.subscribe(callback);
-  }
-
-  waitUntilNext(callback: (data: T | undefined) => void): IAttachable {
-    if (this.destroyed) {
-      throw new Error(`Reference: This reference is destroyed cannot be waited until next!`);
-    }
-
-    return this.variable.waitUntilNext(callback);
-  }
-
-  waitUntil(data: T | undefined, callback: (data: T | undefined) => void): IAttachable {
-    if (this.destroyed) {
-      throw new Error(`Reference: This reference is destroyed cannot be waited until!`);
-    }
-
-    return this.variable.waitUntil(data, callback);
   }
 
   attach(parent: Attachable | string): this {

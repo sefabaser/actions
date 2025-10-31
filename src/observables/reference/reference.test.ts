@@ -227,92 +227,6 @@ describe('Reference', () => {
     });
   });
 
-  describe('Wait until', () => {
-    test('wait until specific value', () => {
-      let refVar = new Reference().attach(parent);
-      let target = new IDAttachable().attachToRoot();
-
-      let triggered = false;
-      refVar
-        .waitUntil(target.id, () => {
-          triggered = true;
-        })
-        .attachToRoot();
-
-      expect(triggered).toBe(false);
-      refVar.value = target.id;
-      expect(triggered).toBe(true);
-    });
-
-    test('wait until undefined', () => {
-      let refVar = new Reference().attach(parent);
-      let target = new IDAttachable().attachToRoot();
-
-      refVar.value = target.id;
-
-      let triggered = false;
-      refVar
-        .waitUntil(undefined, () => {
-          triggered = true;
-        })
-        .attachToRoot();
-
-      expect(triggered).toBe(false);
-      refVar.value = undefined;
-      expect(triggered).toBe(true);
-    });
-
-    test('wait until triggered immediately if already at value', () => {
-      let refVar = new Reference().attach(parent);
-      let target = new IDAttachable().attachToRoot();
-
-      refVar.value = target.id;
-
-      let triggered = false;
-      refVar
-        .waitUntil(target.id, () => {
-          triggered = true;
-        })
-        .attachToRoot();
-
-      expect(triggered).toBe(true);
-    });
-
-    test('wait until next', () => {
-      let refVar = new Reference().attach(parent);
-      let target = new IDAttachable().attachToRoot();
-
-      let receivedValue: string | undefined;
-      refVar
-        .waitUntilNext(value => {
-          receivedValue = value;
-        })
-        .attachToRoot();
-
-      expect(receivedValue).toBeUndefined();
-      refVar.value = target.id;
-      expect(receivedValue).toBe(target.id);
-    });
-
-    test('wait until next only triggers once', () => {
-      let refVar = new Reference().attach(parent);
-      let target1 = new IDAttachable().attachToRoot();
-      let target2 = new IDAttachable().attachToRoot();
-
-      let callCount = 0;
-      refVar
-        .waitUntilNext(() => {
-          callCount++;
-        })
-        .attachToRoot();
-
-      refVar.value = target1.id;
-      refVar.value = target2.id;
-
-      expect(callCount).toBe(1);
-    });
-  });
-
   describe('Edge cases', () => {
     test('destroyed parent cleans up reference subscription', () => {
       let refVar = new Reference().attach(parent);
@@ -561,40 +475,6 @@ describe('Reference', () => {
       expect(refVar.value).toBeUndefined();
     });
 
-    test('waitUntil works with object values', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new IDAttachable().attachToRoot();
-
-      let triggered = false;
-      let targetValue = { id: target.id };
-
-      refVar
-        .waitUntil(targetValue, () => {
-          triggered = true;
-        })
-        .attachToRoot();
-
-      expect(triggered).toBe(false);
-      refVar.value = targetValue;
-      expect(triggered).toBe(true);
-    });
-
-    test('waitUntilNext works with object values', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
-      let target = new IDAttachable().attachToRoot();
-
-      let receivedValue: { id: string } | undefined;
-      refVar
-        .waitUntilNext(value => {
-          receivedValue = value;
-        })
-        .attachToRoot();
-
-      expect(receivedValue).toBeUndefined();
-      refVar.value = { id: target.id };
-      expect(receivedValue).toEqual({ id: target.id });
-    });
-
     test('setting same object value does not create duplicate subscriptions', () => {
       let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
@@ -671,26 +551,6 @@ describe('Reference', () => {
       expect(() => {
         refVar.subscribe(() => {});
       }).toThrow('Reference: This reference is destroyed cannot be subscribed to!');
-    });
-
-    test('cannot waitUntilNext on destroyed reference', () => {
-      let refVar = new Reference().attach(parent);
-
-      refVar.destroy();
-
-      expect(() => {
-        refVar.waitUntilNext(() => {});
-      }).toThrow('Reference: This reference is destroyed cannot be waited until next!');
-    });
-
-    test('cannot waitUntil on destroyed reference', () => {
-      let refVar = new Reference().attach(parent);
-
-      refVar.destroy();
-
-      expect(() => {
-        refVar.waitUntil('some-id', () => {});
-      }).toThrow('Reference: This reference is destroyed cannot be waited until!');
     });
 
     test('destroy cleans up internal destroy subscription', () => {

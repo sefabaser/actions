@@ -1,5 +1,3 @@
-import { Comparator } from 'helpers-lib';
-
 import { Attachable, IAttachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { IStream, Sequence } from '../../sequence/sequence';
@@ -42,8 +40,6 @@ export class Notifier<T> {
     wrapper.listenersMap = this.listenersMap;
     wrapper.nextAvailableSubscriptionId = this.nextAvailableSubscriptionId;
     wrapper.subscribe = callback => this.subscribe(callback);
-    wrapper.waitUntil = (expectedData, callback) => this.waitUntil(expectedData, callback);
-    wrapper.waitUntilNext = callback => this.waitUntilNext(callback);
     return wrapper;
   }
 
@@ -60,36 +56,22 @@ export class Notifier<T> {
     return this.baseSubscribe(callback);
   }
 
-  waitUntilNext(callback: NotifierCallbackFunction<T>): IAttachable {
-    let subscription: IAttachable;
-    subscription = this.baseSubscribe(data => {
-      CallbackHelper.triggerCallback(data, callback);
-      subscription.destroy();
-    });
-    return subscription;
-  }
-
-  waitUntil(expectedData: T, callback: NotifierCallbackFunction<T>): IAttachable {
-    let subscription: IAttachable;
-    subscription = this.baseSubscribe(data => {
-      if (Comparator.isEqual(data, expectedData)) {
-        CallbackHelper.triggerCallback(data, callback);
-        subscription.destroy();
-      }
-    });
-    return subscription;
-  }
-
   toSequence(): Sequence<T> {
-    let subscription: IAttachable;
-    return Sequence.create<T>(resolve => {
-      subscription = this.subscribe(resolve).attachToRoot();
-      return () => subscription.destroy();
+    return Sequence.create<T>((resolve, attachment) => {
+      this.subscribe(resolve).attach(attachment);
     });
   }
 
   map<K>(callback: (data: T) => K | IStream<K>): Sequence<K> {
     return this.toSequence().map(callback);
+  }
+
+  take(count: number): Sequence<T> {
+    return this.toSequence().take(count);
+  }
+
+  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {
+    return this.toSequence().filter(callback);
   }
 
   /** @internal */

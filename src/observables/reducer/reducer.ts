@@ -258,15 +258,6 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     return super.subscribe(callback);
   }
 
-  waitUntil(data: ResponseType, callback: NotifierCallbackFunction<ResponseType>): IAttachable {
-    if (Comparator.isEqual(this.previousBroadcast, data)) {
-      CallbackHelper.triggerCallback(data, callback);
-      return Attachable.getDestroyed();
-    } else {
-      return super.waitUntil(data, callback);
-    }
-  }
-
   /** @internal */
   broadcast(value: ResponseType): void {
     if (!Comparator.isEqual(this.previousBroadcast, value)) {

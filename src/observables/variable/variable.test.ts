@@ -100,36 +100,6 @@ describe(`Variable`, () => {
 
       expect(triggeredWith).toEqual(undefined);
     });
-
-    test('wait until', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable
-        .waitUntil(2, value => {
-          triggeredWith = value;
-        })
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(undefined);
-      variable.value = 2;
-      expect(triggeredWith).toEqual(2);
-    });
-
-    test('wait until next', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable
-        .waitUntilNext(value => {
-          triggeredWith = value;
-        })
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(undefined);
-      variable.value = 2;
-      expect(triggeredWith).toEqual(2);
-    });
   });
 
   describe(`Current Value`, () => {
@@ -161,38 +131,12 @@ describe(`Variable`, () => {
       expect(heap).toEqual([1, 1, 2, 2]);
     });
 
-    test('if wait until is equal to current value, it should be triggered', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable
-        .waitUntil(1, value => {
-          triggeredWith = value;
-        })
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(1);
-    });
-
     test('notifier subscribe should trigger right away like variable does', () => {
       let variable = new Variable<number>(1);
 
       let triggeredWith: number | undefined;
       variable.notifier
         .subscribe(value => {
-          triggeredWith = value;
-        })
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(1);
-    });
-
-    test('notifier wait until should trigger right away like variable does', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable.notifier
-        .waitUntil(1, value => {
           triggeredWith = value;
         })
         .attachToRoot();

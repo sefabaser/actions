@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { IAttachable } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';
@@ -21,8 +21,6 @@ export interface IVariable<T> {
   listenerCount: number;
   set(data: T): this;
   subscribe(callback: VariableListenerCallbackFunction<T>): IAttachable;
-  waitUntilNext(callback: (data: T) => void): void;
-  waitUntil(data: T, callback: (data: T) => void): void;
 }
 
 export class Variable<T> extends Notifier<T> implements IVariable<T> {
@@ -63,14 +61,5 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
       CallbackHelper.triggerCallback(this.currentValue, callback);
     }
     return super.subscribe(callback);
-  }
-
-  waitUntil(expectedData: T, callback: (data: T) => void): IAttachable {
-    if (Comparator.isEqual(this.currentValue, expectedData)) {
-      CallbackHelper.triggerCallback(expectedData, callback);
-      return Attachable.getDestroyed();
-    } else {
-      return super.waitUntil(expectedData, callback);
-    }
   }
 }

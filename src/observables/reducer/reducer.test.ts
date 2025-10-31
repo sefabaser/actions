@@ -614,45 +614,4 @@ describe(`Reducer`, () => {
       expect(reducer.value).toEqual(7);
     });
   });
-
-  describe(`Wait Until`, () => {
-    let reducer: Reducer<boolean, boolean>;
-
-    beforeEach(() => {
-      reducer = Reducer.createOr();
-    });
-
-    test('wait until spesific data', async () => {
-      let resolvedWith: boolean | undefined;
-
-      reducer
-        .waitUntil(true, data => {
-          resolvedWith = data;
-        })
-        .attachToRoot();
-
-      let effectChannel = reducer.effect(false).attachToRoot();
-      expect(resolvedWith).toEqual(undefined);
-
-      effectChannel.update(true);
-      expect(resolvedWith).toEqual(true);
-    });
-
-    test('wait until callback throws error', () => {
-      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      reducer.effect(true).attachToRoot();
-
-      expect(() =>
-        reducer
-          .waitUntil(true, () => {
-            throw new Error('test error');
-          })
-          .attachToRoot()
-      ).not.toThrow();
-
-      expect(consoleErrorSpy).toBeCalled();
-      consoleErrorSpy.mockRestore();
-    });
-  });
 });

@@ -18,7 +18,11 @@ export class CallbackUtilities {
     let allEffectChannels = attachables.map(attachable => allReducer.effect().attach(attachable));
 
     return Sequence.create((resolve, attachable) => {
-      allReducer.waitUntil(false, () => resolve()).attach(attachable);
+      allReducer
+        .filter(value => value === false)
+        .take(1)
+        .read(() => resolve())
+        .attach(attachable);
       return () => allEffectChannels.forEach(channel => channel.destroy());
     });
   }
