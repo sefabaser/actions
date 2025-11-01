@@ -254,15 +254,34 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     }, 30000);
 
     test('complex merge and combine destroyed by sequences', async () => {
-      let sequence1 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+      let sequence1 = Sequence.create<number>((resolve, attachable) => {
+        delayedCalls.callEachDelayed(
+          [10, 11],
+          delayedValue => resolve(delayedValue),
+          () => attachable.destroy()
+        );
       }).map(value =>
-        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+        Sequence.create<string>((resolve, attachable) =>
+          delayedCalls.callEachDelayed(
+            [value + 's1'],
+            delayedValue => resolve(delayedValue),
+            () => attachable.destroy()
+          )
+        )
       );
 
-      let sequence2 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).map(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      let sequence2 = Sequence.create<number>((resolve, attachable) => {
+        delayedCalls.callEachDelayed(
+          [20, 21],
+          delayedValue => resolve(delayedValue),
+          () => attachable.destroy()
+        );
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          resolve(value + 's2');
+          attachable.destroy();
+        })
+      );
 
       let merged = Sequence.merge(sequence1, sequence2).map(value =>
         Sequence.create<string>(resolve => {
@@ -270,10 +289,20 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).map(value =>
-        Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+        resolve('a');
+        attachable.destroy();
+      }).map(value => value + 's3');
+      let sequence4 = Sequence.create<string>((resolve, attachable) => {
+        resolve('b');
+        attachable.destroy();
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          delayedCalls.callEachDelayed(
+            [value + 's4'],
+            delayedValue => resolve(delayedValue),
+            () => attachable.destroy()
+          );
         })
       );
 
@@ -325,19 +354,25 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         attachable.destroy();
       }).map(value => value + 's3');
 
+      let heap: unknown[] = [];
       let combined = Sequence.combine({
-        m: merged,
-        s3: sequence3
-      }).attachToRoot();
+        s3: sequence3,
+        m: merged
+      })
+        .read(value => heap.push(value))
+        .attachToRoot();
 
-      combined.destroy();
-      await delayedCalls.waitForAllPromises();
+      expect(sequence1.destroyed).toBeTruthy();
+      expect(sequence2.destroyed).toBeTruthy();
+      expect(sequence3.destroyed).toBeTruthy();
+      expect(merged.destroyed).toBeTruthy();
+      expect(combined.destroyed).toBeTruthy();
 
       sequence1 = undefined as any;
       sequence2 = undefined as any;
       sequence3 = undefined as any;
-      combined = undefined as any;
       merged = undefined as any;
+      combined = undefined as any;
 
       let snapshot = await takeNodeMinimalHeap();
       expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();

@@ -106,6 +106,8 @@ describe('Sequence', () => {
         sequance.destroy();
         expect(triggered).toBeTruthy();
       });
+
+      test('resolve after destruction should not throw error', () => {});
     });
 
     describe('Attachment Errors', () => {
@@ -1305,6 +1307,28 @@ describe('Sequence', () => {
           'Each given sequence to merge or combine has to be diferent.'
         );
       });
+
+      test('a', async () => {
+        let sequence = Sequence.create<void>((resolve, attachable) => {
+          resolve();
+          attachable.destroy();
+        })
+          .map(() =>
+            Sequence.create<void>(resolve => {
+              delayedCalls.callEachDelayed([1], () => resolve());
+            })
+          )
+          .read(() => {});
+
+        let heap: unknown[] = [];
+        Sequence.combine({
+          s: sequence
+        })
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+      });
     });
   });
 
@@ -1590,6 +1614,72 @@ describe('Sequence', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
     });
+    /*
+    test('complex merge and combine destroyed by sequences', async () => {
+      let sequence1 = Sequence.create<number>((resolve, attachable) => {
+        delayedCalls.callEachDelayed(
+          [10, 11],
+          delayedValue => resolve(delayedValue),
+          () => attachable.destroy()
+        );
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) =>
+          delayedCalls.callEachDelayed(
+            [value + 's1'],
+            delayedValue => resolve(delayedValue),
+            () => attachable.destroy()
+          )
+        )
+      );
+
+      let sequence2 = Sequence.create<number>((resolve, attachable) => {
+        delayedCalls.callEachDelayed(
+          [20, 21],
+          delayedValue => resolve(delayedValue),
+          () => attachable.destroy()
+        );
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          resolve(value + 's2');
+          attachable.destroy();
+        })
+      );
+
+      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+        Sequence.create<string>(resolve => {
+          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+        })
+      );
+
+      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+        resolve('a');
+        attachable.destroy();
+      }).map(value => value + 's3');
+      let sequence4 = Sequence.create<string>((resolve, attachable) => {
+        resolve('b');
+        attachable.destroy();
+      }).map(value =>
+        Sequence.create<string>((resolve, attachable) => {
+          delayedCalls.callEachDelayed(
+            [value + 's4'],
+            delayedValue => resolve(delayedValue),
+            () => attachable.destroy()
+          );
+        })
+      );
+
+      let heap: unknown[] = [];
+      Sequence.combine({
+        m: merged,
+        s3: sequence3,
+        s4: sequence4
+      })
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      await delayedCalls.waitForAllPromises();
+      expect(heap).toEqual(['a']);
+    });*/
 
     test('complex merge and combine instantly destroyed sequences', async () => {
       let sequence1 = Sequence.create<string>((resolve, attachable) => {
