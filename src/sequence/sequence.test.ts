@@ -69,11 +69,11 @@ describe('Sequence', () => {
         expect(sequance.destroyed).toBeTruthy();
       });
 
-      test('destroying after resolve', () => {
+      test('finalizing after resolve', () => {
         let triggered = false;
-        let sequance = Sequence.create<void>((resolve, attachable) => {
+        let sequance = Sequence.create<void>((resolve, executor) => {
           resolve();
-          attachable.destroy();
+          executor.final();
         })
           .read(() => {
             triggered = true;
@@ -244,12 +244,12 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b', 'c']);
       });
 
-      test('instantly destroyed sequence chain', () => {
+      test('instantly finalizing sequence chain', () => {
         let heap: string[] = [];
 
-        Sequence.create<void>((resolve, attachable) => {
+        Sequence.create<void>((resolve, executor) => {
           resolve();
-          attachable.destroy();
+          executor.final();
         })
           .read(() => {
             heap.push('a');
@@ -754,12 +754,12 @@ describe('Sequence', () => {
       });
 
       describe('destroying pipeline', () => {
-        test('when sequence is destroyed the pipeline should also be destroyed', async () => {
+        test('when sequence is finalized the pipeline should also be destroyed after all operations complete', async () => {
           let heap: unknown[] = [];
 
-          let sequence = Sequence.create<number>((resolve, attachable) => {
+          let sequence = Sequence.create<number>((resolve, executor) => {
             resolve(1);
-            attachable.destroy();
+            executor.final();
           })
             .read(value => heap.push(value))
             .attachToRoot();
@@ -769,12 +769,12 @@ describe('Sequence', () => {
           expect(sequence['executor']['_pipeline']).toEqual(undefined);
         });
 
-        test('destroying pipeline should wait ongoing operation to be completed', async () => {
+        test('finalizing pipeline should wait ongoing operation to be completed', async () => {
           let heap: unknown[] = [];
 
-          Sequence.create<number>((resolve, attachable) => {
+          Sequence.create<number>((resolve, executor) => {
             resolve(1);
-            attachable.destroy();
+            executor.final();
           })
             .map(value =>
               Sequence.create<string>(resolve =>
@@ -788,13 +788,13 @@ describe('Sequence', () => {
           expect(heap).toEqual(['1a']);
         });
 
-        test('destroying pipeline should wait multiple ongoing operations to be completed', async () => {
+        test('finalizing pipeline should wait multiple ongoing operations to be completed', async () => {
           let heap: unknown[] = [];
 
-          Sequence.create<number>((resolve, attachable) => {
+          Sequence.create<number>((resolve, executor) => {
             resolve(1);
             resolve(2);
-            attachable.destroy();
+            executor.final();
           })
             .map(value =>
               Sequence.create<string>(r2 => delayedCalls.callEachDelayed([value + 'a'], delayedValue => r2(delayedValue)))
@@ -804,30 +804,6 @@ describe('Sequence', () => {
 
           await delayedCalls.waitForAllPromises();
           expect(heap).toEqual(['1a', '2a']);
-        });
-
-        test('destroying pipeline should wait mix triggered multiple ongoing operations to be completed', async () => {
-          let heap: unknown[] = [];
-
-          let resolve!: (value: number) => void;
-          let sequence = Sequence.create<number>(r1 => {
-            resolve = r1;
-            resolve(1);
-            resolve(2);
-          })
-            .map(value => {
-              console.log(value);
-              return Sequence.create<string>(r2 => delayedCalls.callEachDelayed([value + 'a'], delayedValue => r2(delayedValue)));
-            })
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          resolve(3);
-          resolve(4);
-          sequence.destroy();
-
-          await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['1a', '2a', '3a', '4a']);
         });
       });
     });
@@ -857,20 +833,20 @@ describe('Sequence', () => {
         expect(heap).toEqual([fakeStream]);
       });
 
-      test('destroying subscriptions via attachmet, instantly destroyed sequence', () => {
+      test('destroying subscriptions via attachment, instantly finalizing sequence', () => {
         let variable = new Variable<number>(1);
         let triggered = false;
 
-        let sequance = Sequence.create<void>((resolve, attachable) => {
+        let sequance = Sequence.create<void>((resolve, executor) => {
           resolve();
-          attachable.destroy();
+          executor.final();
         })
-          .map((_, attachable) => {
+          .map((_, executor) => {
             variable
               .subscribe(() => {
                 triggered = true;
               })
-              .attach(attachable);
+              .attach(executor);
           })
           .attachToRoot();
 
@@ -887,12 +863,12 @@ describe('Sequence', () => {
         let sequance = Sequence.create<void>(r => {
           resolve = r;
         })
-          .map((_, attachable) => {
+          .map((_, executor) => {
             variable
               .subscribe(() => {
                 triggered = true;
               })
-              .attach(attachable);
+              .attach(executor);
           })
           .attachToRoot();
 
@@ -1276,21 +1252,21 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b', 'c']);
       });
 
-      test('instantly resolved sequences', async () => {
+      test('instantly resolved and finalized sequences', async () => {
         let heap: string[] = [];
 
         Sequence.merge(
-          Sequence.create<string>((resolve, attachable) => {
+          Sequence.create<string>((resolve, executor) => {
             resolve('a');
-            attachable.destroy();
+            executor.final();
           }),
-          Sequence.create<string>((resolve, attachable) => {
+          Sequence.create<string>((resolve, executor) => {
             resolve('b');
-            attachable.destroy();
+            executor.final();
           }),
-          Sequence.create<string>((resolve, attachable) => {
+          Sequence.create<string>((resolve, executor) => {
             resolve('c');
-            attachable.destroy();
+            executor.final();
           })
         )
           .read(data => heap.push(data))
@@ -1400,10 +1376,10 @@ describe('Sequence', () => {
         );
       });
 
-      test('merging a destroyed sequence which had a delayed map link was throwing error', async () => {
-        let sequence = Sequence.create<void>((resolve, attachable) => {
+      test('merging a finalized sequence which had a delayed map link was throwing error', async () => {
+        let sequence = Sequence.create<void>((resolve, executor) => {
           resolve();
-          attachable.destroy();
+          executor.final();
         })
           .map(() =>
             Sequence.create<void>(resolve => {
@@ -1436,14 +1412,14 @@ describe('Sequence', () => {
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
       });
 
-      test('instantly destroyed sequences', () => {
-        let sequence1 = Sequence.create<string>((resolve, attachable) => {
+      test('instantly finalizing sequences', () => {
+        let sequence1 = Sequence.create<string>((resolve, executor) => {
           resolve('a');
-          attachable.destroy();
+          executor.final();
         });
-        let sequence2 = Sequence.create<number>((resolve, attachable) => {
+        let sequence2 = Sequence.create<number>((resolve, executor) => {
           resolve(1);
-          attachable.destroy();
+          executor.final();
         });
 
         let heap: { a: string; b: number }[] = [];
@@ -1556,10 +1532,10 @@ describe('Sequence', () => {
         );
       });
 
-      test('combining a destroyed sequence which had a delayed map link was throwing error', async () => {
-        let sequence = Sequence.create<void>((resolve, attachable) => {
+      test('combining a finalized sequence which had a delayed map link was throwing error', async () => {
+        let sequence = Sequence.create<void>((resolve, executor) => {
           resolve();
-          attachable.destroy();
+          executor.final();
         })
           .map(() =>
             Sequence.create<void>(resolve => {
@@ -1726,36 +1702,36 @@ describe('Sequence', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
     });
-    /*
+
     test('complex merge and combine destroyed by sequences', async () => {
-      let sequence1 = Sequence.create<number>((resolve, attachable) => {
+      let sequence1 = Sequence.create<number>((resolve, executor) => {
         delayedCalls.callEachDelayed(
           [10, 11],
           delayedValue => resolve(delayedValue),
-          () => attachable.destroy()
+          () => executor.final()
         );
       })
         .map(value =>
-          Sequence.create<string>((resolve, attachable) =>
+          Sequence.create<string>((resolve, executor) =>
             delayedCalls.callEachDelayed(
               [value + 's1'],
               delayedValue => resolve(delayedValue),
-              () => attachable.destroy()
+              () => executor.final()
             )
           )
         )
         .read(value => console.log(value));
 
-      let sequence2 = Sequence.create<number>((resolve, attachable) => {
+      let sequence2 = Sequence.create<number>((resolve, executor) => {
         delayedCalls.callEachDelayed(
           [20, 21],
           delayedValue => resolve(delayedValue),
-          () => attachable.destroy()
+          () => executor.final()
         );
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           resolve(value + 's2');
-          attachable.destroy();
+          executor.final();
         })
       );
 
@@ -1765,19 +1741,19 @@ describe('Sequence', () => {
         })
       );
 
-      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+      let sequence3 = Sequence.create<string>((resolve, executor) => {
         resolve('a');
-        attachable.destroy();
+        executor.final();
       }).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>((resolve, attachable) => {
+      let sequence4 = Sequence.create<string>((resolve, executor) => {
         resolve('b');
-        attachable.destroy();
+        executor.final();
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           delayedCalls.callEachDelayed(
             [value + 's4'],
             delayedValue => resolve(delayedValue),
-            () => attachable.destroy()
+            () => executor.final()
           );
         })
       );
@@ -1793,34 +1769,34 @@ describe('Sequence', () => {
 
       await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a']);
-    });*/
+    });
 
-    test('complex merge and combine instantly destroyed sequences', async () => {
-      let sequence1 = Sequence.create<string>((resolve, attachable) => {
+    test('complex merge and combine instantly finalized sequences', async () => {
+      let sequence1 = Sequence.create<string>((resolve, executor) => {
         resolve('1');
-        attachable.destroy();
+        executor.final();
       }).map(value => value + '1');
 
-      let sequence2 = Sequence.create<string>((resolve, attachable) => {
+      let sequence2 = Sequence.create<string>((resolve, executor) => {
         resolve('2');
-        attachable.destroy();
+        executor.final();
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           resolve(value + '2');
-          attachable.destroy();
+          executor.final();
         })
       );
 
       let merged = Sequence.merge(sequence1, sequence2).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           resolve(value + 'm');
-          attachable.destroy();
+          executor.final();
         })
       );
 
-      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+      let sequence3 = Sequence.create<string>((resolve, executor) => {
         resolve('a');
-        attachable.destroy();
+        executor.final();
       }).map(value => value + 's3');
 
       let heap: unknown[] = [];
