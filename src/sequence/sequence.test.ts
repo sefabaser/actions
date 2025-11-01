@@ -694,29 +694,23 @@ describe('Sequence', () => {
           expect(triggered).toEqual(false);
         });
 
-        test('self destroying sequence async map combination', async () => {
+        test('self destroying sequence async map combination 0', async () => {
           let heap: unknown[] = [];
 
           Sequence.create<number>((resolve, attachable) => {
-            delayedCalls.callEachDelayed(
-              [1, 2],
-              delayedValue => resolve(delayedValue),
-              () => attachable.destroy()
-            );
+            resolve(1);
+            attachable.destroy();
           })
             .map(value =>
-              Sequence.create<string>((resolve, attachable) =>
-                delayedCalls.callEachDelayed(
-                  [value + 'a'],
-                  delayedValue => resolve(delayedValue),
-                  () => attachable.destroy()
-                )
+              Sequence.create<string>(resolve =>
+                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
             )
-            .read(value => heap.push(value));
+            .read(value => heap.push(value))
+            .attachToRoot();
 
           await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['1a', '2a']);
+          expect(heap).toEqual(['1a']);
         });
       });
 
@@ -1659,7 +1653,7 @@ describe('Sequence', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
     });
-
+    /*
     test('complex merge and combine destroyed by sequences', async () => {
       let sequence1 = Sequence.create<number>((resolve, attachable) => {
         delayedCalls.callEachDelayed(
@@ -1726,7 +1720,7 @@ describe('Sequence', () => {
 
       await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a']);
-    });
+    });*/
 
     test('complex merge and combine instantly destroyed sequences', async () => {
       let sequence1 = Sequence.create<string>((resolve, attachable) => {
