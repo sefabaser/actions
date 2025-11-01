@@ -693,25 +693,6 @@ describe('Sequence', () => {
           innerResolves.forEach(resolve => resolve(''));
           expect(triggered).toEqual(false);
         });
-
-        test('self destroying sequence async map combination 0', async () => {
-          let heap: unknown[] = [];
-
-          Sequence.create<number>((resolve, attachable) => {
-            resolve(1);
-            attachable.destroy();
-          })
-            .map(value =>
-              Sequence.create<string>(resolve =>
-                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
-              )
-            )
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['1a']);
-        });
       });
 
       describe('map returns notifier', () => {
@@ -758,6 +739,62 @@ describe('Sequence', () => {
 
           action.trigger('');
           expect(triggered).toEqual(false);
+        });
+      });
+
+      describe('destroying pipeline', () => {
+        test('when sequence is destroyed the pipeline should also be destroyed if there is no ongoing operations', async () => {
+          let heap: unknown[] = [];
+
+          let sequence = Sequence.create<number>((resolve, attachable) => {
+            resolve(1);
+            attachable.destroy();
+          })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual([1]);
+          expect(sequence['executor']['_pipeline']).toEqual(undefined);
+        });
+
+        test('destroying pipeline should wait ongoing operation to be completed', async () => {
+          let heap: unknown[] = [];
+
+          Sequence.create<number>((resolve, attachable) => {
+            resolve(1);
+            attachable.destroy();
+          })
+            .map(value =>
+              Sequence.create<string>(resolve =>
+                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
+              )
+            )
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['1a']);
+        });
+
+        test('destroying pipeline should wait multiple ongoing operations to be completed', async () => {
+          let heap: unknown[] = [];
+
+          Sequence.create<number>((resolve, attachable) => {
+            resolve(1);
+            resolve(1);
+            attachable.destroy();
+          })
+            .map(value =>
+              Sequence.create<string>(resolve =>
+                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
+              )
+            )
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['1a', '1a']);
         });
       });
     });
