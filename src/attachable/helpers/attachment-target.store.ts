@@ -1,3 +1,4 @@
+import { IAttachable } from '../attachable';
 import { IDAttachable } from '../id-attachable';
 
 /** @internal */
@@ -7,7 +8,7 @@ export class AttachmentTargetStore {
   private static idToAttachmentTarget = new Map<string, IDAttachable>();
   private static idToAttachmentTargetClass = new Map<string, typeof IDAttachable>();
 
-  static findAttachmentTarget(attachableCandidate: string): IDAttachable {
+  static findAttachmentTarget(attachableCandidate: string): IAttachable {
     let attachmentTarget = this.idToAttachmentTarget.get(attachableCandidate);
     if (!attachmentTarget) {
       throw new Error(`Attachable: attachable not found by id! id: ${attachableCandidate}`);

@@ -2,29 +2,37 @@ import { Comparator } from 'helpers-lib';
 
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 
-export interface IAttachable {
+export interface IAttachment {
   destroyed: boolean;
   attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: Attachable | string): this;
+  attach(parent: IAttachable | string): this;
   attachToRoot(): this;
+}
+
+export interface IAttachable extends IAttachment {
+  attachedParent: IAttachable | undefined;
+  /** @internal */
+  setAttachment(child: IAttachment): void;
+  /** @internal */
+  removeAttachment(child: IAttachment): void;
 }
 
 export class Attachable implements IAttachable {
   /**
    * @returns IAttachable that is already destroyed
    */
-  static getDestroyed(): IAttachable {
+  static getDestroyed(): IAttachment {
     let destroyedSubscription = new Attachable();
     destroyedSubscription.destroy();
     return destroyedSubscription;
   }
 
-  private _attachments: Set<IAttachable> | undefined;
+  private _attachments: Set<IAttachment> | undefined;
 
-  private _attachedParent: Attachable | undefined;
+  private _attachedParent: IAttachable | undefined;
   /** @internal */
-  get attachedParent(): Attachable | undefined {
+  get attachedParent(): IAttachable | undefined {
     return this._attachedParent;
   }
 
@@ -62,7 +70,7 @@ export class Attachable implements IAttachable {
     }
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: IAttachable | string): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
@@ -71,7 +79,7 @@ export class Attachable implements IAttachable {
     if (!this._destroyed) {
       let parentEntity = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
 
-      let currentParent: Attachable | undefined = parentEntity;
+      let currentParent: IAttachable | undefined = parentEntity;
       while (currentParent) {
         if (currentParent === this) {
           throw new Error(`Circular attachment detected!`);
@@ -95,7 +103,7 @@ export class Attachable implements IAttachable {
   }
 
   /** @internal */
-  setAttachment(child: IAttachable): void {
+  setAttachment(child: IAttachment): void {
     if (this.destroyed) {
       child.destroy();
     } else {
@@ -107,7 +115,7 @@ export class Attachable implements IAttachable {
   }
 
   /** @internal */
-  removeAttachment(child: IAttachable): void {
+  removeAttachment(child: IAttachment): void {
     this._attachments?.delete(child);
   }
 }

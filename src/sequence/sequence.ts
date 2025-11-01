@@ -1,11 +1,15 @@
-import { Attachable, IAttachable } from '../attachable/attachable';
+import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
 export type IStream<T = void> = Notifier<T> | Sequence<T>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
-class SequenceExecuter extends Attachable {
+export interface ISequenceExecutor extends IAttachable {
+  final(): void;
+}
+
+class SequenceExecuter extends Attachable implements ISequenceExecutor {
   onDestroyListeners = new Set<() => void>();
 
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
@@ -13,10 +17,6 @@ class SequenceExecuter extends Attachable {
 
   destroy(): void {
     if (!this.destroyed) {
-      if (this.attachIsCalled) {
-        this._pipeline = undefined as any;
-      }
-
       super.destroy();
 
       let listeners = [...this.onDestroyListeners];
@@ -27,41 +27,43 @@ class SequenceExecuter extends Attachable {
     }
   }
 
-  trigger(data: unknown, index = 0, checkDestroyed = true): void {
-    if (!this.destroyed || !checkDestroyed) {
+  trigger(data: unknown, index = 0): void {
+    if (!this.destroyed) {
       if (index < this._pipeline.length) {
         let item = this._pipeline[index];
-        item(data, returnData => this.trigger(returnData, index + 1, checkDestroyed));
-      } else {
-        if (!this.attachIsCalled) {
-          if (!this._pendingValues) {
-            this._pendingValues = [];
-          }
-          this._pendingValues.push(data);
+        item(data, returnData => this.trigger(returnData, index + 1));
+      } else if (!this.attachIsCalled) {
+        if (!this._pendingValues) {
+          this._pendingValues = [];
         }
+        this._pendingValues.push(data);
       }
     }
   }
 
   enterPipeline<A, B>(item: SequencePipelineItem<A, B>) {
-    if (this.attachIsCalled) {
-      throw new Error('After attaching a sequence you cannot add another operation.');
-    }
+    if (!this.destroyed) {
+      if (this.attachIsCalled) {
+        throw new Error('After attaching a sequence you cannot add another operation.');
+      }
 
-    this._pipeline.push(item);
-    if (this._pendingValues) {
-      let pendingValues = this._pendingValues;
-      this._pendingValues = [];
-      let itemIndex = this._pipeline.length - 1;
+      this._pipeline.push(item);
+      if (this._pendingValues) {
+        let pendingValues = this._pendingValues;
+        this._pendingValues = [];
+        let itemIndex = this._pipeline.length - 1;
 
-      for (let i = 0; i < pendingValues.length; i++) {
-        let value = pendingValues[i];
-        this.trigger(value, itemIndex, false);
+        for (let i = 0; i < pendingValues.length; i++) {
+          let value = pendingValues[i];
+          this.trigger(value, itemIndex);
+        }
       }
     }
   }
 
-  attach(parent: Attachable | string): this {
+  final() {}
+
+  attach(parent: IAttachable | string): this {
     this._pendingValues = undefined;
     return super.attach(parent);
   }
@@ -72,11 +74,11 @@ class SequenceExecuter extends Attachable {
   }
 }
 
-export class Sequence<T = void> implements IAttachable {
+export class Sequence<T = void> implements IAttachment {
   static merge<S>(...streams: IStream<S>[]): Sequence<S> {
     let activeSequences = this.validateAndConvertToSet(streams);
 
-    let subscriptions: IAttachable[] = [];
+    let subscriptions: IAttachment[] = [];
     let mergedSequence = Sequence.create<S>(resolve => {
       streams.forEach(stream => {
         let subscription = stream.subscribe(resolve).attachToRoot(); // Each handled manually
@@ -99,7 +101,7 @@ export class Sequence<T = void> implements IAttachable {
     let keys = Object.keys(streamsObject);
     let unresolvedKeys = new Set(keys);
 
-    let subscriptions: IAttachable[] = [];
+    let subscriptions: IAttachment[] = [];
     let combinedSequence = Sequence.create<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : never }>(resolve => {
       keys.forEach(key => {
         let stream = streamsObject[key];
@@ -175,7 +177,9 @@ export class Sequence<T = void> implements IAttachable {
     }
   }
 
-  static create<S = void>(executor: (resolve: (data: S) => void, attachable: Attachable) => (() => void) | void): Sequence<S> {
+  static create<S = void>(
+    executor: (resolve: (data: S) => void, sequenceExecutor: ISequenceExecutor) => (() => void) | void
+  ): Sequence<S> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
@@ -257,7 +261,7 @@ export class Sequence<T = void> implements IAttachable {
     return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, attachable: Attachable) => K | IStream<K>): Sequence<K> {
+  map<K>(callback: (data: T, sequenceExecutor: ISequenceExecutor) => K | IStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, resolve) => {
@@ -311,7 +315,7 @@ export class Sequence<T = void> implements IAttachable {
   }
 
   /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
     return this.read(callback);
   }
 
@@ -319,7 +323,7 @@ export class Sequence<T = void> implements IAttachable {
     this.executor.destroy();
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: IAttachable | string): this {
     this.executor.attach(parent);
     return this;
   }

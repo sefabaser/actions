@@ -1,4 +1,5 @@
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { IAttachable } from '../..';
+import { IAttachment } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { IStream, Sequence } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';
@@ -7,7 +8,7 @@ export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
   static fromSequence<S>(sequence: Sequence<S>): {
-    attach: (parent: Attachable | string) => Notifier<S>;
+    attach: (parent: IAttachable | string) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
     if (sequence.attachIsCalled) {
@@ -17,7 +18,7 @@ export class Notifier<T> {
     let notifier = new Notifier<S>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
     return {
-      attach: (parent: Attachable | string) => {
+      attach: (parent: IAttachable | string) => {
         sequence.attach(parent);
         return notifier;
       },
@@ -52,7 +53,7 @@ export class Notifier<T> {
     return this;
   }
 
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachable {
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
     return this.baseSubscribe(callback);
   }
 
@@ -83,7 +84,7 @@ export class Notifier<T> {
     return this.nextAvailableSubscriptionId++;
   }
 
-  private baseSubscribe(callback: NotifierCallbackFunction<T>): IAttachable {
+  private baseSubscribe(callback: NotifierCallbackFunction<T>): IAttachment {
     let subscriptionId = this.getNextAvailableSubscriptionId();
     this.listenersMap.set(subscriptionId, callback);
 

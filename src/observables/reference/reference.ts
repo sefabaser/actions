@@ -1,6 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { IAttachable } from '../..';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
@@ -35,7 +36,7 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
   }
 
   private variable: Variable<T | undefined>;
-  private destroySubscription: IAttachable | undefined;
+  private destroySubscription: IAttachment | undefined;
   private options: { initialValue: T | undefined; path: string | undefined };
 
   constructor(...args: T extends string ? [options?: StringReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]) {
@@ -79,7 +80,7 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T | undefined>): IAttachable {
+  subscribe(callback: VariableListenerCallbackFunction<T | undefined>): IAttachment {
     if (this.destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
     }
@@ -87,7 +88,7 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
     return this.variable.subscribe(callback);
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: IAttachable | string): this {
     super.attach(parent);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;

@@ -693,6 +693,9 @@ describe('Sequence', () => {
           innerResolves.forEach(resolve => resolve(''));
           expect(triggered).toEqual(false);
         });
+
+        // TODO: race condition, first trigger resolves later than the second
+        // TODO: shall new trigger should cancel all previous ongoing operations?
       });
 
       describe('map returns notifier', () => {
@@ -742,6 +745,14 @@ describe('Sequence', () => {
         });
       });
 
+      describe('race conditions', () => {
+        // TODO: first trigger resolves later than the second
+        // How to deal? Options
+        //    - trigger should cancel all previous ongoing operations
+        //    - a completed map should cancel previously ongoing same map step's operations
+        //    - map should wait the previous operation to complete
+      });
+
       describe('destroying pipeline', () => {
         test('when sequence is destroyed the pipeline should also be destroyed', async () => {
           let heap: unknown[] = [];
@@ -782,29 +793,7 @@ describe('Sequence', () => {
 
           Sequence.create<number>((resolve, attachable) => {
             resolve(1);
-            resolve(1);
-            attachable.destroy();
-          })
-            .map(value =>
-              Sequence.create<string>(resolve =>
-                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
-              )
-            )
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['1a', '1a']);
-        });
-
-        test('destroying pipeline should wait mix triggered multiple ongoing operations to be completed', async () => {
-          let heap: unknown[] = [];
-
-          let resolve: (value: number) => void;
-          Sequence.create<number>((r1, attachable) => {
-            resolve = r1;
-            resolve(1);
-            resolve(1);
+            resolve(2);
             attachable.destroy();
           })
             .map(value =>
@@ -814,7 +803,31 @@ describe('Sequence', () => {
             .attachToRoot();
 
           await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['1a', '1a']);
+          expect(heap).toEqual(['1a', '2a']);
+        });
+
+        test('destroying pipeline should wait mix triggered multiple ongoing operations to be completed', async () => {
+          let heap: unknown[] = [];
+
+          let resolve!: (value: number) => void;
+          let sequence = Sequence.create<number>(r1 => {
+            resolve = r1;
+            resolve(1);
+            resolve(2);
+          })
+            .map(value => {
+              console.log(value);
+              return Sequence.create<string>(r2 => delayedCalls.callEachDelayed([value + 'a'], delayedValue => r2(delayedValue)));
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          resolve(3);
+          resolve(4);
+          sequence.destroy();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['1a', '2a', '3a', '4a']);
         });
       });
     });
@@ -1144,7 +1157,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeFalsy();
       });
 
-      test('instantly finishing the sequence should not block the chain', () => {
+      test('instantly resolving the sequence should not block the chain', () => {
         let heap: string[] = [];
         Sequence.create<string>(resolve => resolve('a'))
           .take(1)
@@ -1195,7 +1208,7 @@ describe('Sequence', () => {
         sequance.attachToRoot();
       });
 
-      test('directly destroyed sequence callback', () => {
+      test('directly resolved sequence callback', () => {
         let heap: string[] = [];
         Sequence.create<void>(resolve => {
           resolve();
@@ -1239,6 +1252,9 @@ describe('Sequence', () => {
         resolve();
         expect(sequance.destroyed).toBeTruthy();
       });
+
+      // TODO: take should destroy the sequence after all ongoing operations completed
+      // TODO: take should destroy the operations coming behind instantly
     });
   });
 
@@ -1260,7 +1276,7 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b', 'c']);
       });
 
-      test('instantly destroyed sequences', async () => {
+      test('instantly resolved sequences', async () => {
         let heap: string[] = [];
 
         Sequence.merge(
@@ -1299,7 +1315,7 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b']);
       });
 
-      test('merging instantly destroyed sequences', async () => {
+      test('merging instantly resolved sequences', async () => {
         let heap: string[] = [];
 
         let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);

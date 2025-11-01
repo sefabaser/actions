@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachable } from '../../attachable/attachable';
+import { IAttachment } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';
@@ -20,7 +20,7 @@ export interface IVariable<T> {
   value: T;
   listenerCount: number;
   set(data: T): this;
-  subscribe(callback: VariableListenerCallbackFunction<T>): IAttachable;
+  subscribe(callback: VariableListenerCallbackFunction<T>): IAttachment;
 }
 
 export class Variable<T> extends Notifier<T> implements IVariable<T> {
@@ -56,7 +56,7 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): IAttachable {
+  subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): IAttachment {
     if (!options?.listenOnlyNewChanges) {
       CallbackHelper.triggerCallback(this.currentValue, callback);
     }

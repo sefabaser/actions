@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachable } from '../../attachable/attachable';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
@@ -251,7 +251,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     return effect;
   }
 
-  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachable {
+  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
     if (!options?.listenOnlyNewChanges) {
       CallbackHelper.triggerCallback(this.previousBroadcast, callback);
     }
