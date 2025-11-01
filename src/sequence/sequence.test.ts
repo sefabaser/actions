@@ -693,6 +693,31 @@ describe('Sequence', () => {
           innerResolves.forEach(resolve => resolve(''));
           expect(triggered).toEqual(false);
         });
+
+        test('self destroying sequence async map combination', async () => {
+          let heap: unknown[] = [];
+
+          Sequence.create<number>((resolve, attachable) => {
+            delayedCalls.callEachDelayed(
+              [1, 2],
+              delayedValue => resolve(delayedValue),
+              () => attachable.destroy()
+            );
+          })
+            .map(value =>
+              Sequence.create<string>((resolve, attachable) =>
+                delayedCalls.callEachDelayed(
+                  [value + 'a'],
+                  delayedValue => resolve(delayedValue),
+                  () => attachable.destroy()
+                )
+              )
+            )
+            .read(value => heap.push(value));
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['1a', '2a']);
+        });
       });
 
       describe('map returns notifier', () => {
@@ -1308,7 +1333,7 @@ describe('Sequence', () => {
         );
       });
 
-      test('a', async () => {
+      test('merging a destroyed sequence which had a delayed map link was throwing error', async () => {
         let sequence = Sequence.create<void>((resolve, attachable) => {
           resolve();
           attachable.destroy();
@@ -1321,9 +1346,7 @@ describe('Sequence', () => {
           .read(() => {});
 
         let heap: unknown[] = [];
-        Sequence.combine({
-          s: sequence
-        })
+        Sequence.merge(sequence)
           .read(value => heap.push(value))
           .attachToRoot();
 
@@ -1464,6 +1487,28 @@ describe('Sequence', () => {
         expect(() => Sequence.combine({ a: action, b: action }).attachToRoot()).toThrow(
           'Each given sequence to merge or combine has to be diferent.'
         );
+      });
+
+      test('combining a destroyed sequence which had a delayed map link was throwing error', async () => {
+        let sequence = Sequence.create<void>((resolve, attachable) => {
+          resolve();
+          attachable.destroy();
+        })
+          .map(() =>
+            Sequence.create<void>(resolve => {
+              delayedCalls.callEachDelayed([1], () => resolve());
+            })
+          )
+          .read(() => {});
+
+        let heap: unknown[] = [];
+        Sequence.combine({
+          s: sequence
+        })
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
       });
     });
   });
@@ -1614,7 +1659,7 @@ describe('Sequence', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
     });
-    /*
+
     test('complex merge and combine destroyed by sequences', async () => {
       let sequence1 = Sequence.create<number>((resolve, attachable) => {
         delayedCalls.callEachDelayed(
@@ -1622,15 +1667,17 @@ describe('Sequence', () => {
           delayedValue => resolve(delayedValue),
           () => attachable.destroy()
         );
-      }).map(value =>
-        Sequence.create<string>((resolve, attachable) =>
-          delayedCalls.callEachDelayed(
-            [value + 's1'],
-            delayedValue => resolve(delayedValue),
-            () => attachable.destroy()
+      })
+        .map(value =>
+          Sequence.create<string>((resolve, attachable) =>
+            delayedCalls.callEachDelayed(
+              [value + 's1'],
+              delayedValue => resolve(delayedValue),
+              () => attachable.destroy()
+            )
           )
         )
-      );
+        .read(value => console.log(value));
 
       let sequence2 = Sequence.create<number>((resolve, attachable) => {
         delayedCalls.callEachDelayed(
@@ -1679,7 +1726,7 @@ describe('Sequence', () => {
 
       await delayedCalls.waitForAllPromises();
       expect(heap).toEqual(['a']);
-    });*/
+    });
 
     test('complex merge and combine instantly destroyed sequences', async () => {
       let sequence1 = Sequence.create<string>((resolve, attachable) => {
