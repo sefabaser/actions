@@ -98,11 +98,11 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('sequence waiting for sequence to complete cut in the middle', async () => {
       let resolve!: () => void;
 
-      let sequence = Sequence.create<void>(resolve => resolve())
+      let sequence = Sequence.create<void>(r1 => r1())
         .map(() =>
           // This sequence will never be resolved
-          Sequence.create<void>(r => {
-            resolve = r;
+          Sequence.create<void>(r2 => {
+            resolve = r2;
           })
         )
         .attachToRoot();

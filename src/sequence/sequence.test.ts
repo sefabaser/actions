@@ -743,7 +743,7 @@ describe('Sequence', () => {
       });
 
       describe('destroying pipeline', () => {
-        test('when sequence is destroyed the pipeline should also be destroyed if there is no ongoing operations', async () => {
+        test('when sequence is destroyed the pipeline should also be destroyed', async () => {
           let heap: unknown[] = [];
 
           let sequence = Sequence.create<number>((resolve, attachable) => {
@@ -789,6 +789,26 @@ describe('Sequence', () => {
               Sequence.create<string>(resolve =>
                 delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
+            )
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual(['1a', '1a']);
+        });
+
+        test('destroying pipeline should wait mix triggered multiple ongoing operations to be completed', async () => {
+          let heap: unknown[] = [];
+
+          let resolve: (value: number) => void;
+          Sequence.create<number>((r1, attachable) => {
+            resolve = r1;
+            resolve(1);
+            resolve(1);
+            attachable.destroy();
+          })
+            .map(value =>
+              Sequence.create<string>(r2 => delayedCalls.callEachDelayed([value + 'a'], delayedValue => r2(delayedValue)))
             )
             .read(value => heap.push(value))
             .attachToRoot();

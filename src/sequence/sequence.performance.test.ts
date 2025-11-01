@@ -78,7 +78,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       });
 
       let parent = new IDAttachable().attachToRoot();
-      sequence.map(() => Sequence.create(resolve => resolve())).attach(parent);
+      sequence.map(() => Sequence.create(r2 => r2())).attach(parent);
       resolve();
       parent.destroy();
     });
@@ -196,16 +196,16 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
         let parent = new IDAttachable().attachToRoot();
         sequence
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
-          .map(() => Sequence.create(resolve => resolve()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
+          .map(() => Sequence.create(r2 => r2()))
           .attach(parent);
         resolve();
         resolve();

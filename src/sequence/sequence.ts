@@ -29,7 +29,7 @@ class SequenceExecuter extends Attachable {
 
   trigger(data: unknown, index = 0, checkDestroyed = true): void {
     if (!this.destroyed || !checkDestroyed) {
-      if (this._pipeline && index < this._pipeline.length) {
+      if (index < this._pipeline.length) {
         let item = this._pipeline[index];
         item(data, returnData => this.trigger(returnData, index + 1, checkDestroyed));
       } else {
@@ -63,27 +63,21 @@ class SequenceExecuter extends Attachable {
 
   attach(parent: Attachable | string): this {
     this._pendingValues = undefined;
-    if (this.destroyed) {
-      this._pipeline = undefined as any;
-    }
     return super.attach(parent);
   }
 
   attachToRoot(): this {
     this._pendingValues = undefined;
-    if (this.destroyed) {
-      this._pipeline = undefined as any;
-    }
     return super.attachToRoot();
   }
 }
 
 export class Sequence<T = void> implements IAttachable {
-  static merge<T>(...streams: IStream<T>[]): Sequence<T> {
+  static merge<S>(...streams: IStream<S>[]): Sequence<S> {
     let activeSequences = this.validateAndConvertToSet(streams);
 
     let subscriptions: IAttachable[] = [];
-    let mergedSequence = Sequence.create<T>(resolve => {
+    let mergedSequence = Sequence.create<S>(resolve => {
       streams.forEach(stream => {
         let subscription = stream.subscribe(resolve).attachToRoot(); // Each handled manually
         subscriptions.push(subscription);
@@ -95,9 +89,9 @@ export class Sequence<T = void> implements IAttachable {
     return mergedSequence;
   }
 
-  static combine<T extends Record<string, IStream<any>>>(
-    streamsObject: T
-  ): Sequence<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : T[K] extends Notifier<infer U> ? U : never }> {
+  static combine<S extends Record<string, IStream<any>>>(
+    streamsObject: S
+  ): Sequence<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : S[K] extends Notifier<infer U> ? U : never }> {
     let streams = Object.values(streamsObject);
     let activeStreams = this.validateAndConvertToSet(streams);
 
@@ -106,7 +100,7 @@ export class Sequence<T = void> implements IAttachable {
     let unresolvedKeys = new Set(keys);
 
     let subscriptions: IAttachable[] = [];
-    let combinedSequence = Sequence.create<{ [K in keyof T]: T[K] extends Sequence<infer U> ? U : never }>(resolve => {
+    let combinedSequence = Sequence.create<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : never }>(resolve => {
       keys.forEach(key => {
         let stream = streamsObject[key];
         let subscription = stream
@@ -133,7 +127,7 @@ export class Sequence<T = void> implements IAttachable {
     return combinedSequence;
   }
 
-  private static shallowCopy<T extends object>(obj: T): T {
+  private static shallowCopy<S extends object>(obj: S): S {
     return Object.keys(obj).reduce((acc, key) => {
       acc[key] = (obj as any)[key];
       return acc;
@@ -181,7 +175,7 @@ export class Sequence<T = void> implements IAttachable {
     }
   }
 
-  static create<T = void>(executor: (resolve: (data: T) => void, attachable: Attachable) => (() => void) | void): Sequence<T> {
+  static create<S = void>(executor: (resolve: (data: S) => void, attachable: Attachable) => (() => void) | void): Sequence<S> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
@@ -193,7 +187,7 @@ export class Sequence<T = void> implements IAttachable {
       console.error(e);
     }
 
-    return new Sequence<T>(sequenceExecutor);
+    return new Sequence<S>(sequenceExecutor);
   }
 
   get destroyed(): boolean {

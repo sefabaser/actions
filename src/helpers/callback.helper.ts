@@ -1,6 +1,6 @@
 /** @internal */
 export class CallbackHelper {
-  static triggerCallback<T>(data: T, callback: (data: T) => void): void {
+  static triggerCallback<T>(data: T, callback: (returnData: T) => void): void {
     try {
       callback(data);
     } catch (e) {

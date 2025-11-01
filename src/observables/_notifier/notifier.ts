@@ -6,15 +6,15 @@ import { ActionSubscription } from '../../utilities/action-subscription';
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
-  static fromSequence<T>(sequence: Sequence<T>): {
-    attach: (parent: Attachable | string) => Notifier<T>;
-    attachToRoot: () => Notifier<T>;
+  static fromSequence<S>(sequence: Sequence<S>): {
+    attach: (parent: Attachable | string) => Notifier<S>;
+    attachToRoot: () => Notifier<S>;
   } {
     if (sequence.attachIsCalled) {
       throw new Error('Attached sequences cannot be converted to notifier!');
     }
 
-    let notifier = new Notifier<T>();
+    let notifier = new Notifier<S>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
     return {
       attach: (parent: Attachable | string) => {

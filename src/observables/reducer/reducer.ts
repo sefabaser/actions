@@ -158,16 +158,16 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     );
   }
 
-  static createCollector<EffectType>(options: Partial<ReducerOptions> = {}): Reducer<EffectType, EffectType[]> {
-    let collection = new Map<number, EffectType>();
-    return new Reducer<EffectType, EffectType[]>(change => {
+  static createCollector<S>(options: Partial<ReducerOptions> = {}): Reducer<S, S[]> {
+    let collection = new Map<number, S>();
+    return new Reducer<S, S[]>(change => {
       if (change.type === 'destroy') {
         collection.delete(change.id);
       } else if (change.type === 'effect' || change.type === 'update') {
         change.current && collection.set(change.id, change.current);
       }
 
-      let response: EffectType[] = [];
+      let response: S[] = [];
       collection.forEach(item => {
         response.push(item);
       });
@@ -175,15 +175,15 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     }, options);
   }
 
-  static createObjectCreator<ResultType>(options?: {
-    initial?: ResultType;
+  static createObjectCreator<S>(options?: {
+    initial?: S;
     doNotUpdateValueAtEffectCreation?: boolean;
     clone?: boolean;
-  }): Reducer<{ key: string; value: any }, ResultType> {
+  }): Reducer<{ key: string; value: any }, S> {
     let collection: any = (options && options.initial) || {};
     let activeEffects = new Set<string>();
 
-    return new Reducer<{ key: string; value: any }, ResultType>(change => {
+    return new Reducer<{ key: string; value: any }, S>(change => {
       if (change.type === 'destroy') {
         if (change.previous) {
           delete collection[change.previous.key];
@@ -206,7 +206,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         }
       }
 
-      return <ResultType>collection;
+      return <S>collection;
     }, options);
   }
 

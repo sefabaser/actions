@@ -132,6 +132,9 @@
         "useGetterReturn": "off",
         "useGuardForIn": "off",
         "useNamespaceKeyword": "error"
+      },
+      "nursery": {
+        "noShadow": "error"
       }
     },
     "includes": ["src/**/*.ts", "src/**/*.tsx"]
