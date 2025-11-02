@@ -60,15 +60,7 @@ describe('Sequence', () => {
       });
     });
 
-    describe('Destruction', () => {
-      test('destroying sequence', () => {
-        let sequance = Sequence.create<void>(resolve => resolve()).attachToRoot();
-
-        expect(sequance.destroyed).toBeFalsy();
-        sequance.destroy();
-        expect(sequance.destroyed).toBeTruthy();
-      });
-
+    describe('Finalization', () => {
       test('finalizing after resolve', () => {
         let triggered = false;
         let sequance = Sequence.create<void>((resolve, executor) => {
@@ -82,6 +74,31 @@ describe('Sequence', () => {
 
         expect(sequance.destroyed).toBeTruthy();
         expect(triggered).toBeTruthy();
+      });
+
+      test('when sequence is finalized the pipeline should also be destroyed after all operations complete', async () => {
+        let heap: unknown[] = [];
+
+        let sequence = Sequence.create<number>((resolve, executor) => {
+          resolve(1);
+          executor.final();
+        })
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        await delayedCalls.waitForAllPromises();
+        expect(heap).toEqual([1]);
+        expect(sequence['executor']['_pipeline']).toEqual(undefined);
+      });
+    });
+
+    describe('Destruction', () => {
+      test('destroying sequence', () => {
+        let sequance = Sequence.create<void>(resolve => resolve()).attachToRoot();
+
+        expect(sequance.destroyed).toBeFalsy();
+        sequance.destroy();
+        expect(sequance.destroyed).toBeTruthy();
       });
 
       test('destroying parent should destroy sequence', () => {
@@ -511,6 +528,34 @@ describe('Sequence', () => {
 
           expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
         });
+
+        test(`pipeline should finish respecting the trigger order`, () => {
+          let resolve1!: (value: string) => void;
+          let resolve2!: (value: string) => void;
+
+          let heap: string[] = [];
+
+          Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+          })
+            .map(value =>
+              Sequence.create<string>(resolve => {
+                if (value === 1) {
+                  resolve1 = resolve;
+                } else {
+                  resolve2 = resolve;
+                }
+              })
+            )
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          resolve2('2');
+          resolve1('1');
+
+          expect(heap).toEqual(['1', '2']);
+        });
       });
 
       describe('map returns notifier', () => {
@@ -577,6 +622,24 @@ describe('Sequence', () => {
           await delayedCalls.waitForAllPromises();
 
           expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+        });
+
+        test(`pipeline should finish respecting the trigger order`, () => {
+          let heap: string[] = [];
+          let action = new Action<string>();
+
+          Sequence.create<void>(resolve => {
+            resolve();
+            resolve();
+          })
+            .map(() => action)
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          action.trigger('2');
+          action.trigger('1');
+
+          expect(heap).toEqual(['1', '2']);
         });
       });
     });
@@ -695,7 +758,6 @@ describe('Sequence', () => {
         });
 
         // TODO: race condition, first trigger resolves later than the second
-        // TODO: shall new trigger should cancel all previous ongoing operations?
       });
 
       describe('map returns notifier', () => {
@@ -754,21 +816,6 @@ describe('Sequence', () => {
       });
 
       describe('destroying pipeline', () => {
-        test('when sequence is finalized the pipeline should also be destroyed after all operations complete', async () => {
-          let heap: unknown[] = [];
-
-          let sequence = Sequence.create<number>((resolve, executor) => {
-            resolve(1);
-            executor.final();
-          })
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual([1]);
-          expect(sequence['executor']['_pipeline']).toEqual(undefined);
-        });
-
         test('finalizing pipeline should wait ongoing operation to be completed', async () => {
           let heap: unknown[] = [];
 
