@@ -1732,83 +1732,166 @@ describe('Sequence', () => {
 
   describe('Combine', () => {
     describe('Behavior', () => {
-      test('simple combine', () => {
-        let sequence1 = Sequence.create<string>(resolve => resolve('a'));
-        let sequence2 = Sequence.create<number>(resolve => resolve(1));
+      describe('Object Input', () => {
+        test('simple combine', () => {
+          let sequence1 = Sequence.create<string>(resolve => resolve('a'));
+          let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
-        let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: sequence1, b: sequence2 })
-          .read(data => heap.push(data))
-          .attachToRoot();
+          let heap: { a: string; b: number }[] = [];
+          Sequence.combine({ a: sequence1, b: sequence2 })
+            .read(data => heap.push(data))
+            .attachToRoot();
 
-        expect(heap).toEqual([{ a: 'a', b: 1 }]);
-      });
-
-      test('instantly finalizing sequences', () => {
-        let sequence1 = Sequence.create<string>((resolve, executor) => {
-          resolve('a');
-          executor.final();
-        });
-        let sequence2 = Sequence.create<number>((resolve, executor) => {
-          resolve(1);
-          executor.final();
+          expect(heap).toEqual([{ a: 'a', b: 1 }]);
         });
 
-        let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: sequence1, b: sequence2 })
-          .read(data => heap.push(data))
-          .attachToRoot();
+        test('instantly finalizing sequences', () => {
+          let sequence1 = Sequence.create<string>((resolve, executor) => {
+            resolve('a');
+            executor.final();
+          });
+          let sequence2 = Sequence.create<number>((resolve, executor) => {
+            resolve(1);
+            executor.final();
+          });
 
-        expect(heap).toEqual([{ a: 'a', b: 1 }]);
+          let heap: { a: string; b: number }[] = [];
+          Sequence.combine({ a: sequence1, b: sequence2 })
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          expect(heap).toEqual([{ a: 'a', b: 1 }]);
+        });
+
+        test('using action directly', () => {
+          let action1 = new Action<string>();
+          let action2 = new Action<number>();
+
+          let heap: { a: string; b: number }[] = [];
+          Sequence.combine({ a: action1, b: action2 })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          action1.trigger('a');
+          action2.trigger(1);
+          expect(heap).toEqual([{ a: 'a', b: 1 }]);
+        });
+
+        test('combine instantly getting destroyed sequences', async () => {
+          let heap: { a: string; b: number }[] = [];
+
+          let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
+          let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
+
+          let combined = Sequence.combine({ a: s1, b: s2 });
+          let read = combined.read(data => heap.push(data)).attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+
+          expect(heap).toEqual([{ a: 'a', b: 1 }]);
+          expect(s1.destroyed).toBeTruthy();
+          expect(s2.destroyed).toBeTruthy();
+          expect(combined.destroyed).toBeTruthy();
+          expect(read.destroyed).toBeTruthy();
+        });
+
+        test('combine with delayed sequences', async () => {
+          let heap: { a: string; b: number }[] = [];
+          Sequence.combine({
+            a: Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
+            b: Sequence.create<number>(resolve => delayedCalls.callEachDelayed([1, 2], resolve))
+          })
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual([
+            { a: 'a', b: 1 },
+            { a: 'b', b: 1 },
+            { a: 'b', b: 2 }
+          ]);
+        });
       });
 
-      test('using action directly', () => {
-        let action1 = new Action<string>();
-        let action2 = new Action<number>();
+      describe('Array Input', () => {
+        test('simple combine', () => {
+          let sequence1 = Sequence.create<string>(resolve => resolve('a'));
+          let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
-        let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: action1, b: action2 })
-          .read(value => heap.push(value))
-          .attachToRoot();
+          let heap: unknown[] = [];
+          Sequence.combine([sequence1, sequence2])
+            .read(data => heap.push(data))
+            .attachToRoot();
 
-        action1.trigger('a');
-        action2.trigger(1);
-        expect(heap).toEqual([{ a: 'a', b: 1 }]);
-      });
+          expect(heap).toEqual([['a', 1]]);
+        });
 
-      test('combine instantly getting destroyed sequences', async () => {
-        let heap: { a: string; b: number }[] = [];
+        test('instantly finalizing sequences', () => {
+          let sequence1 = Sequence.create<string>((resolve, executor) => {
+            resolve('a');
+            executor.final();
+          });
+          let sequence2 = Sequence.create<number>((resolve, executor) => {
+            resolve(1);
+            executor.final();
+          });
 
-        let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
-        let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
+          let heap: unknown[] = [];
+          Sequence.combine([sequence1, sequence2])
+            .read(data => heap.push(data))
+            .attachToRoot();
 
-        let combined = Sequence.combine({ a: s1, b: s2 });
-        let read = combined.read(data => heap.push(data)).attachToRoot();
+          expect(heap).toEqual([['a', 1]]);
+        });
 
-        await delayedCalls.waitForAllPromises();
+        test('using action directly', () => {
+          let action1 = new Action<string>();
+          let action2 = new Action<number>();
 
-        expect(heap).toEqual([{ a: 'a', b: 1 }]);
-        expect(s1.destroyed).toBeTruthy();
-        expect(s2.destroyed).toBeTruthy();
-        expect(combined.destroyed).toBeTruthy();
-        expect(read.destroyed).toBeTruthy();
-      });
+          let heap: unknown[] = [];
+          Sequence.combine([action1, action2])
+            .read(value => heap.push(value))
+            .attachToRoot();
 
-      test('combine with delayed sequences', async () => {
-        let heap: { a: string; b: number }[] = [];
-        Sequence.combine({
-          a: Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
-          b: Sequence.create<number>(resolve => delayedCalls.callEachDelayed([1, 2], resolve))
-        })
-          .read(data => heap.push(data))
-          .attachToRoot();
+          action1.trigger('a');
+          action2.trigger(1);
+          expect(heap).toEqual([['a', 1]]);
+        });
 
-        await delayedCalls.waitForAllPromises();
-        expect(heap).toEqual([
-          { a: 'a', b: 1 },
-          { a: 'b', b: 1 },
-          { a: 'b', b: 2 }
-        ]);
+        test('combine instantly getting destroyed sequences', async () => {
+          let heap: unknown[] = [];
+
+          let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
+          let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
+
+          let combined = Sequence.combine([s1, s2]);
+          let read = combined.read(data => heap.push(data)).attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+
+          expect(heap).toEqual([['a', 1]]);
+          expect(s1.destroyed).toBeTruthy();
+          expect(s2.destroyed).toBeTruthy();
+          expect(combined.destroyed).toBeTruthy();
+          expect(read.destroyed).toBeTruthy();
+        });
+
+        test('combine with delayed sequences', async () => {
+          let heap: unknown[] = [];
+          Sequence.combine([
+            Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
+            Sequence.create<number>(resolve => delayedCalls.callEachDelayed([1, 2], resolve))
+          ])
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          await delayedCalls.waitForAllPromises();
+          expect(heap).toEqual([
+            ['a', 1],
+            ['b', 1],
+            ['b', 2]
+          ]);
+        });
       });
     });
 

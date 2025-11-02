@@ -5,6 +5,8 @@ export type IStream<T = void> = Notifier<T> | Sequence<T>;
 
 type SequencePipelineItem<A, B> = (data: A, callback: (returnData: B) => void) => void;
 
+type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
+
 export interface ISequenceExecutor extends IAttachable {
   final(): void;
 }
@@ -91,9 +93,9 @@ export class Sequence<T = void> implements IAttachment {
     return mergedSequence;
   }
 
-  static combine<S extends Record<string, IStream<any>>>(
-    streamsObject: S
-  ): Sequence<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : S[K] extends Notifier<infer U> ? U : never }> {
+  static combine<const S extends readonly IStream<any>[]>(streams: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combine<S extends Record<string, IStream<any>>>(streamsObject: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combine<S extends Record<string, IStream<any>> | readonly IStream<any>[]>(input: S): Sequence<any> {
     let streams = Object.values(streamsObject);
     let activeStreams = this.validateAndConvertToSet(streams);
 
@@ -125,7 +127,6 @@ export class Sequence<T = void> implements IAttachment {
     });
 
     this.waitUntilAllSequencedDestroyed(activeStreams, () => combinedSequence.destroy());
-
     return combinedSequence;
   }
 
