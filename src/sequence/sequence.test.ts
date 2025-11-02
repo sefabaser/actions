@@ -675,31 +675,67 @@ describe('Sequence', () => {
         });
 
         test(`pipeline should finish respecting the trigger order`, () => {
-          let resolve1!: (value: string) => void;
-          let resolve2!: (value: string) => void;
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
 
-          let heap: string[] = [];
+          let heap: unknown[] = [];
 
           Sequence.create<number>(resolve => {
             resolve(1);
             resolve(2);
           })
             .map(value =>
-              Sequence.create<string>(resolve => {
+              Sequence.create<number>((resolve, executor) => {
                 if (value === 1) {
-                  resolve1 = resolve;
+                  action1.subscribe(() => resolve(value)).attach(executor);
                 } else {
-                  resolve2 = resolve;
+                  action2.subscribe(() => resolve(value)).attach(executor);
                 }
               })
             )
             .read(value => heap.push(value))
             .attachToRoot();
 
-          resolve2('2');
-          resolve1('1');
+          action2.trigger();
+          action1.trigger();
 
-          expect(heap).toEqual(['1', '2']);
+          expect(heap).toEqual([1, 2]);
+        });
+
+        test(`blockToEnsureCallOrder false option`, () => {
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+
+          let heap: unknown[] = [];
+
+          Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .map(
+              value =>
+                Sequence.create<number>((resolve, executor) => {
+                  if (value === 1) {
+                    action1.subscribe(() => resolve(value)).attach(executor);
+                  } else if (value === 2) {
+                    action2.subscribe(() => resolve(value)).attach(executor);
+                  } else {
+                    resolve(value);
+                  }
+                }),
+              { blockToEnsureCallOrder: false }
+            )
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          expect(heap).toEqual([3]);
+
+          action2.trigger();
+          expect(heap).toEqual([3, 2]);
+
+          action1.trigger();
+          expect(heap).toEqual([3, 2, 1]);
         });
       });
 
@@ -770,21 +806,62 @@ describe('Sequence', () => {
         });
 
         test(`pipeline should finish respecting the trigger order`, () => {
-          let heap: string[] = [];
-          let action = new Action<string>();
+          let heap: unknown[] = [];
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
 
-          Sequence.create<void>(resolve => {
-            resolve();
-            resolve();
+          Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
           })
-            .map(() => action)
+            .map(value => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else {
+                return action2.map(() => value);
+              }
+            })
             .read(value => heap.push(value))
             .attachToRoot();
 
-          action.trigger('2');
-          action.trigger('1');
+          action2.trigger();
+          action1.trigger();
 
-          expect(heap).toEqual(['1', '2']);
+          expect(heap).toEqual([1, 2]);
+        });
+
+        test(`blockToEnsureCallOrder false option`, () => {
+          let heap: unknown[] = [];
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+
+          Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .map(
+              value => {
+                if (value === 1) {
+                  return action1.map(() => value);
+                } else if (value === 2) {
+                  return action2.map(() => value);
+                } else {
+                  return value;
+                }
+              },
+              { blockToEnsureCallOrder: false }
+            )
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          expect(heap).toEqual([3]);
+
+          action2.trigger();
+          expect(heap).toEqual([3, 2]);
+
+          action1.trigger();
+          expect(heap).toEqual([3, 2, 1]);
         });
       });
     });

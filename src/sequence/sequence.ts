@@ -261,8 +261,16 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, sequenceExecutor: ISequenceExecutor) => K | IStream<K>): Sequence<K> {
+  map<K>(
+    callback: (data: T, sequenceExecutor: ISequenceExecutor) => K | IStream<K>,
+    partialOptions?: Partial<{ blockToEnsureCallOrder: boolean }>
+  ): Sequence<K> {
     this.prepareToBeLinked();
+
+    let options = {
+      blockToEnsureCallOrder: true,
+      ...partialOptions
+    };
 
     this.executor.enterPipeline<T, K>((data, resolve) => {
       let executionReturn: K | IStream<K>;
