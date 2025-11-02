@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from '../observables/action/action';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { Sequence } from './sequence';
+import { Sequence, SequenceClassNameForMemoryLeakTest } from './sequence';
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
@@ -30,7 +30,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
     }, 30000);
 
@@ -43,7 +43,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await delayedCalls.waitForAllPromises();
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
     }, 30000);
 
     test('map chaining', async () => {
@@ -74,7 +74,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
     }, 30000);
 
@@ -91,7 +91,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
     }, 30000);
 
@@ -115,7 +115,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
     }, 30000);
 
@@ -159,7 +159,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       sequence = undefined as any;
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
     }, 30000);
   });
@@ -206,7 +206,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       merged = undefined as any;
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
     }, 30000);
 
     test('complex merge and combine destroyed in the middle of process', async () => {
@@ -250,36 +250,36 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       merged = undefined as any;
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
     }, 30000);
 
     test('complex merge and combine destroyed by sequences', async () => {
-      let sequence1 = Sequence.create<number>((resolve, attachable) => {
+      let sequence1 = Sequence.create<number>((resolve, executor) => {
         delayedCalls.callEachDelayed(
           [10, 11],
           delayedValue => resolve(delayedValue),
-          () => attachable.destroy()
+          () => executor.final()
         );
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) =>
+        Sequence.create<string>((resolve, executor) =>
           delayedCalls.callEachDelayed(
             [value + 's1'],
             delayedValue => resolve(delayedValue),
-            () => attachable.destroy()
+            () => executor.final()
           )
         )
       );
 
-      let sequence2 = Sequence.create<number>((resolve, attachable) => {
+      let sequence2 = Sequence.create<number>((resolve, executor) => {
         delayedCalls.callEachDelayed(
           [20, 21],
           delayedValue => resolve(delayedValue),
-          () => attachable.destroy()
+          () => executor.final()
         );
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           resolve(value + 's2');
-          attachable.destroy();
+          executor.final();
         })
       );
 
@@ -289,19 +289,19 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+      let sequence3 = Sequence.create<string>((resolve, executor) => {
         resolve('a');
-        attachable.destroy();
+        executor.final();
       }).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>((resolve, attachable) => {
+      let sequence4 = Sequence.create<string>((resolve, executor) => {
         resolve('b');
-        attachable.destroy();
+        executor.final();
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           delayedCalls.callEachDelayed(
             [value + 's4'],
             delayedValue => resolve(delayedValue),
-            () => attachable.destroy()
+            () => executor.final()
           );
         })
       );
@@ -312,8 +312,8 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         s4: sequence4
       }).attachToRoot();
 
-      combined.destroy();
       await delayedCalls.waitForAllPromises();
+      expect(combined.destroyed).toBeTruthy();
 
       sequence1 = undefined as any;
       sequence2 = undefined as any;
@@ -323,35 +323,35 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       merged = undefined as any;
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
     }, 30000);
 
     test('complex merge and combine instantly destroyed sequences', async () => {
-      let sequence1 = Sequence.create<string>((resolve, attachable) => {
+      let sequence1 = Sequence.create<string>((resolve, executor) => {
         resolve('1');
-        attachable.destroy();
+        executor.final();
       }).map(value => value + '1');
 
-      let sequence2 = Sequence.create<string>((resolve, attachable) => {
+      let sequence2 = Sequence.create<string>((resolve, executor) => {
         resolve('2');
-        attachable.destroy();
+        executor.final();
       }).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           resolve(value + '2');
-          attachable.destroy();
+          executor.final();
         })
       );
 
       let merged = Sequence.merge(sequence1, sequence2).map(value =>
-        Sequence.create<string>((resolve, attachable) => {
+        Sequence.create<string>((resolve, executor) => {
           resolve(value + 'm');
-          attachable.destroy();
+          executor.final();
         })
       );
 
-      let sequence3 = Sequence.create<string>((resolve, attachable) => {
+      let sequence3 = Sequence.create<string>((resolve, executor) => {
         resolve('a');
-        attachable.destroy();
+        executor.final();
       }).map(value => value + 's3');
 
       let heap: unknown[] = [];
@@ -362,6 +362,16 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .read(value => heap.push(value))
         .attachToRoot();
 
+      expect(heap).toEqual([
+        {
+          m: '11m',
+          s3: 'as3'
+        },
+        {
+          m: '22m',
+          s3: 'as3'
+        }
+      ]);
       expect(sequence1.destroyed).toBeTruthy();
       expect(sequence2.destroyed).toBeTruthy();
       expect(sequence3.destroyed).toBeTruthy();
@@ -375,7 +385,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       combined = undefined as any;
 
       let snapshot = await takeNodeMinimalHeap();
-      expect(snapshot.hasObjectWithClassName('SequenceExecuter')).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequenceClassNameForMemoryLeakTest)).toBeFalsy();
     }, 30000);
   });
 });

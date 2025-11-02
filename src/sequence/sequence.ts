@@ -333,3 +333,6 @@ export class Sequence<T = void> implements IAttachment {
     return this;
   }
 }
+
+/** @internal */
+export const SequenceClassNameForMemoryLeakTest = SequenceExecuter.name;
