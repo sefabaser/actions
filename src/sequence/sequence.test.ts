@@ -1435,8 +1435,57 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeTruthy();
       });
 
-      // TODO: take should destroy the sequence after all ongoing operations completed
-      // TODO: take should destroy the operations coming behind instantly
+      test('take should destroy the sequence after all ongoing operations completed and cancel all packages coming after', () => {
+        let action1 = new Action<string>();
+        let action2 = new Action<string>();
+        let actionlast = new Action<string>();
+
+        let heap: string[] = [];
+        let sequence = Sequence.create<number>(resolve => {
+          resolve(1);
+          resolve(2);
+          resolve(3);
+        })
+          .map(data =>
+            Sequence.create<string>((resolve, executor) => {
+              if (data === 1) {
+                action1.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+              } else if (data === 2) {
+                action1.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+              } else {
+                action2.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+              }
+            })
+          )
+          .take(1)
+          .map(data =>
+            Sequence.create<string>((resolve, executor) => {
+              actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            })
+          )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(2);
+        expect(action2.listenerCount).toEqual(1);
+        expect(actionlast.listenerCount).toEqual(0);
+
+        action1.trigger('-a1');
+        expect(heap).toEqual([]);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+        expect(actionlast.listenerCount).toEqual(1);
+
+        actionlast.trigger('-al');
+        expect(heap).toEqual(['1-a1-al']);
+        expect(sequence.destroyed).toBeTruthy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+        expect(actionlast.listenerCount).toEqual(0);
+      });
     });
   });
 
