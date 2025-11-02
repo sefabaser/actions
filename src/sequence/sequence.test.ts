@@ -142,27 +142,97 @@ describe('Sequence', () => {
       });
 
       test('finalization should cancel the packages that comes after the calling package', () => {
-        let action = new Action<string>();
+        let action1 = new Action<void>();
+        let action2 = new Action<void>();
 
-        let heap: string[] = [];
-        Sequence.create<number>(resolve => {
+        let heap: unknown[] = [];
+        let sequence = Sequence.create<number>(resolve => {
           resolve(1);
           resolve(2);
         })
           .map(data =>
-            Sequence.create<string>((resolve, executor) => {
-              action.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            Sequence.create<number>((resolve, executor) => {
+              action1.subscribe(() => resolve(data)).attach(executor);
+            })
+          )
+          .map((data, mainExecutor) =>
+            Sequence.create<number>((resolve, executor) => {
+              if (data === 1) {
+                mainExecutor.final();
+              }
+              action2.subscribe(() => resolve(data)).attach(executor);
             })
           )
           .read(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
-        expect(action.listenerCount).toEqual(2);
+        expect(action1.listenerCount).toEqual(2);
+        expect(action2.listenerCount).toEqual(0);
+        expect(sequence.destroyed).toBeFalsy();
 
-        action.trigger('a');
-        expect(heap).toEqual(['1a', '2a']);
-        expect(action.listenerCount).toEqual(0);
+        action1.trigger();
+        expect(heap).toEqual([]);
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(1);
+        expect(sequence.destroyed).toBeFalsy();
+
+        action2.trigger();
+        expect(heap).toEqual([1]);
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+        expect(sequence.destroyed).toBeTruthy();
+      });
+
+      test('finalization should cancel the subscriptions that comes after the calling package', () => {
+        let action1 = new Action<void>();
+        let action2 = new Action<void>();
+        let actionlast = new Action<void>();
+
+        let heap: unknown[] = [];
+        let sequence = Sequence.create<number>(resolve => {
+          resolve(1);
+          resolve(2);
+        })
+          .map(data =>
+            Sequence.create<number>((resolve, executor) => {
+              if (data === 1) {
+                action1.subscribe(() => resolve(data)).attach(executor);
+              } else {
+                action2.subscribe(() => resolve(data)).attach(executor);
+              }
+            })
+          )
+          .map((data, mainExecutor) =>
+            Sequence.create<number>((resolve, executor) => {
+              if (data === 1) {
+                mainExecutor.final();
+              }
+              actionlast.subscribe(() => resolve(data)).attach(executor);
+            })
+          )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+        expect(action1.listenerCount).toEqual(1);
+        expect(action2.listenerCount).toEqual(1);
+        expect(actionlast.listenerCount).toEqual(0);
+        expect(sequence.destroyed).toBeFalsy();
+
+        action1.trigger();
+        expect(heap).toEqual([]);
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+        expect(actionlast.listenerCount).toEqual(1);
+        expect(sequence.destroyed).toBeFalsy();
+
+        actionlast.trigger();
+        expect(heap).toEqual([1]);
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+        expect(actionlast.listenerCount).toEqual(0);
+        expect(sequence.destroyed).toBeTruthy();
       });
     });
 
