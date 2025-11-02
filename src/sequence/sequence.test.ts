@@ -141,7 +141,7 @@ describe('Sequence', () => {
         expect(action2.listenerCount).toEqual(0);
       });
 
-      test('finalization should cancel the packages that comes after the calling package', () => {
+      test('finalization should cancel the packages that comes behind the calling package', () => {
         let action1 = new Action<void>();
         let action2 = new Action<void>();
 
@@ -184,7 +184,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeTruthy();
       });
 
-      test('finalization should cancel the subscriptions that comes after the calling package', () => {
+      test('finalization should cancel the subscriptions that comes behind the calling package', () => {
         let action1 = new Action<void>();
         let action2 = new Action<void>();
         let actionlast = new Action<void>();
@@ -1462,29 +1462,22 @@ describe('Sequence', () => {
         });
 
         expect(triggered).toBeFalsy();
-        sequence.take(1);
+        sequence.take(1).attachToRoot();
         expect(triggered).toBeTruthy();
-        sequence.attachToRoot();
       });
 
       test('directly resolved sequence callback', () => {
         let heap: string[] = [];
         Sequence.create<void>(resolve => {
           resolve();
-          return () => {
-            heap.push('destroyed');
-          };
+          return () => heap.push('destroyed');
         })
-          .read(() => {
-            heap.push('read1');
-          })
+          .read(() => heap.push('read1'))
           .take(1)
-          .read(() => {
-            heap.push('read2');
-          })
+          .read(() => heap.push('read2'))
           .attachToRoot();
 
-        expect(heap).toEqual(['read1', 'destroyed', 'read2']);
+        expect(heap).toEqual(['read1', 'read2', 'destroyed']);
       });
 
       test('destroying parent should destroy sequence', () => {
@@ -1777,14 +1770,15 @@ describe('Sequence', () => {
           expect(heap).toEqual([{ a: 'a', b: 1 }]);
         });
 
-        test('combine instantly getting destroyed sequences', async () => {
+        test('combine instantly getting resolved sequences', async () => {
           let heap: { a: string; b: number }[] = [];
 
           let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
           let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
-          let combined = Sequence.combine({ a: s1, b: s2 });
-          let read = combined.read(data => heap.push(data)).attachToRoot();
+          let combined = Sequence.combine({ a: s1, b: s2 })
+            .read(data => heap.push(data))
+            .attachToRoot();
 
           await delayedCalls.waitForAllPromises();
 
@@ -1864,8 +1858,9 @@ describe('Sequence', () => {
           let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
           let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
-          let combined = Sequence.combine([s1, s2]);
-          let read = combined.read(data => heap.push(data)).attachToRoot();
+          let combined = Sequence.combine([s1, s2])
+            .read(data => heap.push(data))
+            .attachToRoot();
 
           await delayedCalls.waitForAllPromises();
 
@@ -1873,7 +1868,6 @@ describe('Sequence', () => {
           expect(s1.destroyed).toBeTruthy();
           expect(s2.destroyed).toBeTruthy();
           expect(combined.destroyed).toBeTruthy();
-          expect(read.destroyed).toBeTruthy();
         });
 
         test('combine with delayed sequences', async () => {
@@ -2125,17 +2119,15 @@ describe('Sequence', () => {
           delayedValue => resolve(delayedValue),
           () => executor.final()
         );
-      })
-        .map(value =>
-          Sequence.create<string>((resolve, executor) =>
-            delayedCalls.callEachDelayed(
-              [value + 's1'],
-              delayedValue => resolve(delayedValue),
-              () => executor.final()
-            )
+      }).map(value =>
+        Sequence.create<string>((resolve, executor) =>
+          delayedCalls.callEachDelayed(
+            [value + 's1'],
+            delayedValue => resolve(delayedValue),
+            () => executor.final()
           )
         )
-        .read(value => console.log(value));
+      );
 
       let sequence2 = Sequence.create<number>((resolve, executor) => {
         delayedCalls.callEachDelayed(

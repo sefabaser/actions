@@ -1,3 +1,4 @@
+import { ArrayHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
 import { IDAttachable } from '../attachable/id-attachable';
@@ -223,5 +224,32 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       { sampleCount: 10, repetationPerSample: 1000 }
     );
     // Min: 101.85249996185303
+  }, 60000);
+
+  test('combine new object', async () => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
+      let combination = Sequence.combine(
+        ArrayHelper.createIntegerArray(10).reduce((acc, i) => {
+          acc[i] = Sequence.create<string>(resolve => resolve('a'));
+          return acc;
+        }, {})
+      )
+        .read(() => {})
+        .attachToRoot();
+      combination.destroy();
+      // Min:  13.876399993896484
+    });
+  }, 60000);
+
+  test('combine new array', async () => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
+      let combination = Sequence.combine(
+        ArrayHelper.createEmptyArray(10).map(() => Sequence.create<string>(resolve => resolve('a')))
+      )
+        .read(() => {})
+        .attachToRoot();
+      combination.destroy();
+      // Min:  12.509200096130371
+    });
   }, 60000);
 });

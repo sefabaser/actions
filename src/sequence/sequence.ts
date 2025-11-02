@@ -1,3 +1,5 @@
+import { Comparator } from 'helpers-lib';
+
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
@@ -16,10 +18,15 @@ class SequenceExecuter extends Attachable implements ISequenceExecutor {
 
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
   private _pendingValues: unknown[] | undefined;
+  private _finalized?: boolean;
+  private _ongoingPackage = 0;
 
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
+
+      this._pipeline = undefined as any;
+      this._pendingValues = undefined;
 
       let listeners = [...this.onDestroyListeners];
       this.onDestroyListeners.clear();
@@ -29,17 +36,11 @@ class SequenceExecuter extends Attachable implements ISequenceExecutor {
     }
   }
 
-  trigger(data: unknown, index = 0): void {
-    if (!this.destroyed) {
-      if (index < this._pipeline.length) {
-        let item = this._pipeline[index];
-        item(data, returnData => this.trigger(returnData, index + 1));
-      } else if (!this.attachIsCalled) {
-        if (!this._pendingValues) {
-          this._pendingValues = [];
-        }
-        this._pendingValues.push(data);
-      }
+  trigger(data: unknown): void {
+    if (!this._finalized) {
+      this._ongoingPackage++;
+      console.log(this._ongoingPackage, ' + initial trigger');
+      this.iteratePackage(data, 0);
     }
   }
 
@@ -57,22 +58,54 @@ class SequenceExecuter extends Attachable implements ISequenceExecutor {
 
         for (let i = 0; i < pendingValues.length; i++) {
           let value = pendingValues[i];
-          this.trigger(value, itemIndex);
+          this._ongoingPackage++;
+          console.log(this._ongoingPackage, ' + pending package');
+          this.iteratePackage(value, itemIndex);
         }
       }
     }
   }
 
-  final() {}
+  final() {
+    this._finalized = true;
+  }
 
   attach(parent: IAttachable | string): this {
     this._pendingValues = undefined;
+    if (this._finalized && this._ongoingPackage === 0) {
+      this.destroy();
+    }
     return super.attach(parent);
   }
 
   attachToRoot(): this {
     this._pendingValues = undefined;
+    if (this._finalized && this._ongoingPackage === 0) {
+      this.destroy();
+    }
     return super.attachToRoot();
+  }
+
+  private iteratePackage(data: unknown, index = 0): void {
+    if (!this.destroyed) {
+      if (index < this._pipeline.length) {
+        let item = this._pipeline[index];
+        item(data, returnData => this.iteratePackage(returnData, index + 1));
+      } else {
+        if (!this.attachIsCalled) {
+          if (!this._pendingValues) {
+            this._pendingValues = [];
+          }
+          this._pendingValues.push(data);
+        }
+
+        this._ongoingPackage--;
+        console.log(this._ongoingPackage, ' - conclude', this._finalized, this.attachIsCalled);
+        if (this._finalized && this._ongoingPackage === 0 && this.attachIsCalled) {
+          this.destroy();
+        }
+      }
+    }
   }
 }
 
@@ -89,33 +122,34 @@ export class Sequence<T = void> implements IAttachment {
       return () => subscriptions.forEach(subscription => subscription.destroy());
     });
 
-    this.waitUntilAllSequencedDestroyed(activeSequences, () => mergedSequence.destroy());
+    this.waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence.executor.final());
     return mergedSequence;
   }
 
   static combine<const S extends readonly IStream<any>[]>(streams: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
   static combine<S extends Record<string, IStream<any>>>(streamsObject: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
   static combine<S extends Record<string, IStream<any>> | readonly IStream<any>[]>(input: S): Sequence<any> {
-    let streams = Object.values(streamsObject);
+    let isArray = Comparator.isArray(input);
+    let streams = Object.values(input);
     let activeStreams = this.validateAndConvertToSet(streams);
 
-    let latestValues: any = {};
-    let keys = Object.keys(streamsObject);
+    let latestValues: any = isArray ? [] : {};
+    let keys = Object.keys(input);
     let unresolvedKeys = new Set(keys);
 
     let subscriptions: IAttachment[] = [];
     let combinedSequence = Sequence.create<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : never }>(resolve => {
       keys.forEach(key => {
-        let stream = streamsObject[key];
+        let stream = (input as any)[key];
         let subscription = stream
-          .subscribe(data => {
+          .subscribe((data: any) => {
             latestValues[key] = data;
             if (unresolvedKeys.size === 0) {
-              resolve(this.shallowCopy(latestValues));
+              resolve(isArray ? [...latestValues] : this.shallowCopy(latestValues));
             } else {
               unresolvedKeys.delete(key);
               if (unresolvedKeys.size === 0) {
-                resolve(this.shallowCopy(latestValues));
+                resolve(isArray ? [...latestValues] : this.shallowCopy(latestValues));
               }
             }
           })
@@ -126,7 +160,8 @@ export class Sequence<T = void> implements IAttachment {
       return () => subscriptions.forEach(subscription => subscription.destroy());
     });
 
-    this.waitUntilAllSequencedDestroyed(activeStreams, () => combinedSequence.destroy());
+    this.waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence.executor.final());
+
     return combinedSequence;
   }
 
@@ -150,7 +185,7 @@ export class Sequence<T = void> implements IAttachment {
     return streamsSet;
   }
 
-  private static waitUntilAllSequencedDestroyed(streams: Set<IStream<unknown>>, callback: () => void): void {
+  private static waitUntilAllSequencesDestroyed(streams: Set<IStream<unknown>>, callback: () => void): void {
     let notifierFound = false;
     streams.forEach(stream => {
       if (stream instanceof Notifier) {
@@ -249,13 +284,15 @@ export class Sequence<T = void> implements IAttachment {
     let taken = 0;
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
-      if (taken < count) {
-        resolve(data);
-        taken++;
-      }
+      taken++;
 
       if (taken >= count) {
-        this.executor.destroy();
+        console.log('final');
+        this.executor.final();
+      }
+
+      if (taken <= count) {
+        resolve(data);
       }
     });
 

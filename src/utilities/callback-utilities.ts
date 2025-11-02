@@ -7,11 +7,6 @@ export class CallbackUtilities {
    * @param attachables Entities that will be waited until all of them to be destroyed
    * @param callback Called after all given entities are destroyed
    * @returns Sequence
-   *
-   * Sample:
-   *  CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3], () => {
-   *    // All entities are destroyed
-   *  }).attachToRoot();
    */
   static untilAllDestroyed(attachables: Attachable[]): Sequence {
     let allReducer = Reducer.createExistenceChecker();
