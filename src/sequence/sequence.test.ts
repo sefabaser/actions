@@ -99,15 +99,21 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .map((data, executor) => {
-            if (data === 1) {
-              return 'first';
-            } else {
-              executor.final();
-              return action1;
-            }
-          })
-          .map(() => action2)
+          .map((data, mainExecutor) =>
+            Sequence.create<string>((resolve, executor) => {
+              if (data === 1) {
+                resolve(data + 'map1');
+              } else {
+                mainExecutor.final();
+                action1.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+              }
+            })
+          )
+          .map(data =>
+            Sequence.create<string>((resolve, executor) => {
+              action2.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            })
+          )
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -116,27 +122,47 @@ describe('Sequence', () => {
         expect(action1.listenerCount).toEqual(1); // second package
         expect(action2.listenerCount).toEqual(1); // first package
 
-        action2.trigger('end first package');
-        expect(heap).toEqual(['end first package']);
+        action2.trigger('map2');
+        expect(heap).toEqual(['1map1map2']);
         expect(sequence.destroyed).toBeFalsy();
         expect(action1.listenerCount).toEqual(1);
         expect(action2.listenerCount).toEqual(0);
 
-        action1.trigger('second');
-        expect(heap).toEqual(['end first package']);
+        action1.trigger('map1');
+        expect(heap).toEqual(['1map1map2']);
         expect(sequence.destroyed).toBeFalsy();
         expect(action1.listenerCount).toEqual(0);
         expect(action2.listenerCount).toEqual(1);
 
-        action2.trigger('end second package');
-        expect(heap).toEqual(['end first package', 'end second package']);
+        action2.trigger('map2');
+        expect(heap).toEqual(['1map1map2', '2map1map2']);
         expect(sequence.destroyed).toBeTruthy();
         expect(action1.listenerCount).toEqual(0);
         expect(action2.listenerCount).toEqual(0);
       });
 
       test('finalization should cancel the packages that comes after the calling package', () => {
-        // TODO
+        let action = new Action<string>();
+
+        let heap: string[] = [];
+        Sequence.create<number>(resolve => {
+          resolve(1);
+          resolve(2);
+        })
+          .map(data =>
+            Sequence.create<string>((resolve, executor) => {
+              action.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            })
+          )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+        expect(action.listenerCount).toEqual(2);
+
+        action.trigger('a');
+        expect(heap).toEqual(['1a', '2a']);
+        expect(action.listenerCount).toEqual(0);
       });
     });
 
