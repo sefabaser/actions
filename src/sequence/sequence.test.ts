@@ -6,7 +6,7 @@ import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { ISequenceExecutor, Sequence } from './sequence';
+import { Sequence } from './sequence';
 
 describe('Sequence', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
@@ -61,21 +61,6 @@ describe('Sequence', () => {
     });
 
     describe('Finalization', () => {
-      test('after finalized no new resolution should be accepted', () => {
-        let resolve!: () => void;
-        let executor!: ISequenceExecutor;
-
-        Sequence.create<void>((r, e) => {
-          resolve = r;
-          executor = e;
-        }).attachToRoot();
-
-        executor.final();
-        expect(() => {
-          resolve();
-        }).toThrow('Sequence: No new resolution is accepted after a sequence finalized!');
-      });
-
       test('when sequence is finalized it should destroy itself and its pipeline', async () => {
         let heap: unknown[] = [];
 
@@ -92,8 +77,62 @@ describe('Sequence', () => {
         expect(sequence['executor']['_pipeline']).toEqual(undefined);
       });
 
+      test('after finalized no new resolution should take effect', () => {
+        let heap: string[] = [];
+        Sequence.create<string>((resolve, executor) => {
+          resolve('1');
+          executor.final();
+          resolve('2');
+        })
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        expect(heap).toEqual(['1']);
+      });
+
       test('finalization should wait the calling package and the ones before it to complete', () => {
-        // TODO
+        let action1 = new Action<string>();
+        let action2 = new Action<string>();
+
+        let heap: string[] = [];
+        let sequence = Sequence.create<number>(resolve => {
+          resolve(1);
+          resolve(2);
+        })
+          .map((data, executor) => {
+            if (data === 1) {
+              return 'first';
+            } else {
+              executor.final();
+              return action1;
+            }
+          })
+          .map(() => action2)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(1); // second package
+        expect(action2.listenerCount).toEqual(1); // first package
+
+        action2.trigger('end first package');
+        expect(heap).toEqual(['end first package']);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(1);
+        expect(action2.listenerCount).toEqual(0);
+
+        action1.trigger('second');
+        expect(heap).toEqual(['end first package']);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(1);
+
+        action2.trigger('end second package');
+        expect(heap).toEqual(['end first package', 'end second package']);
+        expect(sequence.destroyed).toBeTruthy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
       });
 
       test('finalization should cancel the packages that comes after the calling package', () => {
