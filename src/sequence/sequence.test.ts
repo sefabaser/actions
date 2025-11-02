@@ -6,7 +6,7 @@ import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { Sequence } from './sequence';
+import { ISequenceExecutor, Sequence } from './sequence';
 
 describe('Sequence', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
@@ -61,22 +61,22 @@ describe('Sequence', () => {
     });
 
     describe('Finalization', () => {
-      test('finalizing after resolve', () => {
-        let triggered = false;
-        let sequance = Sequence.create<void>((resolve, executor) => {
-          resolve();
-          executor.final();
-        })
-          .read(() => {
-            triggered = true;
-          })
-          .attachToRoot();
+      test('after finalized no new resolution should be accepted', () => {
+        let resolve!: () => void;
+        let executor!: ISequenceExecutor;
 
-        expect(sequance.destroyed).toBeTruthy();
-        expect(triggered).toBeTruthy();
+        Sequence.create<void>((r, e) => {
+          resolve = r;
+          executor = e;
+        }).attachToRoot();
+
+        executor.final();
+        expect(() => {
+          resolve();
+        }).toThrow('Sequence: No new resolution is accepted after a sequence finalized!');
       });
 
-      test('when sequence is finalized the pipeline should also be destroyed after all operations complete', async () => {
+      test('when sequence is finalized it should destroy itself and its pipeline', async () => {
         let heap: unknown[] = [];
 
         let sequence = Sequence.create<number>((resolve, executor) => {
@@ -88,39 +88,49 @@ describe('Sequence', () => {
 
         await delayedCalls.waitForAllPromises();
         expect(heap).toEqual([1]);
+        expect(sequence.destroyed).toBeTruthy();
         expect(sequence['executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('finalization should wait the calling package and the ones before it to complete', () => {
+        // TODO
+      });
+
+      test('finalization should cancel the packages that comes after the calling package', () => {
+        // TODO
       });
     });
 
     describe('Destruction', () => {
       test('destroying sequence', () => {
-        let sequance = Sequence.create<void>(resolve => resolve()).attachToRoot();
+        let sequence = Sequence.create<void>(resolve => resolve()).attachToRoot();
 
-        expect(sequance.destroyed).toBeFalsy();
-        sequance.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeFalsy();
+        sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence['executor']['_pipeline']).toEqual(undefined);
       });
 
       test('destroying parent should destroy sequence', () => {
         let parent = new Attachable().attachToRoot();
 
-        let sequance = Sequence.create<void>(resolve => resolve()).attach(parent);
+        let sequence = Sequence.create<void>(resolve => resolve()).attach(parent);
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         parent.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('destroy sequence callback', () => {
         let triggered = false;
-        let sequance = Sequence.create<void>(() => {
+        let sequence = Sequence.create<void>(() => {
           return () => {
             triggered = true;
           };
         }).attachToRoot();
 
         expect(triggered).toBeFalsy();
-        sequance.destroy();
+        sequence.destroy();
         expect(triggered).toBeTruthy();
       });
 
@@ -359,34 +369,34 @@ describe('Sequence', () => {
 
     describe('Destruction', () => {
       test('destroying sequence', () => {
-        let sequance = Sequence.create<void>(resolve => resolve())
+        let sequence = Sequence.create<void>(resolve => resolve())
           .read(() => {})
           .read(() => {})
           .read(() => {})
           .attachToRoot();
 
-        expect(sequance.destroyed).toBeFalsy();
-        sequance.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeFalsy();
+        sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('destroying parent should destroy sequence', () => {
         let parent = new Attachable().attachToRoot();
 
-        let sequance = Sequence.create<void>(resolve => resolve())
+        let sequence = Sequence.create<void>(resolve => resolve())
           .read(() => {})
           .read(() => {})
           .read(() => {})
           .attach(parent);
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         parent.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('destroy sequence callback', () => {
         let triggered = false;
-        let sequance = Sequence.create<void>(resolve => {
+        let sequence = Sequence.create<void>(resolve => {
           resolve();
           return () => {
             triggered = true;
@@ -398,7 +408,7 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(triggered).toBeFalsy();
-        sequance.destroy();
+        sequence.destroy();
         expect(triggered).toBeTruthy();
       });
     });
@@ -647,20 +657,20 @@ describe('Sequence', () => {
     describe('Destruction', () => {
       describe('sync', () => {
         test('destroying sequence', () => {
-          let sequance = Sequence.create<void>(resolve => resolve())
+          let sequence = Sequence.create<void>(resolve => resolve())
             .map(() => {})
             .map(() => {})
             .map(() => {})
             .attachToRoot();
 
-          expect(sequance.destroyed).toBeFalsy();
-          sequance.destroy();
-          expect(sequance.destroyed).toBeTruthy();
+          expect(sequence.destroyed).toBeFalsy();
+          sequence.destroy();
+          expect(sequence.destroyed).toBeTruthy();
         });
 
         test('destroy sequence callback', () => {
           let triggered = false;
-          let sequance = Sequence.create<void>(resolve => {
+          let sequence = Sequence.create<void>(resolve => {
             resolve();
             return () => {
               triggered = true;
@@ -672,22 +682,22 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(triggered).toBeFalsy();
-          sequance.destroy();
+          sequence.destroy();
           expect(triggered).toBeTruthy();
         });
 
         test('destroying parent should destroy sequence', () => {
           let parent = new Attachable().attachToRoot();
 
-          let sequance = Sequence.create<void>(resolve => resolve())
+          let sequence = Sequence.create<void>(resolve => resolve())
             .map(() => {})
             .map(() => {})
             .map(() => {})
             .attach(parent);
 
-          expect(sequance.destroyed).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
           parent.destroy();
-          expect(sequance.destroyed).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
         });
       });
 
@@ -756,8 +766,6 @@ describe('Sequence', () => {
           innerResolves.forEach(resolve => resolve(''));
           expect(triggered).toEqual(false);
         });
-
-        // TODO: race condition, first trigger resolves later than the second
       });
 
       describe('map returns notifier', () => {
@@ -805,14 +813,6 @@ describe('Sequence', () => {
           action.trigger('');
           expect(triggered).toEqual(false);
         });
-      });
-
-      describe('race conditions', () => {
-        // TODO: first trigger resolves later than the second
-        // How to deal? Options
-        //    - trigger should cancel all previous ongoing operations
-        //    - a completed map should cancel previously ongoing same map step's operations
-        //    - map should wait the previous operation to complete
       });
 
       describe('destroying pipeline', () => {
@@ -884,7 +884,7 @@ describe('Sequence', () => {
         let variable = new Variable<number>(1);
         let triggered = false;
 
-        let sequance = Sequence.create<void>((resolve, executor) => {
+        let sequence = Sequence.create<void>((resolve, executor) => {
           resolve();
           executor.final();
         })
@@ -897,7 +897,7 @@ describe('Sequence', () => {
           })
           .attachToRoot();
 
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
         expect(variable.listenerCount).toEqual(0);
         expect(triggered).toBeTruthy();
       });
@@ -907,7 +907,7 @@ describe('Sequence', () => {
         let triggered = false;
 
         let resolve!: () => void;
-        let sequance = Sequence.create<void>(r => {
+        let sequence = Sequence.create<void>(r => {
           resolve = r;
         })
           .map((_, executor) => {
@@ -919,19 +919,19 @@ describe('Sequence', () => {
           })
           .attachToRoot();
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         expect(variable.listenerCount).toEqual(0);
         expect(triggered).toBeFalsy();
 
         resolve();
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         expect(variable.listenerCount).toEqual(1);
         expect(triggered).toBeTruthy();
 
-        sequance.destroy();
+        sequence.destroy();
 
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
         expect(variable.listenerCount).toEqual(0);
       });
     });
@@ -1074,34 +1074,34 @@ describe('Sequence', () => {
 
     describe('Destruction', () => {
       test('destroying sequence', () => {
-        let sequance = Sequence.create<void>(resolve => resolve())
+        let sequence = Sequence.create<void>(resolve => resolve())
           .filter(() => true)
           .filter(() => true)
           .filter(() => true)
           .attachToRoot();
 
-        expect(sequance.destroyed).toBeFalsy();
-        sequance.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeFalsy();
+        sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('destroying parent should destroy sequence', () => {
         let parent = new Attachable().attachToRoot();
 
-        let sequance = Sequence.create<void>(resolve => resolve())
+        let sequence = Sequence.create<void>(resolve => resolve())
           .filter(() => true)
           .filter(() => true)
           .filter(() => true)
           .attach(parent);
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         parent.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('destroy sequence callback', () => {
         let triggered = false;
-        let sequance = Sequence.create<void>(resolve => {
+        let sequence = Sequence.create<void>(resolve => {
           resolve();
           return () => {
             triggered = true;
@@ -1113,7 +1113,7 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(triggered).toBeFalsy();
-        sequance.destroy();
+        sequence.destroy();
         expect(triggered).toBeTruthy();
       });
     });
@@ -1207,18 +1207,18 @@ describe('Sequence', () => {
 
     describe('Destruction', () => {
       test('destroying sequence', () => {
-        let sequance = Sequence.create<void>(resolve => resolve())
+        let sequence = Sequence.create<void>(resolve => resolve())
           .take(2)
           .attachToRoot();
 
-        expect(sequance.destroyed).toBeFalsy();
-        sequance.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeFalsy();
+        sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('destroy sequence callback', () => {
         let triggered = false;
-        let sequance = Sequence.create<void>(resolve => {
+        let sequence = Sequence.create<void>(resolve => {
           resolve();
           return () => {
             triggered = true;
@@ -1226,9 +1226,9 @@ describe('Sequence', () => {
         });
 
         expect(triggered).toBeFalsy();
-        sequance.take(1);
+        sequence.take(1);
         expect(triggered).toBeTruthy();
-        sequance.attachToRoot();
+        sequence.attachToRoot();
       });
 
       test('directly resolved sequence callback', () => {
@@ -1254,26 +1254,26 @@ describe('Sequence', () => {
       test('destroying parent should destroy sequence', () => {
         let parent = new Attachable().attachToRoot();
 
-        let sequance = Sequence.create<void>(resolve => resolve())
+        let sequence = Sequence.create<void>(resolve => resolve())
           .take(2)
           .attach(parent);
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         parent.destroy();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       test('completing takes should destroy the sequence', () => {
         let resolve!: () => void;
-        let sequance = Sequence.create<void>(r => {
+        let sequence = Sequence.create<void>(r => {
           resolve = r;
         })
           .take(1)
           .attachToRoot();
 
-        expect(sequance.destroyed).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
         resolve();
-        expect(sequance.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
       // TODO: take should destroy the sequence after all ongoing operations completed
@@ -1398,7 +1398,7 @@ describe('Sequence', () => {
     });
 
     describe('Edge Cases', () => {
-      test('merged sequances should not need to be attached manually', () => {
+      test('merged sequences should not need to be attached manually', () => {
         vi.useFakeTimers();
         expect(() => {
           let sequence1 = Sequence.create(() => {});
@@ -1554,7 +1554,7 @@ describe('Sequence', () => {
     });
 
     describe('Edge Cases', () => {
-      test('combined sequances should not need to be attached manually', () => {
+      test('combined sequences should not need to be attached manually', () => {
         vi.useFakeTimers();
         expect(() => {
           let sequence1 = Sequence.create<string>(() => {});

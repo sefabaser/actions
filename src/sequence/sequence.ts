@@ -205,12 +205,12 @@ export class Sequence<T = void> implements IAttachment {
   private linked = false;
   private constructor(private executor: SequenceExecuter) {}
 
-  read(callback: (data: T) => void): Sequence<T> {
+  read(callback: (data: T, sequenceExecutor: ISequenceExecutor) => void): Sequence<T> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, T>((data, resolve) => {
       try {
-        callback(data);
+        callback(data, this.executor);
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;
@@ -221,14 +221,14 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {
+  filter(callback: (data: T, previousValue: T | undefined, sequenceExecutor: ISequenceExecutor) => boolean): Sequence<T> {
     this.prepareToBeLinked();
 
     let previousValue: T | undefined;
     this.executor.enterPipeline<T, T>((data, resolve) => {
       let response: boolean;
       try {
-        response = callback(data, previousValue);
+        response = callback(data, previousValue, this.executor);
         previousValue = data;
       } catch (e) {
         console.error('Sequence callback function error: ', e);
