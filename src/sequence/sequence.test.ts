@@ -973,6 +973,30 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeTruthy();
         expect(variable.listenerCount).toEqual(0);
       });
+
+      test('two packages waiting for same action to be triggered should pass together to the next link', () => {
+        let action = new Action<string>();
+
+        let heap: string[] = [];
+        Sequence.create<number>(resolve => {
+          resolve(1);
+          resolve(2);
+        })
+          .map(data =>
+            Sequence.create<string>((resolve, executor) => {
+              action.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            })
+          )
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+        expect(action.listenerCount).toEqual(2);
+
+        action.trigger('a');
+        expect(heap).toEqual(['1a', '2a']);
+        expect(action.listenerCount).toEqual(0);
+      });
     });
   });
 
