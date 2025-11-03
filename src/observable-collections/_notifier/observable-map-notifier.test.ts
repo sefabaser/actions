@@ -61,9 +61,12 @@ describe('ObservableMapNotifier', () => {
       notifier['map'].set(1, 'test');
       let triggeredWith: string | undefined;
 
-      let subscription = notifier.waitUntilAdded(1).read(value => {
-        triggeredWith = value;
-      });
+      let subscription = notifier
+        .waitUntilAdded(1)
+        .read(value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
 
       expect(triggeredWith).toBe('test');
       expect(subscription.destroyed).toBe(true);
@@ -149,9 +152,12 @@ describe('ObservableMapNotifier', () => {
 
       notifier['map'].set(1, 'test');
 
-      notifier.waitUntilAdded(1).read(() => {
-        throw new Error('Test error');
-      });
+      notifier
+        .waitUntilAdded(1)
+        .read(() => {
+          throw new Error('Test error');
+        })
+        .attachToRoot();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Sequence callback function error: ', expect.any(Error));
 
@@ -181,9 +187,12 @@ describe('ObservableMapNotifier', () => {
     test('immediate callback if item does not exist', () => {
       let triggered = false;
 
-      let subscription = notifier.waitUntilRemoved(1).read(() => {
-        triggered = true;
-      });
+      let subscription = notifier
+        .waitUntilRemoved(1)
+        .read(() => {
+          triggered = true;
+        })
+        .attachToRoot();
 
       expect(triggered).toBe(true);
       expect(subscription.destroyed).toBe(true);
@@ -272,9 +281,12 @@ describe('ObservableMapNotifier', () => {
       let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       let subscription2Called = false;
 
-      notifier.waitUntilRemoved(1).read(() => {
-        throw new Error('Test error');
-      });
+      notifier
+        .waitUntilRemoved(1)
+        .read(() => {
+          throw new Error('Test error');
+        })
+        .attachToRoot();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Sequence callback function error: ', expect.any(Error));
 

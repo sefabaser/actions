@@ -55,9 +55,12 @@ describe('ObservableSet', () => {
   test('should return waitUntilRemovedSync if item is added', () => {
     let set = new ObservableSet<number>();
     let called = false;
-    set.waitUntilRemoved(1).read(() => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .read(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -66,9 +69,12 @@ describe('ObservableSet', () => {
     set.add(1);
     set.delete(1);
     let called = false;
-    set.waitUntilRemoved(1).read(() => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .read(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 

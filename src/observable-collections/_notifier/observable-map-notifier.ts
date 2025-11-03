@@ -50,10 +50,10 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   }
 
   waitUntilAdded(value: KeyType): Sequence<ValueType> {
-    return Sequence.create<ValueType>((resolve, attachable) => {
+    return Sequence.create<ValueType>((resolve, executor) => {
       let resolveAndDestroy = () => {
         resolve(this.map.get(value)!);
-        attachable.destroy();
+        executor.final();
       };
 
       if (this.map.has(value)) {
@@ -74,10 +74,10 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   }
 
   waitUntilRemoved(value: KeyType): Sequence<void> {
-    return Sequence.create((resolve, attachable) => {
+    return Sequence.create((resolve, executor) => {
       let resolveAndDestroy = () => {
         resolve();
-        attachable.destroy();
+        executor.final();
       };
 
       if (!this.map.has(value)) {

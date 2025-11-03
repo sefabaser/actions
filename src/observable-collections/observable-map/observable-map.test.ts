@@ -37,9 +37,12 @@ describe('ObservableMap', () => {
     let set = new ObservableMap<number, string>();
     set.set(1, 'test');
     let called = false;
-    set.waitUntilAdded(1).read(() => {
-      called = true;
-    });
+    set
+      .waitUntilAdded(1)
+      .read(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -59,9 +62,12 @@ describe('ObservableMap', () => {
   test('should return waitUntilRemovedSync if item is not set', async () => {
     let set = new ObservableMap<number, string>();
     let called = false;
-    set.waitUntilRemoved(1).read(() => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .read(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -70,9 +76,12 @@ describe('ObservableMap', () => {
     let called = false;
     set.set(1, 'test');
     set.delete(1);
-    set.waitUntilRemoved(1).read(() => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .read(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
