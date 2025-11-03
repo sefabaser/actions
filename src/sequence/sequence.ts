@@ -22,18 +22,20 @@ class SequenceContext implements ISequenceContext {
     return this._attachable;
   }
 
-  private finalIsCalled?: boolean;
-
-  constructor(private executor: SequenceExecuter) {}
-
-  final(): void {
-    this.finalIsCalled = true;
+  constructor(
+    private executor: SequenceExecuter,
+    final: () => void
+  ) {
+    this.final = final;
   }
+
+  final(): void {}
 }
 
 class SequencePackage {
   data: unknown;
   pipelineIndex = 0;
+  ongoingContext?: SequenceContext;
   pending?: boolean;
   behind?: SequencePackage;
 }
@@ -51,6 +53,8 @@ class SequenceExecuter extends Attachable {
       super.destroy();
 
       this._pipeline = undefined as any;
+      this._headPackage = undefined;
+      this._tailPackage = undefined;
 
       let listeners = [...this.onDestroyListeners];
       this.onDestroyListeners.clear();
@@ -105,10 +109,21 @@ class SequenceExecuter extends Attachable {
 
   final(sequencePackage?: SequencePackage) {
     console.log('final');
-    this._finalized = true;
     if (this._headPackage === undefined && this.attachIsCalled) {
-      console.log('final destroy');
       this.destroy();
+      return;
+    }
+
+    this._finalized = true;
+    if (sequencePackage) {
+      let iteratedPackage = sequencePackage.behind;
+      while (iteratedPackage) {
+        iteratedPackage.ongoingContext?.['_attachable']?.destroy();
+        iteratedPackage = iteratedPackage.behind;
+      }
+
+      sequencePackage.behind = undefined;
+      this._tailPackage = sequencePackage;
     }
   }
 
@@ -142,23 +157,23 @@ class SequenceExecuter extends Attachable {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
 
-        let context = new SequenceContext(this);
+        let context = new SequenceContext(this, () => {
+          this.final(sequencePackage);
+        });
+        sequencePackage.ongoingContext = context;
+
         pipelineItem(sequencePackage.data, context, returnData => {
           context['_attachable']?.destroy();
-          if (context['finalIsCalled']) {
-            this.final(sequencePackage);
-          }
+          sequencePackage.ongoingContext = undefined;
 
           sequencePackage.data = returnData;
           sequencePackage.pipelineIndex++;
-          console.log(returnData, ' return data');
           this.iteratePackage(sequencePackage);
         });
       } else {
         if (!this.attachIsCalled) {
           if (!sequencePackage.pending) {
             sequencePackage.pending = true;
-            console.log('pending');
           }
         } else {
           console.log('package destroy');
@@ -394,25 +409,7 @@ export class Sequence<T = void> implements IAttachment {
         // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
         if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
           console.log(' returned stream');
-          let destroyedDirectly = false;
-          let destroyListener = () => subscription.destroy();
-
-          let subscription: { destroy: () => void } = undefined as any;
-          subscription = executionReturn
-            .subscribe(innerData => {
-              if (subscription) {
-                subscription.destroy();
-                this.executor.onDestroyListeners.delete(destroyListener);
-              } else {
-                destroyedDirectly = true;
-              }
-
-              resolve(innerData);
-            })
-            .attachToRoot();
-          if (!destroyedDirectly) {
-            this.executor.onDestroyListeners.add(destroyListener);
-          }
+          executionReturn.subscribe(innerData => resolve(innerData)).attach(context.attachable);
         } else {
           resolve(executionReturn);
         }

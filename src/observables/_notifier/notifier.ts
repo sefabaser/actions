@@ -58,8 +58,8 @@ export class Notifier<T> {
   }
 
   toSequence(): Sequence<T> {
-    return Sequence.create<T>((resolve, attachment) => {
-      this.subscribe(resolve).attach(attachment);
+    return Sequence.create<T>((resolve, context) => {
+      this.subscribe(resolve).attach(context.attachable);
     });
   }
 

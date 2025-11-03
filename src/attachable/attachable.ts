@@ -71,6 +71,7 @@ export class Attachable implements IAttachable {
   }
 
   attach(parent: IAttachable | string): this {
+    console.log('  --------  ', parent);
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
