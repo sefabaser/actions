@@ -5,7 +5,7 @@ import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/not
 
 export type IStream<T = void> = Notifier<T> | Sequence<T>;
 
-type SequencePipelineItem<A, B> = (data: A, sequencePackage: SequencePackage, callback: (returnData: B) => void) => void;
+type SequencePipelineItem<A, B> = (data: A, context: ISequenceContext, callback: (returnData: B) => void) => void;
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
 
 export interface ISequenceContext {
@@ -16,35 +16,26 @@ export interface ISequenceContext {
 class SequenceContext implements ISequenceContext {
   private _attachable?: IAttachable;
   get attachable(): IAttachable {
-    // TODO: test performance lazy vs prebuild.
     if (!this._attachable) {
-      this._attachable = new Attachable().attach(this.sequencePackage.executor);
+      this._attachable = new Attachable().attach(this.executor);
     }
-    console.log('  / attachable create');
     return this._attachable;
   }
 
-  constructor(private sequencePackage: SequencePackage) {}
+  private finalIsCalled?: boolean;
+
+  constructor(private executor: SequenceExecuter) {}
 
   final(): void {
-    this.sequencePackage.executor.final(this.sequencePackage);
+    this.finalIsCalled = true;
   }
 }
 
 class SequencePackage {
-  context = new SequenceContext(this);
   data: unknown;
   pipelineIndex = 0;
   pending?: boolean;
   behind?: SequencePackage;
-
-  constructor(public executor: SequenceExecuter) {}
-
-  destroy(): void {
-    this.context['_attachable']?.destroy();
-    this.behind = undefined;
-    console.log('  / attachable destroy');
-  }
 }
 
 class SequenceExecuter extends Attachable {
@@ -70,7 +61,7 @@ class SequenceExecuter extends Attachable {
 
   trigger(data: unknown): void {
     if (!this._finalized) {
-      let sequencePackage = new SequencePackage(this);
+      let sequencePackage = new SequencePackage();
       if (this._headPackage) {
         this._headPackage.behind = sequencePackage;
       } else {
@@ -122,7 +113,6 @@ class SequenceExecuter extends Attachable {
 
   private onAttach(): void {
     while (this._headPackage?.pending) {
-      this._headPackage.destroy();
       this._headPackage = this._headPackage.behind;
     }
 
@@ -137,7 +127,14 @@ class SequenceExecuter extends Attachable {
     if (!this.destroyed) {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
-        pipelineItem(sequencePackage.data, sequencePackage, returnData => {
+
+        let context = new SequenceContext(this);
+        pipelineItem(sequencePackage.data, context, returnData => {
+          context['_attachable']?.destroy();
+          if (context['finalIsCalled']) {
+            this.final(sequencePackage);
+          }
+
           sequencePackage.data = returnData;
           sequencePackage.pipelineIndex++;
           console.log(returnData, ' return data');
@@ -150,7 +147,6 @@ class SequenceExecuter extends Attachable {
             console.log('pending');
           }
         } else {
-          sequencePackage.destroy();
           console.log('package destroy');
           if (this._headPackage === sequencePackage) {
             this._headPackage = sequencePackage.behind;
@@ -302,9 +298,9 @@ export class Sequence<T = void> implements IAttachment {
   read(callback: (data: T, context: ISequenceContext) => void): Sequence<T> {
     this.prepareToBeLinked();
 
-    this.executor.enterPipeline<T, T>((data, sequencePackage, resolve) => {
+    this.executor.enterPipeline<T, T>((data, context, resolve) => {
       try {
-        callback(data, sequencePackage.context);
+        callback(data, context);
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;
@@ -319,10 +315,10 @@ export class Sequence<T = void> implements IAttachment {
     this.prepareToBeLinked();
 
     let previousValue: T | undefined;
-    this.executor.enterPipeline<T, T>((data, sequencePackage, resolve) => {
+    this.executor.enterPipeline<T, T>((data, context, resolve) => {
       let response: boolean;
       try {
-        response = callback(data, previousValue, sequencePackage.context);
+        response = callback(data, previousValue, context);
         previousValue = data;
       } catch (e) {
         console.error('Sequence callback function error: ', e);
@@ -341,11 +337,11 @@ export class Sequence<T = void> implements IAttachment {
 
     let taken = 0;
 
-    this.executor.enterPipeline<T, T>((data, sequencePackage, resolve) => {
+    this.executor.enterPipeline<T, T>((data, context, resolve) => {
       taken++;
 
       if (taken >= count) {
-        this.executor.final(sequencePackage);
+        context.final();
       }
 
       if (taken <= count) {
@@ -367,11 +363,11 @@ export class Sequence<T = void> implements IAttachment {
       ...partialOptions
     };
 
-    this.executor.enterPipeline<T, K>((data, sequencePackage, resolve) => {
+    this.executor.enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: K | IStream<K>;
 
       try {
-        executionReturn = callback(data, sequencePackage.context);
+        executionReturn = callback(data, context);
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;
@@ -439,4 +435,4 @@ export class Sequence<T = void> implements IAttachment {
 }
 
 /** @internal */
-export const ClassNamesForMemoryLeakTest = [SequenceExecuter.name, SequencePackage.name, SequenceContext.name];
+export const ClassNamesForMemoryLeakTest = [SequenceExecuter.name, SequencePackage.name];

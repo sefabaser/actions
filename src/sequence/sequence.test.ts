@@ -1061,7 +1061,9 @@ describe('Sequence', () => {
             context.final();
           })
             .map(value =>
-              Sequence.create<string>(r2 => delayedCalls.callEachDelayed([value + 'a'], delayedValue => r2(delayedValue)))
+              Sequence.create<string>(resolve =>
+                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
+              )
             )
             .read(value => heap.push(value))
             .attachToRoot();
@@ -1154,6 +1156,7 @@ describe('Sequence', () => {
 
         expect(sequence.destroyed).toBeTruthy();
         expect(variable.listenerCount).toEqual(0);
+        expect(action.listenerCount).toEqual(0);
       });
 
       test('two packages waiting for same action to be triggered should pass together to the next link', () => {
@@ -1514,7 +1517,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeTruthy();
       });
 
-      test('take should destroy the sequence after all ongoing operations completed and cancel all packages coming after', () => {
+      test('take should destroy the sequence after all ongoing operations completed and cancel all packages coming behind', () => {
         let action1 = new Action<string>();
         let action2 = new Action<string>();
         let actionlast = new Action<string>();
