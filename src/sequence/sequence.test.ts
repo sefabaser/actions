@@ -683,13 +683,16 @@ describe('Sequence', () => {
           Sequence.create<number>(resolve => {
             resolve(1);
             resolve(2);
+            resolve(3);
           })
             .map(value =>
               Sequence.create<number>((resolve, executor) => {
                 if (value === 1) {
                   action1.subscribe(() => resolve(value)).attach(executor);
-                } else {
+                } else if (value === 2) {
                   action2.subscribe(() => resolve(value)).attach(executor);
+                } else {
+                  resolve(value);
                 }
               })
             )
@@ -699,7 +702,7 @@ describe('Sequence', () => {
           action2.trigger();
           action1.trigger();
 
-          expect(heap).toEqual([1, 2]);
+          expect(heap).toEqual([1, 2, 3]);
         });
 
         test(`blockToEnsureCallOrder false option`, () => {
@@ -813,12 +816,15 @@ describe('Sequence', () => {
           Sequence.create<number>(resolve => {
             resolve(1);
             resolve(2);
+            resolve(3);
           })
             .map(value => {
               if (value === 1) {
                 return action1.map(() => value);
-              } else {
+              } else if (value === 2) {
                 return action2.map(() => value);
+              } else {
+                return value;
               }
             })
             .read(value => heap.push(value))
@@ -827,7 +833,7 @@ describe('Sequence', () => {
           action2.trigger();
           action1.trigger();
 
-          expect(heap).toEqual([1, 2]);
+          expect(heap).toEqual([1, 2, 3]);
         });
 
         test(`blockToEnsureCallOrder false option`, () => {
