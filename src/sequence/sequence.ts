@@ -67,12 +67,18 @@ class SequenceExecuter extends Attachable implements ISequenceExecutor {
   }
 
   final() {
+    console.log('final');
     this._finalized = true;
+    if (this._ongoingPackage === 0 && this.attachIsCalled) {
+      console.log('final destroy');
+      this.destroy();
+    }
   }
 
   attach(parent: IAttachable | string): this {
     this._pendingValues = undefined;
     if (this._finalized && this._ongoingPackage === 0) {
+      console.log('attach destroy');
       this.destroy();
     }
     return super.attach(parent);
@@ -81,6 +87,7 @@ class SequenceExecuter extends Attachable implements ISequenceExecutor {
   attachToRoot(): this {
     this._pendingValues = undefined;
     if (this._finalized && this._ongoingPackage === 0) {
+      console.log('attach to root destroy');
       this.destroy();
     }
     return super.attachToRoot();
@@ -102,6 +109,7 @@ class SequenceExecuter extends Attachable implements ISequenceExecutor {
         this._ongoingPackage--;
         console.log(this._ongoingPackage, ' - conclude', this._finalized, this.attachIsCalled);
         if (this._finalized && this._ongoingPackage === 0 && this.attachIsCalled) {
+          console.log('conclude destroy');
           this.destroy();
         }
       }
@@ -287,7 +295,6 @@ export class Sequence<T = void> implements IAttachment {
       taken++;
 
       if (taken >= count) {
-        console.log('final');
         this.executor.final();
       }
 

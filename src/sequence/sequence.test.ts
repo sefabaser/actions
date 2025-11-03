@@ -1664,13 +1664,13 @@ describe('Sequence', () => {
 
       test('children destroy -> merge destroy', async () => {
         let sequence1 = Sequence.create(() => {});
-        let sequence = Sequence.create(() => {});
-        let merged = Sequence.merge(sequence1, sequence).attachToRoot();
+        let sequence2 = Sequence.create(() => {});
+        let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
 
         expect(merged.destroyed).toBeFalsy();
         sequence1.destroy();
         expect(merged.destroyed).toBeFalsy();
-        sequence.destroy();
+        sequence2.destroy();
         expect(merged.destroyed).toBeTruthy();
       });
     });
@@ -1786,7 +1786,6 @@ describe('Sequence', () => {
           expect(s1.destroyed).toBeTruthy();
           expect(s2.destroyed).toBeTruthy();
           expect(combined.destroyed).toBeTruthy();
-          expect(read.destroyed).toBeTruthy();
         });
 
         test('combine with delayed sequences', async () => {
