@@ -73,7 +73,7 @@ describe('Sequence', () => {
 
         expect(heap).toEqual([1]);
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['context']['_pipeline']).toEqual(undefined);
+        expect(sequence['executor']['_pipeline']).toEqual(undefined);
       });
 
       test('after finalized no new resolution should take effect', () => {
@@ -242,7 +242,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeFalsy();
         sequence.destroy();
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['context']['_pipeline']).toEqual(undefined);
+        expect(sequence['executor']['_pipeline']).toEqual(undefined);
       });
 
       test('destroying parent should destroy sequence', () => {

@@ -35,6 +35,7 @@ class SequencePackage {
 
   data: unknown;
   pipelineIndex = 0;
+  pending?: boolean;
   behind?: SequencePackage;
 
   constructor(public executor: SequenceExecuter) {
@@ -50,16 +51,14 @@ class SequenceExecuter extends Attachable {
   onDestroyListeners = new Set<() => void>();
 
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
-  private _pendingPackages: SequencePackage[] | undefined;
   private _finalized?: boolean;
-  private _tailPackage?: SequencePackage;
+  private _headPackage?: SequencePackage;
 
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
 
       this._pipeline = undefined as any;
-      this._pendingPackages = undefined;
 
       let listeners = [...this.onDestroyListeners];
       this.onDestroyListeners.clear();
@@ -72,14 +71,14 @@ class SequenceExecuter extends Attachable {
   trigger(data: unknown): void {
     if (!this._finalized) {
       let sequencePackage = new SequencePackage(this);
-      if (this._tailPackage) {
-        this._tailPackage.behind = sequencePackage;
+      if (this._headPackage) {
+        this._headPackage.behind = sequencePackage;
       } else {
-        this._tailPackage = sequencePackage;
+        this._headPackage = sequencePackage;
       }
 
       sequencePackage.data = data;
-      console.log(!!this._tailPackage, ' + initial trigger');
+      console.log(!!this._headPackage, ' + initial trigger');
       this.iteratePackage(sequencePackage);
     }
   }
@@ -91,14 +90,11 @@ class SequenceExecuter extends Attachable {
       }
 
       this._pipeline.push(item);
-      if (this._pendingPackages) {
-        let pendingPackages = this._pendingPackages;
-        this._pendingPackages = [];
-
-        for (let i = 0; i < pendingPackages.length; i++) {
-          console.log(!!this._tailPackage, ' + pending sequencePackage');
-          this.iteratePackage(pendingPackages[i]);
-        }
+      let sequencePackage = this._headPackage;
+      console.log(!!this._headPackage, ' enter pipeline');
+      while (sequencePackage?.pending) {
+        this.iteratePackage(sequencePackage);
+        sequencePackage = sequencePackage.behind;
       }
     }
   }
@@ -106,15 +102,19 @@ class SequenceExecuter extends Attachable {
   final(sequencePackage?: SequencePackage) {
     console.log('final');
     this._finalized = true;
-    if (this._tailPackage === undefined && this.attachIsCalled) {
+    if (this._headPackage === undefined && this.attachIsCalled) {
       console.log('final destroy');
       this.destroy();
     }
   }
 
   attach(parent: IAttachable | string): this {
-    this._pendingPackages = undefined;
-    if (this._finalized && this._tailPackage === undefined) {
+    while (this._headPackage?.pending) {
+      this._headPackage.destroy();
+      this._headPackage = this._headPackage.behind;
+    }
+
+    if (this._finalized && this._headPackage === undefined) {
       console.log('attach destroy');
       this.destroy();
     }
@@ -122,8 +122,12 @@ class SequenceExecuter extends Attachable {
   }
 
   attachToRoot(): this {
-    this._pendingPackages = undefined;
-    if (this._finalized && this._tailPackage === undefined) {
+    while (this._headPackage?.pending) {
+      this._headPackage.destroy();
+      this._headPackage = this._headPackage.behind;
+    }
+
+    if (this._finalized && this._headPackage === undefined) {
       console.log('attach to root destroy');
       this.destroy();
     }
@@ -141,22 +145,18 @@ class SequenceExecuter extends Attachable {
         });
       } else {
         if (!this.attachIsCalled) {
-          if (!this._pendingPackages) {
-            this._pendingPackages = [];
+          sequencePackage.pending = true;
+          console.log('pending');
+        } else {
+          sequencePackage.destroy();
+          if (this._headPackage === sequencePackage) {
+            this._headPackage = sequencePackage.behind;
           }
-          sequencePackage.pipelineIndex++;
-          this._pendingPackages.push(sequencePackage);
-        }
 
-        sequencePackage.destroy();
-        if (this._tailPackage === sequencePackage) {
-          this._tailPackage = undefined;
-        }
-
-        console.log(!!this._tailPackage, ' - conclude', this._finalized, this.attachIsCalled);
-        if (this._finalized && this._tailPackage === undefined && this.attachIsCalled) {
-          console.log('conclude destroy');
-          this.destroy();
+          if (this._finalized && this._headPackage === undefined) {
+            console.log('conclude destroy');
+            this.destroy();
+          }
         }
       }
     }
