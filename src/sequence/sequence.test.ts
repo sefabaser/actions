@@ -928,7 +928,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 delayedCalls.callEachDelayed([''], () => r(''));
               });
-              expect(innerSequence!['context']['_pipeline'].length).toEqual(0);
+              expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .map(() => {
@@ -937,7 +937,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['context']['_pipeline'].length).toEqual(1);
+          expect(innerSequence!['executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -959,7 +959,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['context']['_pipeline'].length).toEqual(0);
+              expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -971,7 +971,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['context']['_pipeline'].length).toEqual(1);
+            expect(innerSequence['executor']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -1119,8 +1119,9 @@ describe('Sequence', () => {
         expect(triggered).toBeTruthy();
       });
 
-      test('destroying subscriptions via attachmet, async sequence', () => {
+      test('attachments on the context attachable should be destroyed right after the package iteration step', () => {
         let variable = new Variable<number>(1);
+        let action = new Action<void>();
         let triggered = false;
 
         let resolve!: () => void;
@@ -1134,16 +1135,19 @@ describe('Sequence', () => {
               })
               .attach(context.attachable);
           })
+          .map(() => action)
           .attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
         expect(variable.listenerCount).toEqual(0);
+        expect(action.listenerCount).toEqual(0);
         expect(triggered).toBeFalsy();
 
         resolve();
 
         expect(sequence.destroyed).toBeFalsy();
-        expect(variable.listenerCount).toEqual(1);
+        expect(variable.listenerCount).toEqual(0);
+        expect(action.listenerCount).toEqual(1);
         expect(triggered).toBeTruthy();
 
         sequence.destroy();

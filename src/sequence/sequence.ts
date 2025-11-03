@@ -18,8 +18,9 @@ class SequenceContext implements ISequenceContext {
   get attachable(): IAttachable {
     // TODO: test performance lazy vs prebuild.
     if (!this._attachable) {
-      this._attachable = new Attachable();
+      this._attachable = new Attachable().attach(this.sequencePackage.executor);
     }
+    console.log('  / attachable create');
     return this._attachable;
   }
 
@@ -31,19 +32,18 @@ class SequenceContext implements ISequenceContext {
 }
 
 class SequencePackage {
-  readonly context: SequenceContext;
-
+  context = new SequenceContext(this);
   data: unknown;
   pipelineIndex = 0;
   pending?: boolean;
   behind?: SequencePackage;
 
-  constructor(public executor: SequenceExecuter) {
-    this.context = new SequenceContext(this);
-  }
+  constructor(public executor: SequenceExecuter) {}
 
   destroy(): void {
     this.context['_attachable']?.destroy();
+    this.behind = undefined;
+    console.log('  / attachable destroy');
   }
 }
 
@@ -94,6 +94,7 @@ class SequenceExecuter extends Attachable {
       console.log(' enter pipeline');
       while (sequencePackage?.pending) {
         console.log('    iterating pending');
+        sequencePackage.pending = false;
         this.iteratePackage(sequencePackage);
         sequencePackage = sequencePackage.behind;
       }
@@ -150,6 +151,7 @@ class SequenceExecuter extends Attachable {
           }
         } else {
           sequencePackage.destroy();
+          console.log('package destroy');
           if (this._headPackage === sequencePackage) {
             this._headPackage = sequencePackage.behind;
           }
@@ -378,6 +380,7 @@ export class Sequence<T = void> implements IAttachment {
       if (executionReturn && typeof executionReturn === 'object' && 'subscribe' in executionReturn) {
         // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
         if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
+          console.log(' returned stream');
           let destroyedDirectly = false;
           let destroyListener = () => subscription.destroy();
 
