@@ -78,7 +78,7 @@ class SequenceExecuter extends Attachable {
       }
 
       sequencePackage.data = data;
-      console.log(!!this._headPackage, ' + initial trigger');
+      console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
     }
   }
@@ -91,8 +91,9 @@ class SequenceExecuter extends Attachable {
 
       this._pipeline.push(item);
       let sequencePackage = this._headPackage;
-      console.log(!!this._headPackage, ' enter pipeline');
+      console.log(' enter pipeline');
       while (sequencePackage?.pending) {
+        console.log('    iterating pending');
         this.iteratePackage(sequencePackage);
         sequencePackage = sequencePackage.behind;
       }
@@ -109,6 +110,16 @@ class SequenceExecuter extends Attachable {
   }
 
   attach(parent: IAttachable | string): this {
+    this.onAttach();
+    return super.attach(parent);
+  }
+
+  attachToRoot(): this {
+    this.onAttach();
+    return super.attachToRoot();
+  }
+
+  private onAttach(): void {
     while (this._headPackage?.pending) {
       this._headPackage.destroy();
       this._headPackage = this._headPackage.behind;
@@ -118,35 +129,25 @@ class SequenceExecuter extends Attachable {
       console.log('attach destroy');
       this.destroy();
     }
-    return super.attach(parent);
-  }
-
-  attachToRoot(): this {
-    while (this._headPackage?.pending) {
-      this._headPackage.destroy();
-      this._headPackage = this._headPackage.behind;
-    }
-
-    if (this._finalized && this._headPackage === undefined) {
-      console.log('attach to root destroy');
-      this.destroy();
-    }
-    return super.attachToRoot();
   }
 
   private iteratePackage(sequencePackage: SequencePackage): void {
+    console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
     if (!this.destroyed) {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
-        sequencePackage.pipelineIndex++;
         pipelineItem(sequencePackage.data, sequencePackage, returnData => {
           sequencePackage.data = returnData;
+          sequencePackage.pipelineIndex++;
+          console.log(returnData, ' return data');
           this.iteratePackage(sequencePackage);
         });
       } else {
         if (!this.attachIsCalled) {
-          sequencePackage.pending = true;
-          console.log('pending');
+          if (!sequencePackage.pending) {
+            sequencePackage.pending = true;
+            console.log('pending');
+          }
         } else {
           sequencePackage.destroy();
           if (this._headPackage === sequencePackage) {
