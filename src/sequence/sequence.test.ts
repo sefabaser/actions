@@ -2212,7 +2212,28 @@ describe('Sequence', () => {
         .attachToRoot();
 
       await delayedCalls.waitForAllPromises();
-      expect(heap).toEqual(['a']);
+      expect(heap).toEqual([
+        {
+          m: '20s2m',
+          s3: 'as3',
+          s4: 'bs4'
+        },
+        {
+          m: '10s1m',
+          s3: 'as3',
+          s4: 'bs4'
+        },
+        {
+          m: '21s2m',
+          s3: 'as3',
+          s4: 'bs4'
+        },
+        {
+          m: '11s1m',
+          s3: 'as3',
+          s4: 'bs4'
+        }
+      ]);
     });
 
     test('complex merge and combine instantly finalized sequences', async () => {
