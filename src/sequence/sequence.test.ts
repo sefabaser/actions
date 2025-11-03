@@ -364,6 +364,19 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b']);
       });
 
+      test('multiple instant resolution', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => {
+          resolve('a');
+          resolve('b');
+          resolve('c');
+        })
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a', 'b', 'c']);
+      });
+
       test('simple sequence mixed triggers', async () => {
         let heap: string[] = [];
 
@@ -563,6 +576,19 @@ describe('Sequence', () => {
 
         resolve('b');
         expect(heap).toEqual(['a', 'b']);
+      });
+
+      test('multiple instant resolution', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => {
+          resolve('a');
+          resolve('b');
+          resolve('c');
+        })
+          .map(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a', 'b', 'c']);
       });
 
       test('simple sequence mixed triggers', async () => {

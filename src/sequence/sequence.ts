@@ -44,6 +44,7 @@ class SequenceExecuter extends Attachable {
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
   private _finalized?: boolean;
   private _headPackage?: SequencePackage;
+  private _tailPackage?: SequencePackage;
 
   destroy(): void {
     if (!this.destroyed) {
@@ -62,10 +63,12 @@ class SequenceExecuter extends Attachable {
   trigger(data: unknown): void {
     if (!this._finalized) {
       let sequencePackage = new SequencePackage();
-      if (this._headPackage) {
-        this._headPackage.behind = sequencePackage;
-      } else {
+      if (!this._tailPackage) {
         this._headPackage = sequencePackage;
+        this._tailPackage = sequencePackage;
+      } else {
+        this._tailPackage.behind = sequencePackage;
+        this._tailPackage = sequencePackage;
       }
 
       sequencePackage.data = data;
@@ -81,13 +84,21 @@ class SequenceExecuter extends Attachable {
       }
 
       this._pipeline.push(item);
+
       let sequencePackage = this._headPackage;
       console.log(' enter pipeline');
       while (sequencePackage?.pending) {
-        console.log('    iterating pending');
+        let next = sequencePackage.behind;
+        console.log(
+          '    iterating pending',
+          sequencePackage.data,
+          sequencePackage.pipelineIndex,
+          sequencePackage.behind?.data,
+          sequencePackage.behind?.pipelineIndex
+        );
         sequencePackage.pending = false;
         this.iteratePackage(sequencePackage);
-        sequencePackage = sequencePackage.behind;
+        sequencePackage = next;
       }
     }
   }
@@ -114,6 +125,9 @@ class SequenceExecuter extends Attachable {
   private onAttach(): void {
     while (this._headPackage?.pending) {
       this._headPackage = this._headPackage.behind;
+    }
+    if (this._tailPackage?.pending) {
+      this._tailPackage = undefined;
     }
 
     if (this._finalized && this._headPackage === undefined) {
@@ -150,6 +164,9 @@ class SequenceExecuter extends Attachable {
           console.log('package destroy');
           if (this._headPackage === sequencePackage) {
             this._headPackage = sequencePackage.behind;
+            if (this._tailPackage === sequencePackage) {
+              this._tailPackage = undefined;
+            }
           }
 
           if (this._finalized && this._headPackage === undefined) {
