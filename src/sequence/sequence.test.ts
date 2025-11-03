@@ -64,24 +64,23 @@ describe('Sequence', () => {
       test('when sequence is finalized it should destroy itself and its pipeline', async () => {
         let heap: unknown[] = [];
 
-        let sequence = Sequence.create<number>((resolve, executor) => {
+        let sequence = Sequence.create<number>((resolve, context) => {
           resolve(1);
-          executor.final();
+          context.final();
         })
           .read(value => heap.push(value))
           .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
         expect(heap).toEqual([1]);
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['executor']['_pipeline']).toEqual(undefined);
+        expect(sequence['context']['_pipeline']).toEqual(undefined);
       });
 
       test('after finalized no new resolution should take effect', () => {
         let heap: string[] = [];
-        Sequence.create<string>((resolve, executor) => {
+        Sequence.create<string>((resolve, context) => {
           resolve('1');
-          executor.final();
+          context.final();
           resolve('2');
         })
           .read(value => heap.push(value))
@@ -100,18 +99,18 @@ describe('Sequence', () => {
           resolve(2);
         })
           .map((data, mainExecutor) =>
-            Sequence.create<string>((resolve, executor) => {
+            Sequence.create<string>((resolve, context) => {
               if (data === 1) {
                 resolve(data + 'map1');
               } else {
                 mainExecutor.final();
-                action1.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+                action1.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
               }
             })
           )
           .map(data =>
-            Sequence.create<string>((resolve, executor) => {
-              action2.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            Sequence.create<string>((resolve, context) => {
+              action2.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
           )
           .read(data => heap.push(data))
@@ -151,16 +150,16 @@ describe('Sequence', () => {
           resolve(2);
         })
           .map(data =>
-            Sequence.create<number>((resolve, executor) => {
-              action1.subscribe(() => resolve(data)).attach(executor);
+            Sequence.create<number>((resolve, context) => {
+              action1.subscribe(() => resolve(data)).attach(context.attachable);
             })
           )
           .map((data, mainExecutor) =>
-            Sequence.create<number>((resolve, executor) => {
+            Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 mainExecutor.final();
               }
-              action2.subscribe(() => resolve(data)).attach(executor);
+              action2.subscribe(() => resolve(data)).attach(context.attachable);
             })
           )
           .read(data => heap.push(data))
@@ -195,20 +194,20 @@ describe('Sequence', () => {
           resolve(2);
         })
           .map(data =>
-            Sequence.create<number>((resolve, executor) => {
+            Sequence.create<number>((resolve, context) => {
               if (data === 1) {
-                action1.subscribe(() => resolve(data)).attach(executor);
+                action1.subscribe(() => resolve(data)).attach(context.attachable);
               } else {
-                action2.subscribe(() => resolve(data)).attach(executor);
+                action2.subscribe(() => resolve(data)).attach(context.attachable);
               }
             })
           )
           .map((data, mainExecutor) =>
-            Sequence.create<number>((resolve, executor) => {
+            Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 mainExecutor.final();
               }
-              actionlast.subscribe(() => resolve(data)).attach(executor);
+              actionlast.subscribe(() => resolve(data)).attach(context.attachable);
             })
           )
           .read(data => heap.push(data))
@@ -243,7 +242,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeFalsy();
         sequence.destroy();
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['executor']['_pipeline']).toEqual(undefined);
+        expect(sequence['context']['_pipeline']).toEqual(undefined);
       });
 
       test('destroying parent should destroy sequence', () => {
@@ -409,9 +408,9 @@ describe('Sequence', () => {
       test('instantly finalizing sequence chain', () => {
         let heap: string[] = [];
 
-        Sequence.create<void>((resolve, executor) => {
+        Sequence.create<void>((resolve, context) => {
           resolve();
-          executor.final();
+          context.final();
         })
           .read(() => {
             heap.push('a');
@@ -686,11 +685,11 @@ describe('Sequence', () => {
             resolve(3);
           })
             .map(value =>
-              Sequence.create<number>((resolve, executor) => {
+              Sequence.create<number>((resolve, context) => {
                 if (value === 1) {
-                  action1.subscribe(() => resolve(value)).attach(executor);
+                  action1.subscribe(() => resolve(value)).attach(context.attachable);
                 } else if (value === 2) {
-                  action2.subscribe(() => resolve(value)).attach(executor);
+                  action2.subscribe(() => resolve(value)).attach(context.attachable);
                 } else {
                   resolve(value);
                 }
@@ -718,11 +717,11 @@ describe('Sequence', () => {
           })
             .map(
               value =>
-                Sequence.create<number>((resolve, executor) => {
+                Sequence.create<number>((resolve, context) => {
                   if (value === 1) {
-                    action1.subscribe(() => resolve(value)).attach(executor);
+                    action1.subscribe(() => resolve(value)).attach(context.attachable);
                   } else if (value === 2) {
-                    action2.subscribe(() => resolve(value)).attach(executor);
+                    action2.subscribe(() => resolve(value)).attach(context.attachable);
                   } else {
                     resolve(value);
                   }
@@ -929,7 +928,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 delayedCalls.callEachDelayed([''], () => r(''));
               });
-              expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
+              expect(innerSequence!['context']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .map(() => {
@@ -938,7 +937,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['_pipeline'].length).toEqual(1);
+          expect(innerSequence!['context']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -960,7 +959,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
+              expect(innerSequence!['context']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -972,7 +971,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['executor']['_pipeline'].length).toEqual(1);
+            expect(innerSequence['context']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -1037,9 +1036,9 @@ describe('Sequence', () => {
         test('finalizing pipeline should wait ongoing operation to be completed', async () => {
           let heap: unknown[] = [];
 
-          Sequence.create<number>((resolve, executor) => {
+          Sequence.create<number>((resolve, context) => {
             resolve(1);
-            executor.final();
+            context.final();
           })
             .map(value =>
               Sequence.create<string>(resolve =>
@@ -1056,10 +1055,10 @@ describe('Sequence', () => {
         test('finalizing pipeline should wait multiple ongoing operations to be completed', async () => {
           let heap: unknown[] = [];
 
-          Sequence.create<number>((resolve, executor) => {
+          Sequence.create<number>((resolve, context) => {
             resolve(1);
             resolve(2);
-            executor.final();
+            context.final();
           })
             .map(value =>
               Sequence.create<string>(r2 => delayedCalls.callEachDelayed([value + 'a'], delayedValue => r2(delayedValue)))
@@ -1102,16 +1101,16 @@ describe('Sequence', () => {
         let variable = new Variable<number>(1);
         let triggered = false;
 
-        let sequence = Sequence.create<void>((resolve, executor) => {
+        let sequence = Sequence.create<void>((resolve, context) => {
           resolve();
-          executor.final();
+          context.final();
         })
-          .map((_, executor) => {
+          .map((_, context) => {
             variable
               .subscribe(() => {
                 triggered = true;
               })
-              .attach(executor);
+              .attach(context.attachable);
           })
           .attachToRoot();
 
@@ -1128,12 +1127,12 @@ describe('Sequence', () => {
         let sequence = Sequence.create<void>(r => {
           resolve = r;
         })
-          .map((_, executor) => {
+          .map((_, context) => {
             variable
               .subscribe(() => {
                 triggered = true;
               })
-              .attach(executor);
+              .attach(context.attachable);
           })
           .attachToRoot();
 
@@ -1162,8 +1161,8 @@ describe('Sequence', () => {
           resolve(2);
         })
           .map(data =>
-            Sequence.create<string>((resolve, executor) => {
-              action.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            Sequence.create<string>((resolve, context) => {
+              action.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
           )
           .read(data => heap.push(data))
@@ -1523,20 +1522,20 @@ describe('Sequence', () => {
           resolve(3);
         })
           .map(data =>
-            Sequence.create<string>((resolve, executor) => {
+            Sequence.create<string>((resolve, context) => {
               if (data === 1) {
-                action1.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+                action1.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
               } else if (data === 2) {
-                action1.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+                action1.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
               } else {
-                action2.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+                action2.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
               }
             })
           )
           .take(1)
           .map(data =>
-            Sequence.create<string>((resolve, executor) => {
-              actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(executor);
+            Sequence.create<string>((resolve, context) => {
+              actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
           )
           .read(data => heap.push(data))
@@ -1587,17 +1586,17 @@ describe('Sequence', () => {
         let heap: string[] = [];
 
         Sequence.merge(
-          Sequence.create<string>((resolve, executor) => {
+          Sequence.create<string>((resolve, context) => {
             resolve('a');
-            executor.final();
+            context.final();
           }),
-          Sequence.create<string>((resolve, executor) => {
+          Sequence.create<string>((resolve, context) => {
             resolve('b');
-            executor.final();
+            context.final();
           }),
-          Sequence.create<string>((resolve, executor) => {
+          Sequence.create<string>((resolve, context) => {
             resolve('c');
-            executor.final();
+            context.final();
           })
         )
           .read(data => heap.push(data))
@@ -1708,9 +1707,9 @@ describe('Sequence', () => {
       });
 
       test('merging a finalized sequence which had a delayed map link was throwing error', async () => {
-        let sequence = Sequence.create<void>((resolve, executor) => {
+        let sequence = Sequence.create<void>((resolve, context) => {
           resolve();
-          executor.final();
+          context.final();
         })
           .map(() =>
             Sequence.create<void>(resolve => {
@@ -1745,13 +1744,13 @@ describe('Sequence', () => {
         });
 
         test('instantly finalizing sequences', () => {
-          let sequence1 = Sequence.create<string>((resolve, executor) => {
+          let sequence1 = Sequence.create<string>((resolve, context) => {
             resolve('a');
-            executor.final();
+            context.final();
           });
-          let sequence2 = Sequence.create<number>((resolve, executor) => {
+          let sequence2 = Sequence.create<number>((resolve, context) => {
             resolve(1);
-            executor.final();
+            context.final();
           });
 
           let heap: { a: string; b: number }[] = [];
@@ -1826,13 +1825,13 @@ describe('Sequence', () => {
         });
 
         test('instantly finalizing sequences', () => {
-          let sequence1 = Sequence.create<string>((resolve, executor) => {
+          let sequence1 = Sequence.create<string>((resolve, context) => {
             resolve('a');
-            executor.final();
+            context.final();
           });
-          let sequence2 = Sequence.create<number>((resolve, executor) => {
+          let sequence2 = Sequence.create<number>((resolve, context) => {
             resolve(1);
-            executor.final();
+            context.final();
           });
 
           let heap: unknown[] = [];
@@ -1947,9 +1946,9 @@ describe('Sequence', () => {
       });
 
       test('combining a finalized sequence which had a delayed map link was throwing error', async () => {
-        let sequence = Sequence.create<void>((resolve, executor) => {
+        let sequence = Sequence.create<void>((resolve, context) => {
           resolve();
-          executor.final();
+          context.final();
         })
           .map(() =>
             Sequence.create<void>(resolve => {
@@ -2118,32 +2117,32 @@ describe('Sequence', () => {
     });
 
     test('complex merge and combine destroyed by sequences', async () => {
-      let sequence1 = Sequence.create<number>((resolve, executor) => {
+      let sequence1 = Sequence.create<number>((resolve, context) => {
         delayedCalls.callEachDelayed(
           [10, 11],
           delayedValue => resolve(delayedValue),
-          () => executor.final()
+          () => context.final()
         );
       }).map(value =>
-        Sequence.create<string>((resolve, executor) =>
+        Sequence.create<string>((resolve, context) =>
           delayedCalls.callEachDelayed(
             [value + 's1'],
             delayedValue => resolve(delayedValue),
-            () => executor.final()
+            () => context.final()
           )
         )
       );
 
-      let sequence2 = Sequence.create<number>((resolve, executor) => {
+      let sequence2 = Sequence.create<number>((resolve, context) => {
         delayedCalls.callEachDelayed(
           [20, 21],
           delayedValue => resolve(delayedValue),
-          () => executor.final()
+          () => context.final()
         );
       }).map(value =>
-        Sequence.create<string>((resolve, executor) => {
+        Sequence.create<string>((resolve, context) => {
           resolve(value + 's2');
-          executor.final();
+          context.final();
         })
       );
 
@@ -2153,19 +2152,19 @@ describe('Sequence', () => {
         })
       );
 
-      let sequence3 = Sequence.create<string>((resolve, executor) => {
+      let sequence3 = Sequence.create<string>((resolve, context) => {
         resolve('a');
-        executor.final();
+        context.final();
       }).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>((resolve, executor) => {
+      let sequence4 = Sequence.create<string>((resolve, context) => {
         resolve('b');
-        executor.final();
+        context.final();
       }).map(value =>
-        Sequence.create<string>((resolve, executor) => {
+        Sequence.create<string>((resolve, context) => {
           delayedCalls.callEachDelayed(
             [value + 's4'],
             delayedValue => resolve(delayedValue),
-            () => executor.final()
+            () => context.final()
           );
         })
       );
@@ -2184,31 +2183,31 @@ describe('Sequence', () => {
     });
 
     test('complex merge and combine instantly finalized sequences', async () => {
-      let sequence1 = Sequence.create<string>((resolve, executor) => {
+      let sequence1 = Sequence.create<string>((resolve, context) => {
         resolve('1');
-        executor.final();
+        context.final();
       }).map(value => value + '1');
 
-      let sequence2 = Sequence.create<string>((resolve, executor) => {
+      let sequence2 = Sequence.create<string>((resolve, context) => {
         resolve('2');
-        executor.final();
+        context.final();
       }).map(value =>
-        Sequence.create<string>((resolve, executor) => {
+        Sequence.create<string>((resolve, context) => {
           resolve(value + '2');
-          executor.final();
+          context.final();
         })
       );
 
       let merged = Sequence.merge(sequence1, sequence2).map(value =>
-        Sequence.create<string>((resolve, executor) => {
+        Sequence.create<string>((resolve, context) => {
           resolve(value + 'm');
-          executor.final();
+          context.final();
         })
       );
 
-      let sequence3 = Sequence.create<string>((resolve, executor) => {
+      let sequence3 = Sequence.create<string>((resolve, context) => {
         resolve('a');
-        executor.final();
+        context.final();
       }).map(value => value + 's3');
 
       let heap: unknown[] = [];
