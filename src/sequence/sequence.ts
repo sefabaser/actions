@@ -35,6 +35,12 @@ class SequencePackage {
   behind?: SequencePackage;
 }
 
+type ExecutionOrderQueuer =
+  | {
+      callback: () => void;
+    }
+  | Record<string, never>;
+
 class SequenceExecuter extends Attachable {
   onDestroyListeners = new Set<() => void>();
 
@@ -73,7 +79,7 @@ class SequenceExecuter extends Attachable {
       }
 
       sequencePackage.data = data;
-      console.log(data, ' + initial trigger');
+      // console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
     }
   }
@@ -86,7 +92,7 @@ class SequenceExecuter extends Attachable {
 
       this._pipeline.push(item);
 
-      console.log('-> enter pipeline', this._pendingPackages.isEmpty ? ' no pending' : ' some pending');
+      // console.log('-> enter pipeline', this._pendingPackages.isEmpty ? ' no pending' : ' some pending');
       let pendingPackages = this._pendingPackages;
       this._pendingPackages = new Queue();
       while (!pendingPackages.isEmpty) {
@@ -97,7 +103,7 @@ class SequenceExecuter extends Attachable {
   }
 
   final(sequencePackage?: SequencePackage) {
-    console.log('final');
+    // console.log('final');
     if (this._headPackage === undefined && this.attachIsCalled) {
       this.destroy();
       return;
@@ -138,7 +144,7 @@ class SequenceExecuter extends Attachable {
     }
 
     if (this._finalized && this._headPackage === undefined) {
-      console.log('attach destroy');
+      // console.log('attach destroy');
       this.destroy();
     }
   }
@@ -146,7 +152,7 @@ class SequenceExecuter extends Attachable {
   private iteratePackage(sequencePackage: SequencePackage): void {
     if (!this.destroyed) {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
-        console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
+        // console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
 
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
 
@@ -161,15 +167,14 @@ class SequenceExecuter extends Attachable {
 
           sequencePackage.data = returnData;
           sequencePackage.pipelineIndex++;
-          // TODO: here it needs to wait the package in front
           this.iteratePackage(sequencePackage);
         });
       } else {
-        console.log('end of pipeline ', sequencePackage.data, sequencePackage.pipelineIndex);
+        // console.log('end of pipeline ', sequencePackage.data, sequencePackage.pipelineIndex, this._pipeline.length);
         if (!this.attachIsCalled) {
           this._pendingPackages.add(sequencePackage);
         } else {
-          console.log('package destroy');
+          // console.log('package destroy');
           if (this._headPackage === sequencePackage) {
             this._headPackage = sequencePackage.behind;
             if (this._tailPackage === sequencePackage) {
@@ -178,7 +183,7 @@ class SequenceExecuter extends Attachable {
           }
 
           if (this._finalized && this._headPackage === undefined) {
-            console.log('conclude destroy');
+            // console.log('conclude destroy');
             this.destroy();
           }
         }
@@ -380,6 +385,7 @@ export class Sequence<T = void> implements IAttachment {
   map<K>(callback: (data: T, context: ISequenceContext) => K | IStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
+    let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: K | IStream<K>;
 
@@ -393,13 +399,46 @@ export class Sequence<T = void> implements IAttachment {
       if (executionReturn && typeof executionReturn === 'object' && 'subscribe' in executionReturn) {
         // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
         if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
-          console.log(' returned stream');
-          executionReturn.subscribe(innerData => resolve(innerData)).attach(context.attachable);
+          // console.log(' returned stream');
+
+          let queuer: ExecutionOrderQueuer = {};
+          queue.add(queuer);
+
+          executionReturn
+            .subscribe(resolvedData => {
+              // console.log('*** ', resolvedData);
+              queuer.callback = () => resolve(resolvedData);
+
+              if (queue.peek() === queuer) {
+                // console.log('       it is the next in queue');
+                queue.pop();
+                resolve(resolvedData);
+
+                while (queue.peek()?.callback) {
+                  queue.pop()?.callback();
+                }
+              } else {
+                queuer.callback = () => resolve(resolvedData);
+              }
+            })
+            .attach(context.attachable);
         } else {
-          resolve(executionReturn);
+          if (queue.isEmpty) {
+            resolve(executionReturn);
+          } else {
+            queue.add({
+              callback: () => resolve(executionReturn as K)
+            });
+          }
         }
       } else {
-        resolve(executionReturn);
+        if (queue.isEmpty) {
+          resolve(executionReturn);
+        } else {
+          queue.add({
+            callback: () => resolve(executionReturn as K)
+          });
+        }
       }
     });
 
@@ -423,13 +462,13 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   attach(parent: IAttachable | string): this {
-    console.log('// attach');
+    // console.log('// attach');
     this.executor.attach(parent);
     return this;
   }
 
   attachToRoot(): this {
-    console.log('// attach');
+    // console.log('// attach');
     this.executor.attachToRoot();
     return this;
   }
