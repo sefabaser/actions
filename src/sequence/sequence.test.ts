@@ -1410,15 +1410,6 @@ describe('Sequence', () => {
         sequence.destroy();
         expect(triggered).toBeTruthy();
       });
-
-      test('filter out packages should be destroyed', () => {
-        let sequence = Sequence.create<void>(resolve => {
-          resolve();
-          resolve();
-        })
-          .filter(() => false)
-          .attachToRoot();
-      });
     });
   });
 

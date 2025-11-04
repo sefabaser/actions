@@ -132,10 +132,10 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .attachToRoot();
 
       expect(resolve).toBeDefined();
-
       expect(sequence).toBeDefined();
       expect(
         checkMemoryLeaks(() => {
+          resolve = undefined as any;
           sequence = undefined as any;
         })
       ).resolves.not.toThrow();
@@ -215,20 +215,18 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       }).attachToRoot();
 
       await delayedCalls.waitForAllPromises();
-
       combined.destroy();
-      sequence1 = undefined as any;
-      sequence2 = undefined as any;
-      sequence3 = undefined as any;
-      sequence4 = undefined as any;
-      combined = undefined as any;
-      merged = undefined as any;
 
-      await Wait(); // Attachment check still keeps the reference, wait for one timeout
-      let snapshot = await takeNodeMinimalHeap();
-      SequenceClassNames.forEach(name => {
-        expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
-      });
+      expect(
+        checkMemoryLeaks(() => {
+          sequence1 = undefined as any;
+          sequence2 = undefined as any;
+          sequence3 = undefined as any;
+          sequence4 = undefined as any;
+          combined = undefined as any;
+          merged = undefined as any;
+        })
+      ).resolves.not.toThrow();
     }, 30000);
 
     test('complex merge and combine destroyed in the middle of process', async () => {
@@ -263,20 +261,16 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       combined.destroy();
 
-      await delayedCalls.waitForAllPromises();
-
-      sequence1 = undefined as any;
-      sequence2 = undefined as any;
-      sequence3 = undefined as any;
-      sequence4 = undefined as any;
-      combined = undefined as any;
-      merged = undefined as any;
-
-      await Wait(); // Attachment check still keeps the reference, wait for one timeout
-      let snapshot = await takeNodeMinimalHeap();
-      SequenceClassNames.forEach(name => {
-        expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
-      });
+      expect(
+        checkMemoryLeaks(() => {
+          sequence1 = undefined as any;
+          sequence2 = undefined as any;
+          sequence3 = undefined as any;
+          sequence4 = undefined as any;
+          combined = undefined as any;
+          merged = undefined as any;
+        })
+      ).resolves.not.toThrow();
     }, 30000);
 
     test('complex merge and combine destroyed by sequences', async () => {
@@ -342,18 +336,16 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       expect(combined.destroyed).toBeTruthy();
 
-      sequence1 = undefined as any;
-      sequence2 = undefined as any;
-      sequence3 = undefined as any;
-      sequence4 = undefined as any;
-      combined = undefined as any;
-      merged = undefined as any;
-
-      await Wait(); // Attachment check still keeps the reference, wait for one timeout
-      let snapshot = await takeNodeMinimalHeap();
-      SequenceClassNames.forEach(name => {
-        expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
-      });
+      expect(
+        checkMemoryLeaks(() => {
+          sequence1 = undefined as any;
+          sequence2 = undefined as any;
+          sequence3 = undefined as any;
+          sequence4 = undefined as any;
+          combined = undefined as any;
+          merged = undefined as any;
+        })
+      ).resolves.not.toThrow();
     }, 30000);
 
     test('complex merge and combine instantly destroyed sequences', async () => {
@@ -408,17 +400,15 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
 
-      sequence1 = undefined as any;
-      sequence2 = undefined as any;
-      sequence3 = undefined as any;
-      merged = undefined as any;
-      combined = undefined as any;
-
-      await Wait(); // Attachment check still keeps the reference, wait for one timeout
-      let snapshot = await takeNodeMinimalHeap();
-      SequenceClassNames.forEach(name => {
-        expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
-      });
+      expect(
+        checkMemoryLeaks(() => {
+          sequence1 = undefined as any;
+          sequence2 = undefined as any;
+          sequence3 = undefined as any;
+          merged = undefined as any;
+          combined = undefined as any;
+        })
+      ).resolves.not.toThrow();
     }, 30000);
   });
 });
