@@ -87,15 +87,10 @@ class SequenceExecuter extends Attachable {
       this._pipeline.push(item);
 
       console.log('-> enter pipeline', this._pendingPackages.isEmpty ? ' no pending' : ' some pending');
-      let pendingPackages: SequencePackage[] = [];
-
-      while (!this._pendingPackages.isEmpty) {
-        let pendingPackage = this._pendingPackages.pop()!;
-        pendingPackages.push(pendingPackage);
-      }
-
-      for (let i = 0; i < pendingPackages.length; i++) {
-        let pendingPackage = pendingPackages[i];
+      let pendingPackages = this._pendingPackages;
+      this._pendingPackages = new Queue();
+      while (!pendingPackages.isEmpty) {
+        let pendingPackage = pendingPackages.pop()!;
         this.iteratePackage(pendingPackage);
       }
     }
