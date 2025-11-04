@@ -36,7 +36,7 @@ export class PerformanceUnitTestHelper {
     durations = durations.sort((a, b) => a - b);
     let min = durations[0];
 
-    console.log('Min: ', min);
+    console.info('Min: ', min);
     return min;
   }
 }

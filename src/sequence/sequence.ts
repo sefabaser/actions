@@ -76,7 +76,7 @@ class SequenceExecuter extends Attachable {
       }
 
       sequencePackage.data = data;
-      console.log(data, ' + initial trigger');
+      // console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
     }
   }
@@ -90,16 +90,10 @@ class SequenceExecuter extends Attachable {
       this._pipeline.push(item);
 
       let sequencePackage = this._headPackage;
-      console.log(' enter pipeline');
+      // console.log(' enter pipeline');
       while (sequencePackage?.pending) {
         let next = sequencePackage.behind;
-        console.log(
-          '    iterating pending',
-          sequencePackage.data,
-          sequencePackage.pipelineIndex,
-          sequencePackage.behind?.data,
-          sequencePackage.behind?.pipelineIndex
-        );
+        // console.log('    iterating pending', sequencePackage.data, sequencePackage.pipelineIndex);
         sequencePackage.pending = false;
         this.iteratePackage(sequencePackage);
         sequencePackage = next;
@@ -108,7 +102,7 @@ class SequenceExecuter extends Attachable {
   }
 
   final(sequencePackage?: SequencePackage) {
-    console.log('final');
+    // console.log('final');
     if (this._headPackage === undefined && this.attachIsCalled) {
       this.destroy();
       return;
@@ -146,13 +140,13 @@ class SequenceExecuter extends Attachable {
     }
 
     if (this._finalized && this._headPackage === undefined) {
-      console.log('attach destroy');
+      // console.log('attach destroy');
       this.destroy();
     }
   }
 
   private iteratePackage(sequencePackage: SequencePackage): void {
-    console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
+    // console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
     if (!this.destroyed) {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
@@ -176,7 +170,7 @@ class SequenceExecuter extends Attachable {
             sequencePackage.pending = true;
           }
         } else {
-          console.log('package destroy');
+          // console.log('package destroy');
           if (this._headPackage === sequencePackage) {
             this._headPackage = sequencePackage.behind;
             if (this._tailPackage === sequencePackage) {
@@ -185,7 +179,7 @@ class SequenceExecuter extends Attachable {
           }
 
           if (this._finalized && this._headPackage === undefined) {
-            console.log('conclude destroy');
+            // console.log('conclude destroy');
             this.destroy();
           }
         }
@@ -408,7 +402,7 @@ export class Sequence<T = void> implements IAttachment {
       if (executionReturn && typeof executionReturn === 'object' && 'subscribe' in executionReturn) {
         // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
         if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
-          console.log(' returned stream');
+          // console.log(' returned stream');
           executionReturn.subscribe(innerData => resolve(innerData)).attach(context.attachable);
         } else {
           resolve(executionReturn);
