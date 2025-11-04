@@ -34,11 +34,13 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('sequence chaining', async () => {
       let sequence = Sequence.create<string>(resolve => {
         delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
-      }).map(data =>
-        Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
-        })
-      );
+      })
+        .map(data =>
+          Sequence.create<string>(resolve => {
+            delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+          })
+        )
+        .attachToRoot();
 
       expect(sequence).toBeDefined();
       expect(
@@ -111,7 +113,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .map(() => action) // Action will never resolve
         .attachToRoot();
 
-      expect(sequence).toBeDefined();
+      sequence.destroy();
       expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
@@ -131,8 +133,8 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         )
         .attachToRoot();
 
+      sequence.destroy();
       expect(resolve).toBeDefined();
-      expect(sequence).toBeDefined();
       expect(
         checkMemoryLeaks(() => {
           resolve = undefined as any;

@@ -113,7 +113,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    // Min:  18.58870005607605 -> 9.106199979782104 -> 8.138400077819824
+    // Min:  8.138400077819824
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
@@ -186,7 +186,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       parent.destroy();
     });
     // Min: 2.625300168991089
-    // After introducing packages: 4.673799991607666 -> 5.293299913406372
+    // After introducing packages: 4.673799991607666 -> 5.293299913406372 -> 5.682100057601929
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
