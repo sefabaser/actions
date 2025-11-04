@@ -1208,6 +1208,26 @@ describe('Sequence', () => {
         expect(heap).toEqual(['1a', '2a']);
         expect(action.listenerCount).toEqual(0);
       });
+
+      test(`pipeline should finish respecting the trigger order`, () => {
+        let action = new Action<number>();
+
+        let heap: unknown[] = [];
+
+        Sequence.create<number>(resolve => {
+          resolve(1);
+          resolve(2);
+        })
+          .map(value => (value === 1 ? action : value))
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        expect(heap).toEqual([2]);
+
+        action.trigger(1);
+
+        expect(heap).toEqual([1, 2]);
+      });
     });
   });
 

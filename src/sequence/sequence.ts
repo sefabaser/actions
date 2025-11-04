@@ -1,4 +1,4 @@
-import { Comparator } from 'helpers-lib';
+import { Comparator, Queue } from 'helpers-lib';
 
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
@@ -24,19 +24,14 @@ class SequenceContext implements ISequenceContext {
 
   constructor(
     private executor: SequenceExecuter,
-    final: () => void
-  ) {
-    this.final = final;
-  }
-
-  final(): void {}
+    public final: () => void
+  ) {}
 }
 
 class SequencePackage {
   data: unknown;
   pipelineIndex = 0;
   ongoingContext?: SequenceContext;
-  pending?: boolean;
   behind?: SequencePackage;
 }
 
@@ -44,6 +39,7 @@ class SequenceExecuter extends Attachable {
   onDestroyListeners = new Set<() => void>();
 
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
+  private _pendingPackages = new Queue<SequencePackage>();
   private _finalized?: boolean;
   private _headPackage?: SequencePackage;
   private _tailPackage?: SequencePackage;
@@ -55,6 +51,7 @@ class SequenceExecuter extends Attachable {
       this._pipeline = undefined as any;
       this._headPackage = undefined;
       this._tailPackage = undefined;
+      this._pendingPackages = undefined as any;
 
       let listeners = [...this.onDestroyListeners];
       this.onDestroyListeners.clear();
@@ -76,7 +73,7 @@ class SequenceExecuter extends Attachable {
       }
 
       sequencePackage.data = data;
-      // console.log(data, ' + initial trigger');
+      console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
     }
   }
@@ -89,20 +86,23 @@ class SequenceExecuter extends Attachable {
 
       this._pipeline.push(item);
 
-      let sequencePackage = this._headPackage;
-      // console.log(' enter pipeline');
-      while (sequencePackage?.pending) {
-        let next = sequencePackage.behind;
-        // console.log('    iterating pending', sequencePackage.data, sequencePackage.pipelineIndex);
-        sequencePackage.pending = false;
-        this.iteratePackage(sequencePackage);
-        sequencePackage = next;
+      console.log('-> enter pipeline', this._pendingPackages.isEmpty ? ' no pending' : ' some pending');
+      let pendingPackages: SequencePackage[] = [];
+
+      while (!this._pendingPackages.isEmpty) {
+        let pendingPackage = this._pendingPackages.pop()!;
+        pendingPackages.push(pendingPackage);
+      }
+
+      for (let i = 0; i < pendingPackages.length; i++) {
+        let pendingPackage = pendingPackages[i];
+        this.iteratePackage(pendingPackage);
       }
     }
   }
 
   final(sequencePackage?: SequencePackage) {
-    // console.log('final');
+    console.log('final');
     if (this._headPackage === undefined && this.attachIsCalled) {
       this.destroy();
       return;
@@ -132,23 +132,27 @@ class SequenceExecuter extends Attachable {
   }
 
   private onAttach(): void {
-    while (this._headPackage?.pending) {
-      this._headPackage = this._headPackage.behind;
-    }
-    if (this._tailPackage?.pending) {
-      this._tailPackage = undefined;
+    while (!this._pendingPackages.isEmpty) {
+      let pendingPackage = this._pendingPackages.pop()!;
+      if (this._headPackage === pendingPackage) {
+        this._headPackage = pendingPackage.behind;
+      }
+      if (this._tailPackage === pendingPackage) {
+        this._tailPackage = undefined;
+      }
     }
 
     if (this._finalized && this._headPackage === undefined) {
-      // console.log('attach destroy');
+      console.log('attach destroy');
       this.destroy();
     }
   }
 
   private iteratePackage(sequencePackage: SequencePackage): void {
-    // console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
     if (!this.destroyed) {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
+        console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
+
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
 
         let context = new SequenceContext(this, () => {
@@ -165,12 +169,11 @@ class SequenceExecuter extends Attachable {
           this.iteratePackage(sequencePackage);
         });
       } else {
+        console.log('end of pipeline ', sequencePackage.data, sequencePackage.pipelineIndex);
         if (!this.attachIsCalled) {
-          if (!sequencePackage.pending) {
-            sequencePackage.pending = true;
-          }
+          this._pendingPackages.add(sequencePackage);
         } else {
-          // console.log('package destroy');
+          console.log('package destroy');
           if (this._headPackage === sequencePackage) {
             this._headPackage = sequencePackage.behind;
             if (this._tailPackage === sequencePackage) {
@@ -179,7 +182,7 @@ class SequenceExecuter extends Attachable {
           }
 
           if (this._finalized && this._headPackage === undefined) {
-            // console.log('conclude destroy');
+            console.log('conclude destroy');
             this.destroy();
           }
         }
@@ -402,7 +405,7 @@ export class Sequence<T = void> implements IAttachment {
       if (executionReturn && typeof executionReturn === 'object' && 'subscribe' in executionReturn) {
         // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
         if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
-          // console.log(' returned stream');
+          console.log(' returned stream');
           executionReturn.subscribe(innerData => resolve(innerData)).attach(context.attachable);
         } else {
           resolve(executionReturn);
@@ -432,15 +435,17 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   attach(parent: IAttachable | string): this {
+    console.log('// attach');
     this.executor.attach(parent);
     return this;
   }
 
   attachToRoot(): this {
+    console.log('// attach');
     this.executor.attachToRoot();
     return this;
   }
 }
 
 /** @internal */
-export const ClassNamesForMemoryLeakTest = [SequenceExecuter.name, SequencePackage.name];
+export const ClassNamesForMemoryLeakTest = [SequenceExecuter.name, SequencePackage.name, Queue.name, 'DoublyLinkedListNode'];
