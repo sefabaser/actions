@@ -161,6 +161,7 @@ class SequenceExecuter extends Attachable {
 
           sequencePackage.data = returnData;
           sequencePackage.pipelineIndex++;
+          // TODO: here it needs to wait the package in front
           this.iteratePackage(sequencePackage);
         });
       } else {
@@ -443,4 +444,12 @@ export class Sequence<T = void> implements IAttachment {
 }
 
 /** @internal */
-export const ClassNamesForMemoryLeakTest = [SequenceExecuter.name, SequencePackage.name, Queue.name, 'DoublyLinkedListNode'];
+export const SequencePackageClassName = SequencePackage.name;
+/** @internal */
+export const SequenceClassNames = [
+  Sequence.name,
+  SequenceExecuter.name,
+  SequencePackageClassName,
+  Queue.name,
+  'DoublyLinkedListNode'
+];

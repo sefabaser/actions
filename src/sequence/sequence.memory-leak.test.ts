@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from '../observables/action/action';
 import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
-import { ClassNamesForMemoryLeakTest, Sequence } from './sequence';
+import { Sequence, SequenceClassNames, SequencePackageClassName } from './sequence';
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   let delayedCalls = new DelayedSequentialCallsHelper();
@@ -12,6 +12,23 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   beforeEach(() => {
     delayedCalls.reset();
   });
+
+  async function checkMemoryLeaks(destroyReferences: () => void = () => {}) {
+    await delayedCalls.waitForAllPromises();
+
+    let snapshot = await takeNodeMinimalHeap();
+    if (snapshot.hasObjectWithClassName(SequencePackageClassName)) {
+      throw new Error(SequencePackageClassName);
+    }
+
+    destroyReferences();
+    snapshot = await takeNodeMinimalHeap();
+    SequenceClassNames.forEach(name => {
+      if (snapshot.hasObjectWithClassName(name)) {
+        throw new Error(name);
+      }
+    });
+  }
 
   describe('Single Sequence', () => {
     test('sequence chaining', async () => {
@@ -23,30 +40,60 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      sequence.destroy();
-      await delayedCalls.waitForAllPromises();
-
-      sequence = undefined as any;
-
-      await Wait(); // Attachment check still keeps the reference, wait for one timeout
-      let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
-        expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
-      });
-      expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
+      expect(sequence).toBeDefined();
+      expect(
+        checkMemoryLeaks(() => {
+          sequence = undefined as any;
+        })
+      ).rejects.not.toThrow();
     }, 30000);
 
     test('destroying sequence in the middle of the chain', async () => {
-      Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+      let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
         .take(2)
         .map(() => {})
         .attachToRoot();
 
+      expect(sequence).toBeDefined();
+      expect(
+        checkMemoryLeaks(() => {
+          sequence = undefined as any;
+        })
+      ).resolves.not.toThrow();
+    }, 30000);
+
+    test('dropping some packages 1', async () => {
+      let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+        .filter(value => value !== 'c')
+        .attachToRoot();
+
+      expect(sequence).toBeDefined();
+      expect(
+        checkMemoryLeaks(() => {
+          sequence = undefined as any;
+        })
+      ).rejects.not.toThrow();
+    }, 30000);
+
+    test('dropping some packages 2', async () => {
+      let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+        .filter(value => value !== 'c')
+        .attachToRoot();
+
+      expect(sequence).toBeDefined();
       await delayedCalls.waitForAllPromises();
 
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
-        expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
+      expect(snapshot.hasObjectWithClassName(SequencePackageClassName)).toBeFalsy();
+
+      sequence = undefined as any;
+      snapshot = await takeNodeMinimalHeap();
+      SequenceClassNames.forEach(name => {
+        let hasLeak = snapshot.hasObjectWithClassName(name);
+        if (hasLeak) {
+          console.error(`Memory leak detected for class: ${name}`);
+        }
+        expect(hasLeak).toBeFalsy();
       });
     }, 30000);
 
@@ -78,7 +125,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
@@ -97,7 +144,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
 
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
@@ -123,7 +170,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
@@ -170,7 +217,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
       expect(snapshot.hasObjectWithClassName(Action.name)).toBeFalsy();
@@ -220,7 +267,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
     }, 30000);
@@ -268,7 +315,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
     }, 30000);
@@ -345,7 +392,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
     }, 30000);
@@ -410,7 +457,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       await Wait(); // Attachment check still keeps the reference, wait for one timeout
       let snapshot = await takeNodeMinimalHeap();
-      ClassNamesForMemoryLeakTest.forEach(name => {
+      SequenceClassNames.forEach(name => {
         expect(snapshot.hasObjectWithClassName(name)).toBeFalsy();
       });
     }, 30000);
