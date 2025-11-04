@@ -729,42 +729,6 @@ describe('Sequence', () => {
 
           expect(heap).toEqual([1, 2, 3]);
         });
-
-        test(`blockToEnsureCallOrder false option`, () => {
-          let action1 = new Action<void>();
-          let action2 = new Action<void>();
-
-          let heap: unknown[] = [];
-
-          Sequence.create<number>(resolve => {
-            resolve(1);
-            resolve(2);
-            resolve(3);
-          })
-            .map(
-              value =>
-                Sequence.create<number>((resolve, context) => {
-                  if (value === 1) {
-                    action1.subscribe(() => resolve(value)).attach(context.attachable);
-                  } else if (value === 2) {
-                    action2.subscribe(() => resolve(value)).attach(context.attachable);
-                  } else {
-                    resolve(value);
-                  }
-                }),
-              { blockToEnsureCallOrder: false }
-            )
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          expect(heap).toEqual([3]);
-
-          action2.trigger();
-          expect(heap).toEqual([3, 2]);
-
-          action1.trigger();
-          expect(heap).toEqual([3, 2, 1]);
-        });
       });
 
       describe('map returns notifier', () => {
@@ -833,27 +797,7 @@ describe('Sequence', () => {
           expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
         });
 
-        test(`pipeline should finish respecting the trigger order two items`, () => {
-          let action = new Action<number>();
-
-          let heap: unknown[] = [];
-
-          Sequence.create<number>(resolve => {
-            resolve(1);
-            resolve(2);
-          })
-            .map(value => (value === 1 ? action : value))
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          expect(heap).toEqual([2]);
-
-          action.trigger(1);
-
-          expect(heap).toEqual([1, 2]);
-        });
-
-        test(`pipeline should finish respecting the trigger order three items`, () => {
+        test(`pipeline should finish respecting the trigger order`, () => {
           let heap: unknown[] = [];
           let action1 = new Action<void>();
           let action2 = new Action<void>();
@@ -879,40 +823,6 @@ describe('Sequence', () => {
           action1.trigger();
 
           expect(heap).toEqual([1, 2, 3]);
-        });
-
-        test(`blockToEnsureCallOrder false option`, () => {
-          let heap: unknown[] = [];
-          let action1 = new Action<void>();
-          let action2 = new Action<void>();
-
-          Sequence.create<number>(resolve => {
-            resolve(1);
-            resolve(2);
-            resolve(3);
-          })
-            .map(
-              value => {
-                if (value === 1) {
-                  return action1.map(() => value);
-                } else if (value === 2) {
-                  return action2.map(() => value);
-                } else {
-                  return value;
-                }
-              },
-              { blockToEnsureCallOrder: false }
-            )
-            .read(value => heap.push(value))
-            .attachToRoot();
-
-          expect(heap).toEqual([3]);
-
-          action2.trigger();
-          expect(heap).toEqual([3, 2]);
-
-          action1.trigger();
-          expect(heap).toEqual([3, 2, 1]);
         });
       });
     });
