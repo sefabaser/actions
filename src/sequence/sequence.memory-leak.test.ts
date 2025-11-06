@@ -35,7 +35,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence = Sequence.create<string>(resolve => {
         delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
-        .map(data =>
+        .asyncMap(data =>
           Sequence.create<string>(resolve => {
             delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })
@@ -53,7 +53,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('destroying sequence in the middle of the chain', async () => {
       let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
         .take(2)
-        .map(() => {})
+        .asyncMap(() => {})
         .attachToRoot();
 
       expect(sequence).toBeDefined();
@@ -84,10 +84,10 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let triggeredWith = '';
       let sequence = action1
         .toSequence()
-        .map(() => action2)
-        .map(data => data)
-        .map(data => data)
-        .map(data => {
+        .asyncMap(() => action2)
+        .asyncMap(data => data)
+        .asyncMap(data => data)
+        .asyncMap(data => {
           triggeredWith = data;
         })
         .attachToRoot();
@@ -112,7 +112,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let action = new Action<void>();
 
       let sequence = Sequence.create<void>(resolve => resolve())
-        .map(() => action) // Action will never resolve
+        .asyncMap(() => action) // Action will never resolve
         .attachToRoot();
 
       sequence.destroy();
@@ -127,7 +127,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let resolve!: () => void;
 
       let sequence = Sequence.create<void>(r1 => r1())
-        .map(() =>
+        .asyncMap(() =>
           // This sequence will never be resolved
           Sequence.create<void>(r2 => {
             resolve = r2;
@@ -152,13 +152,13 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       let heap: string[] = [];
       let sequence = action1
-        .map(a1 => action2.map(a2 => a1 + a2))
-        .map(a2 =>
+        .asyncMap(a1 => action2.asyncMap(a2 => a1 + a2))
+        .asyncMap(a2 =>
           Sequence.create<string>(resolve => {
             delayedCalls.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
-          }).map(s2 => action3.map(d3 => s2 + d3))
+          }).asyncMap(s2 => action3.asyncMap(d3 => s2 + d3))
         )
-        .map(data => {
+        .asyncMap(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -191,22 +191,22 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('complex merge and combine destroyed by listener', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
-      }).map(value =>
+      }).asyncMap(value =>
         Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).map(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      }).asyncMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       ); // 20s2m 10s1m 21s2m 11s1m
 
-      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).map(value =>
+      let sequence3 = Sequence.create<string>(resolve => resolve('a')).asyncMap(value => value + 's3');
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).asyncMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
@@ -236,22 +236,22 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('complex merge and combine destroyed in the middle of process', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
-      }).map(value =>
+      }).asyncMap(value =>
         Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).map(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      }).asyncMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       );
 
-      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).map(value =>
+      let sequence3 = Sequence.create<string>(resolve => resolve('a')).asyncMap(value => value + 's3');
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).asyncMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
@@ -284,7 +284,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
           delayedValue => resolve(delayedValue),
           () => executor.final()
         );
-      }).map(value =>
+      }).asyncMap(value =>
         Sequence.create<string>((resolve, executor) =>
           delayedCalls.callEachDelayed(
             [value + 's1'],
@@ -300,14 +300,14 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
           delayedValue => resolve(delayedValue),
           () => executor.final()
         );
-      }).map(value =>
+      }).asyncMap(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + 's2');
           executor.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -316,11 +316,11 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence3 = Sequence.create<string>((resolve, executor) => {
         resolve('a');
         executor.final();
-      }).map(value => value + 's3');
+      }).asyncMap(value => value + 's3');
       let sequence4 = Sequence.create<string>((resolve, executor) => {
         resolve('b');
         executor.final();
-      }).map(value =>
+      }).asyncMap(value =>
         Sequence.create<string>((resolve, executor) => {
           delayedCalls.callEachDelayed(
             [value + 's4'],
@@ -356,19 +356,19 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence1 = Sequence.create<string>((resolve, executor) => {
         resolve('1');
         executor.final();
-      }).map(value => value + '1');
+      }).asyncMap(value => value + '1');
 
       let sequence2 = Sequence.create<string>((resolve, executor) => {
         resolve('2');
         executor.final();
-      }).map(value =>
+      }).asyncMap(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + '2');
           executor.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).map(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + 'm');
           executor.final();
@@ -378,7 +378,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence3 = Sequence.create<string>((resolve, executor) => {
         resolve('a');
         executor.final();
-      }).map(value => value + 's3');
+      }).asyncMap(value => value + 's3');
 
       let heap: unknown[] = [];
       let combined = Sequence.combine({

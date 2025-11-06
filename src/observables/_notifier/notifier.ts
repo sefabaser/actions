@@ -63,8 +63,8 @@ export class Notifier<T> {
     });
   }
 
-  map<K>(callback: (data: T) => K | IStream<K>): Sequence<K> {
-    return this.toSequence().map(callback);
+  asyncMap<K>(callback: (data: T) => K | IStream<K>): Sequence<K> {
+    return this.toSequence().asyncMap(callback);
   }
 
   take(count: number): Sequence<T> {

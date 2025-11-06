@@ -329,7 +329,7 @@ describe('Notifier', () => {
       let externalNotifier = new Notifier<string>();
 
       let parent = new Attachable().attachToRoot();
-      let sequence = Sequence.create(resolve => resolve()).map(() => externalNotifier);
+      let sequence = Sequence.create(resolve => resolve()).asyncMap(() => externalNotifier);
       Notifier.fromSequence(sequence).attach(parent);
 
       expect(externalNotifier.listenerCount).toEqual(1);

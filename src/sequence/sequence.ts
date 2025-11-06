@@ -440,7 +440,7 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, context: ISequenceContext) => K | IStream<K>): Sequence<K> {
+  asyncMap<K>(callback: (data: T, context: ISequenceContext) => K | IStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     let queue = new Queue<ExecutionOrderQueuer>();
