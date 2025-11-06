@@ -43,7 +43,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .attachToRoot();
 
       expect(sequence).toBeDefined();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
         })
@@ -57,7 +57,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .attachToRoot();
 
       expect(sequence).toBeDefined();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
         })
@@ -66,11 +66,11 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
     test('dropping some packages', async () => {
       let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
-        .filter(value => value !== 'c')
+        .filter(value => value !== 'a')
         .attachToRoot();
 
       expect(sequence).toBeDefined();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
         })
@@ -99,7 +99,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       expect(triggeredWith).toEqual('a');
 
       expect(sequence).toBeDefined();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
         })
@@ -114,7 +114,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .attachToRoot();
 
       sequence.destroy();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
         })
@@ -135,7 +135,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       sequence.destroy();
       expect(resolve).toBeDefined();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           resolve = undefined as any;
           sequence = undefined as any;
@@ -174,7 +174,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       });
 
       expect(sequence).toBeDefined();
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
           action1 = undefined as any;
@@ -219,7 +219,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await delayedCalls.waitForAllPromises();
       combined.destroy();
 
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence1 = undefined as any;
           sequence2 = undefined as any;
@@ -263,7 +263,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       combined.destroy();
 
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence1 = undefined as any;
           sequence2 = undefined as any;
@@ -338,7 +338,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       expect(combined.destroyed).toBeTruthy();
 
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence1 = undefined as any;
           sequence2 = undefined as any;
@@ -402,7 +402,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       expect(merged.destroyed).toBeTruthy();
       expect(combined.destroyed).toBeTruthy();
 
-      expect(
+      await expect(
         checkMemoryLeaks(() => {
           sequence1 = undefined as any;
           sequence2 = undefined as any;

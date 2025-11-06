@@ -8,9 +8,15 @@ export type IStream<T = void> = Notifier<T> | Sequence<T>;
 type SequencePipelineItem<A, B> = (data: A, context: ISequenceContext, callback: (returnData: B) => void) => void;
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
 
+export interface ISequenceCreatorContext {
+  attachable: IAttachable;
+  final(): void;
+}
+
 export interface ISequenceContext {
   attachable: IAttachable;
   final(): void;
+  drop(): void;
 }
 
 class SequenceContext implements ISequenceContext {
@@ -24,8 +30,13 @@ class SequenceContext implements ISequenceContext {
 
   constructor(
     private executor: SequenceExecuter,
-    public final: () => void
+    public final: () => void,
+    public drop: () => void
   ) {}
+
+  destroy() {
+    this._attachable?.destroy();
+  }
 }
 
 class SequencePackage {
@@ -33,6 +44,11 @@ class SequencePackage {
   pipelineIndex = 0;
   ongoingContext?: SequenceContext;
   behind?: SequencePackage;
+  forward?: SequencePackage;
+
+  destroy() {
+    this.ongoingContext?.destroy();
+  }
 }
 
 type ExecutionOrderQueuer =
@@ -69,15 +85,7 @@ class SequenceExecuter extends Attachable {
 
   trigger(data: unknown): void {
     if (!this._finalized) {
-      let sequencePackage = new SequencePackage();
-      if (!this._tailPackage) {
-        this._headPackage = sequencePackage;
-        this._tailPackage = sequencePackage;
-      } else {
-        this._tailPackage.behind = sequencePackage;
-        this._tailPackage = sequencePackage;
-      }
-
+      let sequencePackage = this.createPackageToEnd();
       sequencePackage.data = data;
       // console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
@@ -104,21 +112,13 @@ class SequenceExecuter extends Attachable {
 
   final(sequencePackage?: SequencePackage) {
     // console.log('final');
-    if (this._headPackage === undefined && this.attachIsCalled) {
+    if (this.attachIsCalled && this.isPipelineEmpty()) {
       this.destroy();
-      return;
-    }
-
-    this._finalized = true;
-    if (sequencePackage) {
-      let iteratedPackage = sequencePackage.behind;
-      while (iteratedPackage) {
-        iteratedPackage.ongoingContext?.['_attachable']?.destroy();
-        iteratedPackage = iteratedPackage.behind;
+    } else {
+      this._finalized = true;
+      if (sequencePackage) {
+        this.destroyAllPackagesBehind(sequencePackage);
       }
-
-      sequencePackage.behind = undefined;
-      this._tailPackage = sequencePackage;
     }
   }
 
@@ -132,18 +132,58 @@ class SequenceExecuter extends Attachable {
     return super.attachToRoot();
   }
 
+  private isPipelineEmpty(): boolean {
+    return this._headPackage === undefined;
+  }
+
+  private createPackageToEnd(): SequencePackage {
+    let sequencePackage = new SequencePackage();
+    if (!this._tailPackage) {
+      this._headPackage = sequencePackage;
+      this._tailPackage = sequencePackage;
+    } else {
+      this._tailPackage.behind = sequencePackage;
+      sequencePackage.forward = this._tailPackage;
+      this._tailPackage = sequencePackage;
+    }
+    return sequencePackage;
+  }
+
+  private destroyPackage(sequencePackage: SequencePackage): void {
+    if (sequencePackage.behind) {
+      sequencePackage.behind.forward = sequencePackage.forward;
+    }
+    if (sequencePackage.forward) {
+      sequencePackage.forward.behind = sequencePackage.behind;
+    }
+    if (this._tailPackage === sequencePackage) {
+      this._tailPackage = sequencePackage.forward;
+    }
+    if (this._headPackage === sequencePackage) {
+      this._headPackage = sequencePackage.behind;
+    }
+
+    sequencePackage.destroy();
+  }
+
+  private destroyAllPackagesBehind(sequencePackage: SequencePackage): void {
+    let iteratedPackage = sequencePackage.behind;
+    while (iteratedPackage) {
+      iteratedPackage.destroy();
+      iteratedPackage = iteratedPackage.behind;
+    }
+
+    sequencePackage.behind = undefined;
+    this._tailPackage = sequencePackage;
+  }
+
   private onAttach(): void {
     while (!this._pendingPackages.isEmpty) {
       let pendingPackage = this._pendingPackages.pop()!;
-      if (this._headPackage === pendingPackage) {
-        this._headPackage = pendingPackage.behind;
-      }
-      if (this._tailPackage === pendingPackage) {
-        this._tailPackage = undefined;
-      }
+      this.destroyPackage(pendingPackage);
     }
 
-    if (this._finalized && this._headPackage === undefined) {
+    if (this._finalized && this.isPipelineEmpty()) {
       // console.log('attach destroy');
       this.destroy();
     }
@@ -156,13 +196,19 @@ class SequenceExecuter extends Attachable {
 
         let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
 
-        let context = new SequenceContext(this, () => {
-          this.final(sequencePackage);
-        });
+        let context = new SequenceContext(
+          this,
+          () => {
+            this.final(sequencePackage);
+          },
+          () => {
+            this.destroyPackage(sequencePackage);
+          }
+        );
         sequencePackage.ongoingContext = context;
 
         pipelineItem(sequencePackage.data, context, returnData => {
-          context['_attachable']?.destroy();
+          context.destroy();
           sequencePackage.ongoingContext = undefined;
 
           sequencePackage.data = returnData;
@@ -175,16 +221,24 @@ class SequenceExecuter extends Attachable {
           this._pendingPackages.add(sequencePackage);
         } else {
           // console.log('package destroy');
-          if (this._headPackage === sequencePackage) {
-            this._headPackage = sequencePackage.behind;
-            if (this._tailPackage === sequencePackage) {
-              this._tailPackage = undefined;
+          if (this._headPackage !== sequencePackage) {
+            throw new Error('Sequence: Internal Error! Iterated package that hits the finish should have been the head package.');
+          } else {
+            if (this._tailPackage === this._headPackage) {
+              // This package is the only remaining one
+              if (this._finalized) {
+                // console.log('conclude destroy');
+                this.destroy();
+              } else {
+                this._headPackage = undefined;
+                this._tailPackage = undefined;
+              }
+            } else {
+              if (sequencePackage.behind) {
+                this._headPackage = sequencePackage.behind;
+                this._headPackage.forward = undefined;
+              }
             }
-          }
-
-          if (this._finalized && this._headPackage === undefined) {
-            // console.log('conclude destroy');
-            this.destroy();
           }
         }
       }
@@ -296,7 +350,9 @@ export class Sequence<T = void> implements IAttachment {
     }
   }
 
-  static create<S = void>(executor: (resolve: (data: S) => void, context: ISequenceContext) => (() => void) | void): Sequence<S> {
+  static create<S = void>(
+    executor: (resolve: (data: S) => void, context: ISequenceCreatorContext) => (() => void) | void
+  ): Sequence<S> {
     let sequenceExecutor = new SequenceExecuter();
 
     try {
@@ -346,17 +402,19 @@ export class Sequence<T = void> implements IAttachment {
 
     let previousValue: T | undefined;
     this.executor.enterPipeline<T, T>((data, context, resolve) => {
-      let response: boolean;
+      let passedTheFilter: boolean;
       try {
-        response = callback(data, previousValue, context);
-        previousValue = data;
+        passedTheFilter = callback(data, previousValue, context);
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;
       }
 
-      if (response) {
+      if (passedTheFilter) {
         resolve(data);
+        previousValue = data;
+      } else {
+        context.drop();
       }
     });
     return new Sequence<T>(this.executor);
@@ -480,7 +538,8 @@ export const SequencePackageClassName = SequencePackage.name;
 export const SequenceClassNames = [
   Sequence.name,
   SequenceExecuter.name,
-  SequencePackageClassName,
+  SequencePackage.name,
+  SequenceContext.name,
   Queue.name,
   'DoublyLinkedListNode'
 ];
