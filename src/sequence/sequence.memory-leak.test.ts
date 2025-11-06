@@ -102,6 +102,8 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       await expect(
         checkMemoryLeaks(() => {
           sequence = undefined as any;
+          action1 = undefined as any;
+          action2 = undefined as any;
         })
       ).resolves.not.toThrow();
     }, 30000);

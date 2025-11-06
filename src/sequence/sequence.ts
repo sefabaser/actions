@@ -84,7 +84,7 @@ class SequenceExecuter extends Attachable {
   }
 
   trigger(data: unknown): void {
-    if (!this._finalized) {
+    if (!this._finalized && !this.destroyed) {
       let sequencePackage = this.createPackageToEnd();
       sequencePackage.data = data;
       // console.log(data, ' + initial trigger');
