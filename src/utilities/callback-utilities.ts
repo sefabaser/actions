@@ -12,12 +12,12 @@ export class CallbackUtilities {
     let allReducer = Reducer.createExistenceChecker();
     let allEffectChannels = attachables.map(attachable => allReducer.effect().attach(attachable));
 
-    return Sequence.create((resolve, attachable) => {
+    return Sequence.create((resolve, context) => {
       allReducer
         .filter(value => value === false)
         .take(1)
         .read(() => resolve())
-        .attach(attachable);
+        .attach(context.attachable);
       return () => allEffectChannels.forEach(channel => channel.destroy());
     });
   }

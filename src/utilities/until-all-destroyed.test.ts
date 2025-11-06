@@ -63,22 +63,20 @@ describe('UntilAllDestroyed', () => {
       expect(obj['_attachments']?.size).toEqual(0);
       expect(sequence['executor']['_attachments']).toEqual(undefined);
     });
+  });
 
-    test.skipIf(!process.env.MANUAL)(
-      'performance',
-      async () => {
-        await PerformanceUnitTestHelper.testPerformance(() => {
-          let obj1 = new IDAttachable().attachToRoot();
-          let obj2 = new IDAttachable().attachToRoot();
-          let obj3 = new IDAttachable().attachToRoot();
+  describe.skipIf(!process.env.MANUAL)('performance', () => {
+    test('performance', async () => {
+      await PerformanceUnitTestHelper.testPerformance(() => {
+        let obj1 = new IDAttachable().attachToRoot();
+        let obj2 = new IDAttachable().attachToRoot();
+        let obj3 = new IDAttachable().attachToRoot();
 
-          CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3])
-            .read(() => {})
-            .attachToRoot();
-        });
-        // 3.5130999088287354
-      },
-      60000
-    );
+        CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3])
+          .read(() => {})
+          .attachToRoot();
+      });
+      // 3.5130999088287354 -> 4.707000017166138
+    }, 60000);
   });
 });
