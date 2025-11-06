@@ -3,9 +3,10 @@ import { Comparator, Queue } from 'helpers-lib';
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
 
-export type IStream<T = void> = Notifier<T> | Sequence<T>;
+export type NotStream<T> = T extends Sequence<any> ? (T extends Notifier<any> ? never : never) : T;
+export type StreamType<T = void> = Notifier<T> | Sequence<T>;
 
-type SequencePipelineItem<A, B> = (data: A, context: ISequenceContext, callback: (returnData: B) => void) => void;
+type SequencePipelineItem<A, B> = (data: A, context: ISequenceLinkContext, callback: (returnData: B) => void) => void;
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
 
 export interface ISequenceCreatorContext {
@@ -13,13 +14,13 @@ export interface ISequenceCreatorContext {
   final(): void;
 }
 
-export interface ISequenceContext {
+export interface ISequenceLinkContext {
   attachable: IAttachable;
   final(): void;
   drop(): void;
 }
 
-class SequenceContext implements ISequenceContext {
+class SequenceContext implements ISequenceLinkContext {
   private _attachable?: IAttachable;
   get attachable(): IAttachable {
     if (!this._attachable) {
@@ -247,7 +248,7 @@ class SequenceExecuter extends Attachable {
 }
 
 export class Sequence<T = void> implements IAttachment {
-  static merge<S>(...streams: IStream<S>[]): Sequence<S> {
+  static merge<S>(...streams: StreamType<S>[]): Sequence<S> {
     let activeSequences = this.validateAndConvertToSet(streams);
 
     let subscriptions: IAttachment[] = [];
@@ -263,9 +264,11 @@ export class Sequence<T = void> implements IAttachment {
     return mergedSequence;
   }
 
-  static combine<const S extends readonly IStream<any>[]>(streams: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
-  static combine<S extends Record<string, IStream<any>>>(streamsObject: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
-  static combine<S extends Record<string, IStream<any>> | readonly IStream<any>[]>(input: S): Sequence<any> {
+  static combine<const S extends readonly StreamType<any>[]>(streams: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combine<S extends Record<string, StreamType<any>>>(
+    streamsObject: S
+  ): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combine<S extends Record<string, StreamType<any>> | readonly StreamType<any>[]>(input: S): Sequence<any> {
     let isArray = Comparator.isArray(input);
     let streams = Object.values(input);
     let activeStreams = this.validateAndConvertToSet(streams);
@@ -309,7 +312,7 @@ export class Sequence<T = void> implements IAttachment {
     }, {} as any);
   }
 
-  private static validateAndConvertToSet(streams: IStream<unknown>[]) {
+  private static validateAndConvertToSet(streams: StreamType<unknown>[]) {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
       streams.forEach(stream => {
@@ -322,7 +325,7 @@ export class Sequence<T = void> implements IAttachment {
     return streamsSet;
   }
 
-  private static waitUntilAllSequencesDestroyed(streams: Set<IStream<unknown>>, callback: () => void): void {
+  private static waitUntilAllSequencesDestroyed(streams: Set<StreamType<unknown>>, callback: () => void): void {
     let notifierFound = false;
     streams.forEach(stream => {
       if (stream instanceof Notifier) {
@@ -381,7 +384,7 @@ export class Sequence<T = void> implements IAttachment {
   private linked = false;
   private constructor(private executor: SequenceExecuter) {}
 
-  read(callback: (data: T, context: ISequenceContext) => void): Sequence<T> {
+  read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, T>((data, context, resolve) => {
@@ -397,7 +400,7 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  filter(callback: (data: T, previousValue: T | undefined, context: ISequenceContext) => boolean): Sequence<T> {
+  filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
     this.prepareToBeLinked();
 
     let previousValue: T | undefined;
@@ -440,12 +443,11 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  asyncMap<K>(callback: (data: T, context: ISequenceContext) => K | IStream<K>): Sequence<K> {
+  map<K>(callback: (data: T, context: ISequenceLinkContext) => NotStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
-    let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: K | IStream<K>;
+      let executionReturn: K;
 
       try {
         executionReturn = callback(data, context);
@@ -454,50 +456,47 @@ export class Sequence<T = void> implements IAttachment {
         return;
       }
 
-      if (executionReturn && typeof executionReturn === 'object' && 'subscribe' in executionReturn) {
-        // instanceof is a relativly costly operation, before going that direction we need to rule out majority of sync returns
-        if (executionReturn instanceof Notifier || executionReturn instanceof Sequence) {
-          // console.log(' returned stream');
+      resolve(executionReturn);
+    });
 
-          let queuer: ExecutionOrderQueuer = {};
-          queue.add(queuer);
+    return new Sequence<K>(this.executor);
+  }
 
-          executionReturn
-            .subscribe(resolvedData => {
-              // console.log('*** ', resolvedData);
-              queuer.callback = () => resolve(resolvedData);
+  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => StreamType<K>): Sequence<K> {
+    this.prepareToBeLinked();
 
-              if (queue.peek() === queuer) {
-                // console.log('       it is the next in queue');
-                queue.pop();
-                resolve(resolvedData);
+    let queue = new Queue<ExecutionOrderQueuer>();
+    this.executor.enterPipeline<T, K>((data, context, resolve) => {
+      let executionReturn: StreamType<K>;
 
-                while (queue.peek()?.callback) {
-                  queue.pop()?.callback();
-                }
-              } else {
-                queuer.callback = () => resolve(resolvedData);
-              }
-            })
-            .attach(context.attachable);
-        } else {
-          if (queue.isEmpty) {
-            resolve(executionReturn);
-          } else {
-            queue.add({
-              callback: () => resolve(executionReturn as K)
-            });
-          }
-        }
-      } else {
-        if (queue.isEmpty) {
-          resolve(executionReturn);
-        } else {
-          queue.add({
-            callback: () => resolve(executionReturn as K)
-          });
-        }
+      try {
+        executionReturn = callback(data, context);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
       }
+
+      let queuer: ExecutionOrderQueuer = {};
+      queue.add(queuer);
+
+      executionReturn
+        .subscribe(resolvedData => {
+          // console.log('*** ', resolvedData);
+          queuer.callback = () => resolve(resolvedData);
+
+          if (queue.peek() === queuer) {
+            // console.log('       it is the next in queue');
+            queue.pop();
+            resolve(resolvedData);
+
+            while (queue.peek()?.callback) {
+              queue.pop()?.callback();
+            }
+          } else {
+            queuer.callback = () => resolve(resolvedData);
+          }
+        })
+        .attach(context.attachable);
     });
 
     return new Sequence<K>(this.executor);

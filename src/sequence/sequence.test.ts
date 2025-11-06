@@ -98,7 +98,7 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .asyncMap((data, mainExecutor) =>
+          .orderedMap((data, mainExecutor) =>
             Sequence.create<string>((resolve, context) => {
               if (data === 1) {
                 resolve(data + 'map1');
@@ -108,7 +108,7 @@ describe('Sequence', () => {
               }
             })
           )
-          .asyncMap(data =>
+          .orderedMap(data =>
             Sequence.create<string>((resolve, context) => {
               action2.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -149,12 +149,12 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .asyncMap(data =>
+          .orderedMap(data =>
             Sequence.create<number>((resolve, context) => {
               action1.subscribe(() => resolve(data)).attach(context.attachable);
             })
           )
-          .asyncMap((data, mainExecutor) =>
+          .orderedMap((data, mainExecutor) =>
             Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 mainExecutor.final();
@@ -193,7 +193,7 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .asyncMap(data =>
+          .orderedMap(data =>
             Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 action1.subscribe(() => resolve(data)).attach(context.attachable);
@@ -202,7 +202,7 @@ describe('Sequence', () => {
               }
             })
           )
-          .asyncMap((data, mainExecutor) =>
+          .orderedMap((data, mainExecutor) =>
             Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 mainExecutor.final();
@@ -561,7 +561,7 @@ describe('Sequence', () => {
     });
   });
 
-  describe('Async Map', () => {
+  describe('Map', () => {
     describe('Triggers', () => {
       test('simple sequence sync triggers', () => {
         let heap: string[] = [];
@@ -571,7 +571,7 @@ describe('Sequence', () => {
           resolve = r;
           resolve('a');
         })
-          .asyncMap(data => heap.push(data))
+          .map(data => heap.push(data))
           .attachToRoot();
 
         resolve('b');
@@ -585,7 +585,7 @@ describe('Sequence', () => {
           resolve('b');
           resolve('c');
         })
-          .asyncMap(data => heap.push(data))
+          .map(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['a', 'b', 'c']);
@@ -600,7 +600,7 @@ describe('Sequence', () => {
           resolve('a');
           resolve('b');
         })
-          .asyncMap(data => heap.push(data))
+          .map(data => heap.push(data))
           .attachToRoot();
 
         resolve('x');
@@ -614,94 +614,371 @@ describe('Sequence', () => {
     });
 
     describe('Behavior', () => {
-      describe('sync', () => {
-        test('sync data chaining', () => {
-          let heap: unknown[] = [];
+      test('sync data chaining', () => {
+        let heap: unknown[] = [];
 
-          Sequence.create<string>(resolve => resolve('a'))
-            .asyncMap(data => {
-              heap.push(data);
-              return 1;
-            })
-            .asyncMap(data => {
-              heap.push(data);
-            })
-            .asyncMap(data => {
-              heap.push(data);
-            })
-            .attachToRoot();
+        Sequence.create<string>(resolve => resolve('a'))
+          .map(data => {
+            heap.push(data);
+            return 1;
+          })
+          .map(data => {
+            heap.push(data);
+          })
+          .map(data => {
+            heap.push(data);
+          })
+          .attachToRoot();
 
-          expect(heap).toEqual(['a', 1, undefined]);
-        });
+        expect(heap).toEqual(['a', 1, undefined]);
+      });
+    });
+
+    describe('Destruction', () => {
+      test('destroying sequence', () => {
+        let sequence = Sequence.create<void>(resolve => resolve())
+          .map(() => {})
+          .map(() => {})
+          .map(() => {})
+          .attachToRoot();
+
+        expect(sequence.destroyed).toBeFalsy();
+        sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
       });
 
-      describe('map returns sequence', () => {
-        test('sync resolve', () => {
-          let heap: unknown[] = [];
+      test('destroy sequence callback', () => {
+        let triggered = false;
+        let sequence = Sequence.create<void>(resolve => {
+          resolve();
+          return () => {
+            triggered = true;
+          };
+        })
+          .map(() => {})
+          .map(() => {})
+          .map(() => {})
+          .attachToRoot();
 
-          Sequence.create<string>(resolve => resolve('a'))
-            .asyncMap(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
-            .read(data => heap.push(data))
-            .attachToRoot();
+        expect(triggered).toBeFalsy();
+        sequence.destroy();
+        expect(triggered).toBeTruthy();
+      });
 
-          expect(heap).toEqual(['aI']);
-        });
+      test('destroying parent should destroy sequence', () => {
+        let parent = new Attachable().attachToRoot();
 
-        test('async resolve', async () => {
-          let heap: unknown[] = [];
+        let sequence = Sequence.create<void>(resolve => resolve())
+          .map(() => {})
+          .map(() => {})
+          .map(() => {})
+          .attach(parent);
 
-          Sequence.create<string>(resolve => resolve('a'))
-            .asyncMap(data =>
-              Sequence.create<string>(resolveInner => {
-                delayedCalls.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+        expect(sequence.destroyed).toBeFalsy();
+        parent.destroy();
+        expect(sequence.destroyed).toBeTruthy();
+      });
+    });
+
+    describe('Edge Cases', () => {
+      test('object with subscribe property should not fool the map', () => {
+        let heap: unknown[] = [];
+        let fakeStream = { subscribe: 'hello' };
+
+        Sequence.create<void>(resolve => resolve())
+          .map(() => fakeStream)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([fakeStream]);
+      });
+
+      test('object with subscribe function should not fool the map', () => {
+        let heap: unknown[] = [];
+        let fakeStream = { subscribe: () => {} };
+
+        Sequence.create<void>(resolve => resolve())
+          .map(() => fakeStream)
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([fakeStream]);
+      });
+
+      test('destroying subscriptions via attachment, instantly finalizing sequence', () => {
+        let variable = new Variable<number>(1);
+        let triggered = false;
+
+        let sequence = Sequence.create<void>((resolve, context) => {
+          resolve();
+          context.final();
+        })
+          .map((_, context) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
               })
-            )
-            .read(data => heap.push(data))
-            .attachToRoot();
+              .attach(context.attachable);
+          })
+          .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['aI']);
+        expect(sequence.destroyed).toBeTruthy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+      });
+
+      test('attachments on the context attachable should be destroyed right after the package iteration step', () => {
+        let variable = new Variable<number>(1);
+        let triggered = false;
+
+        let resolve!: () => void;
+        let sequence = Sequence.create<void>(r => {
+          resolve = r;
+        })
+          .map((_, context) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
+              })
+              .attach(context.attachable);
+          })
+          .attachToRoot();
+
+        expect(sequence.destroyed).toBeFalsy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
+
+        resolve();
+
+        expect(sequence.destroyed).toBeFalsy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+
+        sequence.destroy();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(variable.listenerCount).toEqual(0);
+      });
+    });
+  });
+
+  describe('Ordered Map', () => {
+    let dummyAsync = <T>(value: T) => Sequence.create<T>(resolve => resolve(value));
+
+    describe('Triggers', () => {
+      test('simple sequence sync triggers', () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+        })
+          .orderedMap(data => dummyAsync(data))
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('b');
+        expect(heap).toEqual(['a', 'b']);
+      });
+
+      test('multiple instant resolution', () => {
+        let heap: string[] = [];
+        Sequence.create<string>(resolve => {
+          resolve('a');
+          resolve('b');
+          resolve('c');
+        })
+          .orderedMap(data => dummyAsync(data))
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['a', 'b', 'c']);
+      });
+
+      test('simple sequence mixed triggers', async () => {
+        let heap: string[] = [];
+
+        let resolve!: (data: string) => void;
+        Sequence.create<string>(r => {
+          resolve = r;
+          resolve('a');
+          resolve('b');
+        })
+          .orderedMap(data => dummyAsync(data))
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        resolve('x');
+        resolve('y');
+        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+        await delayedCalls.waitForAllPromises();
+
+        expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
+      });
+    });
+
+    describe('Behavior', () => {
+      describe('all async maps common', () => {
+        describe('map returns sequence', () => {
+          test('instant resolve sequence', () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('async resolve', async () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data =>
+                Sequence.create<string>(resolveInner => {
+                  delayedCalls.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+                })
+              )
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            await delayedCalls.waitForAllPromises();
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('data chaining', () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data => {
+                heap.push(data);
+                return dummyAsync(1);
+              })
+              .orderedMap(data => {
+                heap.push(data);
+                return dummyAsync(undefined);
+              })
+              .orderedMap(data => {
+                heap.push(data);
+                return dummyAsync(undefined);
+              })
+              .attachToRoot();
+
+            expect(heap).toEqual(['a', 1, undefined]);
+          });
+
+          test('mixed resolves', async () => {
+            let results = new Set<string>();
+
+            let resolve!: (data: string) => void;
+
+            let innerCount = 0;
+            Sequence.create<string>(r => {
+              resolve = r;
+              resolve('a');
+              resolve('b');
+            })
+              .orderedMap(data =>
+                Sequence.create<string>(resolveInner => {
+                  let response = data + 'I';
+
+                  // 1 sync response, 1 async response on each call
+                  if (innerCount % 2 === 0) {
+                    resolveInner(response);
+                  } else {
+                    delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                  }
+                  innerCount++;
+                })
+              )
+              .read(data => results.add(data))
+              .attachToRoot();
+
+            resolve('x');
+            resolve('y');
+            delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+
+            await delayedCalls.waitForAllPromises();
+
+            expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+          });
         });
 
-        test('mixed resolves', async () => {
-          let results = new Set<string>();
+        describe('map returns notifier', () => {
+          test('sync resolve', () => {
+            let heap: unknown[] = [];
 
-          let resolve!: (data: string) => void;
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data => new Variable<string>(data + 'I'))
+              .read(data => heap.push(data))
+              .attachToRoot();
 
-          let innerCount = 0;
-          Sequence.create<string>(r => {
-            resolve = r;
-            resolve('a');
-            resolve('b');
-          })
-            .asyncMap(data =>
-              Sequence.create<string>(resolveInner => {
-                let response = data + 'I';
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('async resolve', async () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data => {
+                let action = new Action<string>();
+                delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
+                return action;
+              })
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            await delayedCalls.waitForAllPromises();
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('mixed resolves', async () => {
+            let results = new Set<string>();
+
+            let resolve!: (data: string) => void;
+
+            let innerCount = 0;
+            Sequence.create<string>(r => {
+              resolve = r;
+              resolve('a');
+              resolve('b');
+            })
+              .orderedMap(data => {
+                let response: Notifier<string>;
 
                 // 1 sync response, 1 async response on each call
                 if (innerCount % 2 === 0) {
-                  resolveInner(response);
+                  response = new Variable<string>(data + 'I');
                 } else {
-                  delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                  let action = new Action<string>();
+                  delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
+                  response = action;
                 }
                 innerCount++;
+
+                return response;
               })
-            )
-            .read(data => results.add(data))
-            .attachToRoot();
+              .read(data => results.add(data))
+              .attachToRoot();
 
-          resolve('x');
-          resolve('y');
-          delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+            resolve('x');
+            resolve('y');
+            delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
 
-          await delayedCalls.waitForAllPromises();
+            await delayedCalls.waitForAllPromises();
 
-          expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+            expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+          });
         });
+      });
 
-        test(`pipeline should finish respecting the trigger order`, () => {
+      describe('specific to this map', () => {
+        test(`pipeline should finish respecting the trigger order with sequence`, () => {
           let action1 = new Action<void>();
-          let action2 = new Action<void>();
+          let action3 = new Action<void>();
 
           let heap: unknown[] = [];
 
@@ -710,116 +987,51 @@ describe('Sequence', () => {
             resolve(2);
             resolve(3);
           })
-            .asyncMap(value =>
+            .orderedMap(value =>
               Sequence.create<number>((resolve, context) => {
                 if (value === 1) {
                   action1.subscribe(() => resolve(value)).attach(context.attachable);
                 } else if (value === 2) {
-                  action2.subscribe(() => resolve(value)).attach(context.attachable);
-                } else {
                   resolve(value);
+                } else {
+                  action3.subscribe(() => resolve(value)).attach(context.attachable);
                 }
               })
             )
             .read(value => heap.push(value))
             .attachToRoot();
 
-          action2.trigger();
+          action3.trigger();
           action1.trigger();
 
           expect(heap).toEqual([1, 2, 3]);
         });
-      });
 
-      describe('map returns notifier', () => {
-        test('sync resolve', () => {
-          let heap: unknown[] = [];
-
-          Sequence.create<string>(resolve => resolve('a'))
-            .asyncMap(data => new Variable<string>(data + 'I'))
-            .read(data => heap.push(data))
-            .attachToRoot();
-
-          expect(heap).toEqual(['aI']);
-        });
-
-        test('async resolve', async () => {
-          let heap: unknown[] = [];
-
-          Sequence.create<string>(resolve => resolve('a'))
-            .asyncMap(data => {
-              let action = new Action<string>();
-              delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
-              return action;
-            })
-            .read(data => heap.push(data))
-            .attachToRoot();
-
-          await delayedCalls.waitForAllPromises();
-          expect(heap).toEqual(['aI']);
-        });
-
-        test('mixed resolves', async () => {
-          let results = new Set<string>();
-
-          let resolve!: (data: string) => void;
-
-          let innerCount = 0;
-          Sequence.create<string>(r => {
-            resolve = r;
-            resolve('a');
-            resolve('b');
-          })
-            .asyncMap(data => {
-              let response: Notifier<string>;
-
-              // 1 sync response, 1 async response on each call
-              if (innerCount % 2 === 0) {
-                response = new Variable<string>(data + 'I');
-              } else {
-                let action = new Action<string>();
-                delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
-                response = action;
-              }
-              innerCount++;
-
-              return response;
-            })
-            .read(data => results.add(data))
-            .attachToRoot();
-
-          resolve('x');
-          resolve('y');
-          delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
-
-          await delayedCalls.waitForAllPromises();
-
-          expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
-        });
-
-        test(`pipeline should finish respecting the trigger order`, () => {
+        test(`pipeline should finish respecting the trigger order with notifier`, () => {
           let heap: unknown[] = [];
           let action1 = new Action<void>();
           let action2 = new Action<void>();
+          let action3 = new Action<void>();
 
           Sequence.create<number>(resolve => {
             resolve(1);
             resolve(2);
             resolve(3);
           })
-            .asyncMap(value => {
+            .orderedMap(value => {
               if (value === 1) {
-                return action1.asyncMap(() => value);
+                return action1.map(() => value);
               } else if (value === 2) {
-                return action2.asyncMap(() => value);
+                return action2.map(() => value);
               } else {
-                return value;
+                return action3.map(() => value);
               }
             })
             .read(value => heap.push(value))
             .attachToRoot();
 
           action2.trigger();
+          action3.trigger();
           action1.trigger();
 
           expect(heap).toEqual([1, 2, 3]);
@@ -828,67 +1040,22 @@ describe('Sequence', () => {
     });
 
     describe('Destruction', () => {
-      describe('sync', () => {
-        test('destroying sequence', () => {
-          let sequence = Sequence.create<void>(resolve => resolve())
-            .asyncMap(() => {})
-            .asyncMap(() => {})
-            .asyncMap(() => {})
-            .attachToRoot();
-
-          expect(sequence.destroyed).toBeFalsy();
-          sequence.destroy();
-          expect(sequence.destroyed).toBeTruthy();
-        });
-
-        test('destroy sequence callback', () => {
-          let triggered = false;
-          let sequence = Sequence.create<void>(resolve => {
-            resolve();
-            return () => {
-              triggered = true;
-            };
-          })
-            .asyncMap(() => {})
-            .asyncMap(() => {})
-            .asyncMap(() => {})
-            .attachToRoot();
-
-          expect(triggered).toBeFalsy();
-          sequence.destroy();
-          expect(triggered).toBeTruthy();
-        });
-
-        test('destroying parent should destroy sequence', () => {
-          let parent = new Attachable().attachToRoot();
-
-          let sequence = Sequence.create<void>(resolve => resolve())
-            .asyncMap(() => {})
-            .asyncMap(() => {})
-            .asyncMap(() => {})
-            .attach(parent);
-
-          expect(sequence.destroyed).toBeFalsy();
-          parent.destroy();
-          expect(sequence.destroyed).toBeTruthy();
-        });
-      });
-
       describe('map returns sequence', () => {
         test(`ongoing execution's subscriptions should be destroyed sequence destroy`, async () => {
           let triggered = false;
           let innerSequence: Sequence<string> | undefined;
 
           let sequence = Sequence.create<void>(resolve => resolve())
-            .asyncMap(() => {
+            .orderedMap(() => {
               innerSequence = Sequence.create(r => {
                 delayedCalls.callEachDelayed([''], () => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
-            .asyncMap(() => {
+            .orderedMap(() => {
               triggered = true;
+              return dummyAsync(undefined);
             })
             .attachToRoot();
 
@@ -911,7 +1078,7 @@ describe('Sequence', () => {
             resolve();
             resolve();
           })
-            .asyncMap(() => {
+            .orderedMap(() => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
@@ -919,8 +1086,9 @@ describe('Sequence', () => {
               innerSequences.push(innerSequence);
               return innerSequence;
             })
-            .asyncMap(() => {
+            .orderedMap(() => {
               triggered = true;
+              return dummyAsync(undefined);
             })
             .attachToRoot();
 
@@ -947,9 +1115,10 @@ describe('Sequence', () => {
 
           let triggered = false;
           let sequence = Sequence.create<void>(resolve => resolve())
-            .asyncMap(() => action)
-            .asyncMap(() => {
+            .orderedMap(() => action)
+            .orderedMap(() => {
               triggered = true;
+              return dummyAsync(undefined);
             })
             .attachToRoot();
 
@@ -971,9 +1140,10 @@ describe('Sequence', () => {
             resolve();
             resolve();
           })
-            .asyncMap(() => action)
-            .asyncMap(() => {
+            .orderedMap(() => action)
+            .orderedMap(() => {
               triggered = true;
+              return dummyAsync(undefined);
             })
             .attachToRoot();
 
@@ -996,7 +1166,7 @@ describe('Sequence', () => {
             resolve(1);
             context.final();
           })
-            .asyncMap(value =>
+            .orderedMap(value =>
               Sequence.create<string>(resolve =>
                 delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
@@ -1016,7 +1186,7 @@ describe('Sequence', () => {
             resolve(2);
             context.final();
           })
-            .asyncMap(value =>
+            .orderedMap(value =>
               Sequence.create<string>(resolve =>
                 delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
@@ -1031,30 +1201,6 @@ describe('Sequence', () => {
     });
 
     describe('Edge Cases', () => {
-      test('object with subscribe property should not fool the map', () => {
-        let heap: unknown[] = [];
-        let fakeStream = { subscribe: 'hello' };
-
-        Sequence.create<void>(resolve => resolve())
-          .asyncMap(() => fakeStream)
-          .read(data => heap.push(data))
-          .attachToRoot();
-
-        expect(heap).toEqual([fakeStream]);
-      });
-
-      test('object with subscribe function should not fool the map', () => {
-        let heap: unknown[] = [];
-        let fakeStream = { subscribe: () => {} };
-
-        Sequence.create<void>(resolve => resolve())
-          .asyncMap(() => fakeStream)
-          .read(data => heap.push(data))
-          .attachToRoot();
-
-        expect(heap).toEqual([fakeStream]);
-      });
-
       test('destroying subscriptions via attachment, instantly finalizing sequence', () => {
         let variable = new Variable<number>(1);
         let triggered = false;
@@ -1063,13 +1209,16 @@ describe('Sequence', () => {
           resolve();
           context.final();
         })
-          .asyncMap((_, context) => {
-            variable
-              .subscribe(() => {
-                triggered = true;
-              })
-              .attach(context.attachable);
-          })
+          .orderedMap((_, context) =>
+            Sequence.create(resolve => {
+              variable
+                .subscribe(() => {
+                  triggered = true;
+                  resolve();
+                })
+                .attach(context.attachable);
+            })
+          )
           .attachToRoot();
 
         expect(sequence.destroyed).toBeTruthy();
@@ -1086,14 +1235,17 @@ describe('Sequence', () => {
         let sequence = Sequence.create<void>(r => {
           resolve = r;
         })
-          .asyncMap((_, context) => {
-            variable
-              .subscribe(() => {
-                triggered = true;
-              })
-              .attach(context.attachable);
-          })
-          .asyncMap(() => action)
+          .orderedMap((_, context) =>
+            Sequence.create(r => {
+              variable
+                .subscribe(() => {
+                  triggered = true;
+                  r();
+                })
+                .attach(context.attachable);
+            })
+          )
+          .orderedMap(() => action)
           .attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
@@ -1123,7 +1275,7 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .asyncMap(data =>
+          .orderedMap(data =>
             Sequence.create<string>((resolve, context) => {
               action.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -1484,7 +1636,7 @@ describe('Sequence', () => {
           resolve(2);
           resolve(3);
         })
-          .asyncMap(data =>
+          .orderedMap(data =>
             Sequence.create<string>((resolve, context) => {
               if (data === 1) {
                 action1.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
@@ -1496,7 +1648,7 @@ describe('Sequence', () => {
             })
           )
           .take(1)
-          .asyncMap(data =>
+          .orderedMap(data =>
             Sequence.create<string>((resolve, context) => {
               actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -1674,7 +1826,7 @@ describe('Sequence', () => {
           resolve();
           context.final();
         })
-          .asyncMap(() =>
+          .orderedMap(() =>
             Sequence.create<void>(resolve => {
               delayedCalls.callEachDelayed([1], () => resolve());
             })
@@ -1913,7 +2065,7 @@ describe('Sequence', () => {
           resolve();
           context.final();
         })
-          .asyncMap(() =>
+          .orderedMap(() =>
             Sequence.create<void>(resolve => {
               delayedCalls.callEachDelayed([1], () => resolve());
             })
@@ -1938,12 +2090,12 @@ describe('Sequence', () => {
 
       let heap: string[] = [];
       action
-        .asyncMap(data =>
+        .orderedMap(data =>
           Sequence.create<string>(resolve => {
             delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })
         )
-        .asyncMap(data => {
+        .read(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -2015,22 +2167,22 @@ describe('Sequence', () => {
     test('complex merge and combine destroy after all complete', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
-      }).asyncMap(value =>
+      }).orderedMap(value =>
         Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
         delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).asyncMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       ); // 20s2m 10s1m 21s2m 11s1m
 
-      let sequence3 = Sequence.create<string>(resolve => resolve('a')).asyncMap(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).asyncMap(value =>
+      let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
@@ -2086,7 +2238,7 @@ describe('Sequence', () => {
           delayedValue => resolve(delayedValue),
           () => context.final()
         );
-      }).asyncMap(value =>
+      }).orderedMap(value =>
         Sequence.create<string>((resolve, context) =>
           delayedCalls.callEachDelayed(
             [value + 's1'],
@@ -2102,14 +2254,14 @@ describe('Sequence', () => {
           delayedValue => resolve(delayedValue),
           () => context.final()
         );
-      }).asyncMap(value =>
+      }).orderedMap(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + 's2');
           context.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
           delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -2118,11 +2270,11 @@ describe('Sequence', () => {
       let sequence3 = Sequence.create<string>((resolve, context) => {
         resolve('a');
         context.final();
-      }).asyncMap(value => value + 's3');
+      }).map(value => value + 's3');
       let sequence4 = Sequence.create<string>((resolve, context) => {
         resolve('b');
         context.final();
-      }).asyncMap(value =>
+      }).orderedMap(value =>
         Sequence.create<string>((resolve, context) => {
           delayedCalls.callEachDelayed(
             [value + 's4'],
@@ -2170,19 +2322,19 @@ describe('Sequence', () => {
       let sequence1 = Sequence.create<string>((resolve, context) => {
         resolve('1');
         context.final();
-      }).asyncMap(value => value + '1');
+      }).map(value => value + '1');
 
       let sequence2 = Sequence.create<string>((resolve, context) => {
         resolve('2');
         context.final();
-      }).asyncMap(value =>
+      }).orderedMap(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + '2');
           context.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + 'm');
           context.final();
@@ -2192,7 +2344,7 @@ describe('Sequence', () => {
       let sequence3 = Sequence.create<string>((resolve, context) => {
         resolve('a');
         context.final();
-      }).asyncMap(value => value + 's3');
+      }).map(value => value + 's3');
 
       let heap: unknown[] = [];
       let combined = Sequence.combine({

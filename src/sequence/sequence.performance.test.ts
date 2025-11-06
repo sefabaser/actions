@@ -79,11 +79,12 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       });
 
       let parent = new IDAttachable().attachToRoot();
-      sequence.map(() => Sequence.create(r2 => r2())).attach(parent);
+      sequence.orderedMap(() => Sequence.create(r2 => r2())).attach(parent);
       resolve();
       parent.destroy();
     });
     // Min:  1.1162998676300049
+    // After introducing packages: 2.077700138092041
   }, 60000);
 
   test('action subscribe 10x', async () => {
@@ -187,6 +188,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min: 2.625300168991089
     // After introducing packages: 4.673799991607666 -> 5.293299913406372 -> 5.682100057601929 -> 7.014800071716309
+    // After map orderedMap seperation: 6.359500169754028
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
@@ -199,16 +201,16 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
         let parent = new IDAttachable().attachToRoot();
         sequence
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
-          .map(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
+          .orderedMap(() => Sequence.create(r2 => r2()))
           .attach(parent);
         resolve();
         resolve();
@@ -226,6 +228,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       { sampleCount: 10, repetationPerSample: 1000 }
     );
     // Min: 101.85249996185303
+    // After introducing packages: 223.7542998790741
   }, 60000);
 
   test('combine new object', async () => {
