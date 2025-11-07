@@ -12,12 +12,16 @@ type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier
 export interface ISequenceCreatorContext {
   attachable: IAttachable;
   final(): void;
+  // TODO: destroy sequence function
 }
 
 export interface ISequenceLinkContext {
   attachable: IAttachable;
   final(): void;
   drop(): void;
+  // TODO: destroy sequence function
+  /** @internal */
+  destroyAttachment(): void;
 }
 
 class SequenceContext implements ISequenceLinkContext {
@@ -35,7 +39,8 @@ class SequenceContext implements ISequenceLinkContext {
     public drop: () => void
   ) {}
 
-  destroy() {
+  /** @internal */
+  destroyAttachment() {
     this._attachable?.destroy();
   }
 }
@@ -44,19 +49,16 @@ class SequencePackage {
   data: unknown;
   pipelineIndex = 0;
   ongoingContext?: SequenceContext;
-  behind?: SequencePackage;
-  forward?: SequencePackage;
 
   destroy() {
-    this.ongoingContext?.destroy();
+    this.ongoingContext?.destroyAttachment();
   }
 }
 
-type ExecutionOrderQueuer =
-  | {
-      callback: () => void;
-    }
-  | Record<string, never>;
+type ExecutionOrderQueuer = {
+  callback?: () => void;
+  context: ISequenceLinkContext;
+};
 
 class SequenceExecuter extends Attachable {
   onDestroyListeners = new Set<() => void>();
@@ -64,16 +66,12 @@ class SequenceExecuter extends Attachable {
   private _pipeline: SequencePipelineItem<unknown, unknown>[] = [];
   private _pendingPackages = new Queue<SequencePackage>();
   private _finalized?: boolean;
-  private _headPackage?: SequencePackage;
-  private _tailPackage?: SequencePackage;
 
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
 
       this._pipeline = undefined as any;
-      this._headPackage = undefined;
-      this._tailPackage = undefined;
       this._pendingPackages = undefined as any;
 
       let listeners = [...this.onDestroyListeners];
@@ -86,7 +84,7 @@ class SequenceExecuter extends Attachable {
 
   trigger(data: unknown): void {
     if (!this._finalized && !this.destroyed) {
-      let sequencePackage = this.createPackageToEnd();
+      let sequencePackage = new SequencePackage();
       sequencePackage.data = data;
       // console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
@@ -101,10 +99,10 @@ class SequenceExecuter extends Attachable {
 
       this._pipeline.push(item);
 
-      // console.log('-> enter pipeline', this._pendingPackages.isEmpty ? ' no pending' : ' some pending');
+      // console.log('-> enter pipeline', this._pendingPackages.empty ? ' no pending' : ' some pending');
       let pendingPackages = this._pendingPackages;
       this._pendingPackages = new Queue();
-      while (!pendingPackages.isEmpty) {
+      while (pendingPackages.notEmpty) {
         let pendingPackage = pendingPackages.pop()!;
         this.iteratePackage(pendingPackage);
       }
@@ -134,54 +132,17 @@ class SequenceExecuter extends Attachable {
   }
 
   private isPipelineEmpty(): boolean {
-    return this._headPackage === undefined;
-  }
-
-  private createPackageToEnd(): SequencePackage {
-    let sequencePackage = new SequencePackage();
-    if (!this._tailPackage) {
-      this._headPackage = sequencePackage;
-      this._tailPackage = sequencePackage;
-    } else {
-      this._tailPackage.behind = sequencePackage;
-      sequencePackage.forward = this._tailPackage;
-      this._tailPackage = sequencePackage;
-    }
-    return sequencePackage;
-  }
-
-  private destroyPackage(sequencePackage: SequencePackage): void {
-    if (sequencePackage.behind) {
-      sequencePackage.behind.forward = sequencePackage.forward;
-    }
-    if (sequencePackage.forward) {
-      sequencePackage.forward.behind = sequencePackage.behind;
-    }
-    if (this._tailPackage === sequencePackage) {
-      this._tailPackage = sequencePackage.forward;
-    }
-    if (this._headPackage === sequencePackage) {
-      this._headPackage = sequencePackage.behind;
-    }
-
-    sequencePackage.destroy();
+    // TODO
   }
 
   private destroyAllPackagesBehind(sequencePackage: SequencePackage): void {
-    let iteratedPackage = sequencePackage.behind;
-    while (iteratedPackage) {
-      iteratedPackage.destroy();
-      iteratedPackage = iteratedPackage.behind;
-    }
-
-    sequencePackage.behind = undefined;
-    this._tailPackage = sequencePackage;
+    // TODO: destroy previous step's waiting packages
   }
 
   private onAttach(): void {
-    while (!this._pendingPackages.isEmpty) {
+    while (this._pendingPackages.notEmpty) {
       let pendingPackage = this._pendingPackages.pop()!;
-      this.destroyPackage(pendingPackage);
+      pendingPackage.destroy();
     }
 
     if (this._finalized && this.isPipelineEmpty()) {
@@ -203,13 +164,13 @@ class SequenceExecuter extends Attachable {
             this.final(sequencePackage);
           },
           () => {
-            this.destroyPackage(sequencePackage);
+            sequencePackage.destroy();
           }
         );
         sequencePackage.ongoingContext = context;
 
         pipelineItem(sequencePackage.data, context, returnData => {
-          context.destroy();
+          sequencePackage.destroy();
           sequencePackage.ongoingContext = undefined;
 
           sequencePackage.data = returnData;
@@ -221,25 +182,10 @@ class SequenceExecuter extends Attachable {
         if (!this.attachIsCalled) {
           this._pendingPackages.add(sequencePackage);
         } else {
-          // console.log('package destroy');
-          if (this._headPackage !== sequencePackage) {
-            throw new Error('Sequence: Internal Error! Iterated package that hits the finish should have been the head package.');
-          } else {
-            if (this._tailPackage === this._headPackage) {
-              // This package is the only remaining one
-              if (this._finalized) {
-                // console.log('conclude destroy');
-                this.destroy();
-              } else {
-                this._headPackage = undefined;
-                this._tailPackage = undefined;
-              }
-            } else {
-              if (sequencePackage.behind) {
-                this._headPackage = sequencePackage.behind;
-                this._headPackage.forward = undefined;
-              }
-            }
+          sequencePackage.destroy();
+
+          if (this._finalized) {
+            this.destroy();
           }
         }
       }
@@ -469,15 +415,31 @@ export class Sequence<T = void> implements IAttachment {
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: StreamType<K>;
 
+      let queuer: ExecutionOrderQueuer = { context };
+      queue.add(queuer);
+
+      let originalFinal = context.final;
+      context.final = () => {
+        while (true) {
+          let oldQueuer = queue.dequeue();
+          if (!oldQueuer) {
+            throw new Error(`Sequence: Internal Error, all queue is checked but the item that called final couldn't be found!`);
+          }
+
+          oldQueuer.context.destroyAttachment();
+          if (oldQueuer === queuer) {
+            break;
+          }
+        }
+        originalFinal();
+      };
+
       try {
         executionReturn = callback(data, context);
       } catch (e) {
         console.error('Sequence callback function error: ', e);
         return;
       }
-
-      let queuer: ExecutionOrderQueuer = {};
-      queue.add(queuer);
 
       executionReturn
         .subscribe(resolvedData => {
@@ -490,7 +452,7 @@ export class Sequence<T = void> implements IAttachment {
             resolve(resolvedData);
 
             while (queue.peek()?.callback) {
-              queue.pop()?.callback();
+              queue.pop()?.callback!();
             }
           } else {
             queuer.callback = () => resolve(resolvedData);
