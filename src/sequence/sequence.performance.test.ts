@@ -208,7 +208,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .read(() => {})
         .attachToRoot();
       combination.destroy();
-      // Min:  13.876399993896484
+      // Min:  13.876399993896484 -> 12.01830005645752 -> 11.235599994659424
     });
   }, 60000);
 

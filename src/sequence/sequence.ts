@@ -88,10 +88,10 @@ class SequenceExecuter extends Attachable {
       this._pendingPackages = undefined as any;
 
       if (this._onDestroyListeners) {
-        let listeners = [...this._onDestroyListeners];
+        let listeners = this._onDestroyListeners;
         this._onDestroyListeners = undefined as any;
-        for (let i = 0; i < listeners.length; i++) {
-          listeners[i]();
+        for (let listener of listeners) {
+          listener();
         }
       }
     }
