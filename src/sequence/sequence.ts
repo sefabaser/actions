@@ -51,9 +51,10 @@ class SequenceContext implements ISequenceLinkContext {
 }
 
 class SequencePackage {
-  data: unknown;
   pipelineIndex = 0;
   ongoingContext?: SequenceContext;
+
+  constructor(public data: unknown) {}
 
   destroy() {
     this.ongoingContext?.destroyAttachment();
@@ -99,11 +100,9 @@ class SequenceExecuter extends Attachable {
 
   trigger(data: unknown): void {
     if (!this._finalized && !this.destroyed) {
-      let sequencePackage = new SequencePackage();
       this.ongoingPackageCount++;
-      sequencePackage.data = data;
       // console.log(data, ' + initial trigger');
-      this.iteratePackage(sequencePackage);
+      this.iteratePackage(new SequencePackage(data));
     }
   }
 
@@ -133,7 +132,7 @@ class SequenceExecuter extends Attachable {
   }
 
   final() {
-    if (this.attachIsCalled && this.isPipelineEmpty()) {
+    if (this.attachIsCalled && this.ongoingPackageCount === 0) {
       // console.log('final destroy');
       this.destroy();
     } else {
@@ -151,10 +150,6 @@ class SequenceExecuter extends Attachable {
     return super.attachToRoot();
   }
 
-  private isPipelineEmpty(): boolean {
-    return this.ongoingPackageCount === 0;
-  }
-
   private onAttach(): void {
     while (this._pendingPackages?.notEmpty) {
       let pendingPackage = this._pendingPackages.pop()!;
@@ -162,7 +157,7 @@ class SequenceExecuter extends Attachable {
       this.ongoingPackageCount--;
     }
 
-    if (this._finalized && this.isPipelineEmpty()) {
+    if (this._finalized && this.ongoingPackageCount === 0) {
       // console.log('attach destroy');
       this.destroy();
     }
@@ -173,13 +168,11 @@ class SequenceExecuter extends Attachable {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
         // console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
 
-        let pipelineItem = this._pipeline[sequencePackage.pipelineIndex];
-
         let context = new SequenceContext(
           this,
           () => {
             if (this._asyncPipelineIndices) {
-              for (let index of this._asyncPipelineIndices.values()) {
+              for (let index of this._asyncPipelineIndices) {
                 if (index > sequencePackage.pipelineIndex) {
                   break;
                 } else {
@@ -197,7 +190,7 @@ class SequenceExecuter extends Attachable {
         );
         sequencePackage.ongoingContext = context;
 
-        pipelineItem.iterator(sequencePackage.data, context, returnData => {
+        this._pipeline[sequencePackage.pipelineIndex].iterator(sequencePackage.data, context, returnData => {
           sequencePackage.destroy();
           sequencePackage.ongoingContext = undefined;
 
@@ -216,7 +209,7 @@ class SequenceExecuter extends Attachable {
           sequencePackage.destroy();
           this.ongoingPackageCount--;
 
-          if (this._finalized && this.isPipelineEmpty()) {
+          if (this._finalized && this.ongoingPackageCount === 0) {
             // console.log('finalized last package destroy');
             this.destroy();
           }

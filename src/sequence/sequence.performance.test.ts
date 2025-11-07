@@ -153,6 +153,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // lazy pending packages: 5.787899971008301
     // remove .clear: 5.663399934768677
     // lazy on destroy listeners: 5.742200136184692
+    // removing isPipelineEmpty: 5.639800071716309
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
