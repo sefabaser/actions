@@ -16,17 +16,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  0.6854000091552734
   }, 60000);
 
-  test('action subscribe single', async () => {
-    let action = new Action<void>();
-    await PerformanceUnitTestHelper.testPerformance(() => {
-      let parent = new IDAttachable().attachToRoot();
-      action.subscribe(() => {}).attach(parent);
-      action.trigger();
-      parent.destroy();
-    });
-    // Min:  0.9406000375747681 -> 0.8449001312255859
-  }, 60000);
-
   test('action to sequence read', async () => {
     let action = new Action<void>();
     await PerformanceUnitTestHelper.testPerformance(() => {
@@ -85,36 +74,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min:  1.1162998676300049
     // After introducing packages: 2.077700138092041
-  }, 60000);
-
-  test('action subscribe 10x', async () => {
-    let action = new Action<void>();
-    await PerformanceUnitTestHelper.testPerformance(() => {
-      let parent = new IDAttachable().attachToRoot();
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.subscribe(() => {}).attach(parent);
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      action.trigger();
-      parent.destroy();
-    });
-    // Min:  8.138400077819824
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {

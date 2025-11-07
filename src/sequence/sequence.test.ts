@@ -1267,13 +1267,14 @@ describe('Sequence', () => {
         expect(action.listenerCount).toEqual(0);
       });
 
-      test('two packages waiting for same action to be triggered should pass together to the next link', () => {
+      test('multiple packages waiting for same action to be triggered should pass together to the next link with keeping their order', () => {
         let action = new Action<string>();
 
         let heap: string[] = [];
         Sequence.create<number>(resolve => {
           resolve(1);
           resolve(2);
+          resolve(3);
         })
           .orderedMap(data =>
             Sequence.create<string>((resolve, context) => {
@@ -1284,10 +1285,10 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(heap).toEqual([]);
-        expect(action.listenerCount).toEqual(2);
+        expect(action.listenerCount).toEqual(3);
 
         action.trigger('a');
-        expect(heap).toEqual(['1a', '2a']);
+        expect(heap).toEqual(['1a', '2a', '3a']);
         expect(action.listenerCount).toEqual(0);
       });
     });
