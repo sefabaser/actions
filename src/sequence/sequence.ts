@@ -66,12 +66,19 @@ type ExecutionOrderQueuer = {
 };
 
 class SequenceExecuter extends Attachable {
-  onDestroyListeners = new Set<() => void>();
+  private _onDestroyListeners?: Set<() => void>;
+  get onDestroyListeners(): Set<() => void> {
+    if (!this._onDestroyListeners) {
+      this._onDestroyListeners = new Set();
+    }
+    return this._onDestroyListeners;
+  }
 
   private _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   private _asyncPipelineIndices?: Set<number>;
-  private _pendingPackages = new Queue<SequencePackage>(); // TODO: test lazy initiation
+  private _pendingPackages?: Queue<SequencePackage>;
   private _finalized?: boolean;
+  ongoingPackageCount = 0;
 
   destroy(): void {
     if (!this.destroyed) {
@@ -80,10 +87,12 @@ class SequenceExecuter extends Attachable {
       this._pipeline = undefined as any;
       this._pendingPackages = undefined as any;
 
-      let listeners = [...this.onDestroyListeners];
-      this.onDestroyListeners.clear();
-      for (let i = 0; i < listeners.length; i++) {
-        listeners[i]();
+      if (this._onDestroyListeners) {
+        let listeners = [...this._onDestroyListeners];
+        this._onDestroyListeners = undefined as any;
+        for (let i = 0; i < listeners.length; i++) {
+          listeners[i]();
+        }
       }
     }
   }
@@ -91,6 +100,7 @@ class SequenceExecuter extends Attachable {
   trigger(data: unknown): void {
     if (!this._finalized && !this.destroyed) {
       let sequencePackage = new SequencePackage();
+      this.ongoingPackageCount++;
       sequencePackage.data = data;
       // console.log(data, ' + initial trigger');
       this.iteratePackage(sequencePackage);
@@ -115,7 +125,7 @@ class SequenceExecuter extends Attachable {
       // console.log('-> enter pipeline', this._pendingPackages.empty ? ' no pending' : ' some pending');
       let pendingPackages = this._pendingPackages;
       this._pendingPackages = new Queue();
-      while (pendingPackages.notEmpty) {
+      while (pendingPackages?.notEmpty) {
         let pendingPackage = pendingPackages.pop()!;
         this.iteratePackage(pendingPackage);
       }
@@ -123,8 +133,8 @@ class SequenceExecuter extends Attachable {
   }
 
   final() {
-    // console.log('final');
     if (this.attachIsCalled && this.isPipelineEmpty()) {
+      // console.log('final destroy');
       this.destroy();
     } else {
       this._finalized = true;
@@ -142,13 +152,14 @@ class SequenceExecuter extends Attachable {
   }
 
   private isPipelineEmpty(): boolean {
-    return this._pendingPackages.empty;
+    return this.ongoingPackageCount === 0;
   }
 
   private onAttach(): void {
-    while (this._pendingPackages.notEmpty) {
+    while (this._pendingPackages?.notEmpty) {
       let pendingPackage = this._pendingPackages.pop()!;
       pendingPackage.destroy();
+      this.ongoingPackageCount--;
     }
 
     if (this._finalized && this.isPipelineEmpty()) {
@@ -181,6 +192,7 @@ class SequenceExecuter extends Attachable {
           },
           () => {
             sequencePackage.destroy();
+            this.ongoingPackageCount--;
           }
         );
         sequencePackage.ongoingContext = context;
@@ -196,11 +208,16 @@ class SequenceExecuter extends Attachable {
       } else {
         // console.log('end of pipeline ', sequencePackage.data, sequencePackage.pipelineIndex, this._pipeline.length);
         if (!this.attachIsCalled) {
+          if (!this._pendingPackages) {
+            this._pendingPackages = new Queue();
+          }
           this._pendingPackages.add(sequencePackage);
         } else {
           sequencePackage.destroy();
+          this.ongoingPackageCount--;
 
-          if (this._finalized) {
+          if (this._finalized && this.isPipelineEmpty()) {
+            // console.log('finalized last package destroy');
             this.destroy();
           }
         }
@@ -463,20 +480,18 @@ export class Sequence<T = void> implements IAttachment {
       },
       (finalPackage?: SequencePackage) => {
         if (finalPackage) {
-          while (true) {
-            let lastInTheLine = queue.dequeue();
-            if (!lastInTheLine) {
-              throw new Error(`Sequence: Internal Error, all queue is checked but the item that called final couldn't be found!`);
-            }
-
+          while (queue.notEmpty && queue.peekLast()?.context !== finalPackage.ongoingContext) {
+            let lastInTheLine = queue.dequeue()!;
             lastInTheLine.context.destroyAttachment();
-            if (lastInTheLine.context === finalPackage.ongoingContext) {
-              break;
-            }
+            this.executor.ongoingPackageCount--;
+          }
+          if (queue.empty) {
+            throw new Error(`Sequence: Internal Error, all queue is checked but the item that called final couldn't be found!`);
           }
         } else {
           while (queue.notEmpty) {
             queue.pop()!.context.destroyAttachment();
+            this.executor.ongoingPackageCount--;
           }
         }
       }
@@ -498,6 +513,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   destroy(): void {
+    // console.log('sequence destroy call');
     this.executor.destroy();
   }
 

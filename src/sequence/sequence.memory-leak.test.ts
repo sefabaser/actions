@@ -64,6 +64,25 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       ).resolves.not.toThrow();
     }, 30000);
 
+    test('destroying sequence while there is some pending packages', async () => {
+      let sequence = Sequence.create<number>(resolve => {
+        resolve(1);
+        resolve(2);
+      });
+
+      expect(sequence['executor']['_pendingPackages']?.notEmpty).toBeTruthy();
+
+      sequence.destroy();
+      sequence.attachToRoot();
+
+      expect(sequence).toBeDefined();
+      await expect(
+        checkMemoryLeaks(() => {
+          sequence = undefined as any;
+        })
+      ).resolves.not.toThrow();
+    }, 30000);
+
     test('dropping some packages', async () => {
       let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
         .filter(value => value !== 'a')

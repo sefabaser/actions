@@ -110,6 +110,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min: 2.370800018310547
     // After introducing packages: 4.625699996948242 -> 5.069400072097778 -> 5.850499868392944
+    // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -148,6 +149,10 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min: 2.625300168991089
     // After introducing packages: 4.673799991607666 -> 5.293299913406372 -> 5.682100057601929 -> 7.014800071716309
     // After map orderedMap seperation: 6.359500169754028
+    // removing links: 5.994100093841553
+    // lazy pending packages: 5.787899971008301
+    // remove .clear: 5.663399934768677
+    // lazy on destroy listeners: 5.742200136184692
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
@@ -188,6 +193,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     );
     // Min: 101.85249996185303
     // After introducing packages: 223.7542998790741
+    // removing links: 230.xxx -> 203.4695999622345
+    // lazy on destroy listeners: 184.33080005645752
   }, 60000);
 
   test('combine new object', async () => {
