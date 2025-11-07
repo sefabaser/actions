@@ -197,37 +197,29 @@ describe('Notifier', () => {
       expect(count).toEqual(2);
     });
 
-    test('notify listeners', () =>
-      new Promise<void>(done => {
-        let listener1 = false;
-        let listener2 = false;
+    test('notify listeners', () => {
+      let heap: string[] = [];
 
-        notifier
-          .subscribe(message => {
-            if (message === 'sample') {
-              listener1 = true;
-              if (listener2) {
-                done();
-              }
-            }
-          })
-          .attachToRoot();
+      notifier.subscribe(message => heap.push(message)).attachToRoot();
+      notifier.subscribe(message => heap.push(message)).attachToRoot();
 
-        notifier
-          .subscribe(message => {
-            if (message === 'sample') {
-              listener2 = true;
-              if (listener1) {
-                done();
-              }
-            }
-          })
-          .attachToRoot();
+      notifier.forEach(listenerCallback => listenerCallback('message'));
 
-        notifier.forEach(listenerCallback => {
-          listenerCallback('sample');
-        });
-      }));
+      expect(heap).toEqual(['message', 'message']);
+    });
+
+    test('notifying listeners should follow the subscription order', () => {
+      let heap: string[] = [];
+
+      notifier.subscribe(message => heap.push('1' + message)).attachToRoot();
+      let secondSubscription = notifier.subscribe(message => heap.push('2' + message)).attachToRoot();
+      notifier.subscribe(message => heap.push('3' + message)).attachToRoot();
+
+      secondSubscription.destroy();
+      notifier.forEach(listenerCallback => listenerCallback('message'));
+
+      expect(heap).toEqual(['1message', '3message']);
+    });
 
     test('destroy should not take affect until all subscribers being notified', () => {
       let listener1 = false;
