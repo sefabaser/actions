@@ -1,14 +1,14 @@
+import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
 import { IDAttachable } from '../attachable/id-attachable';
-import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
-import { UnitTestHelper } from '../sequence/delayed-sequential-calls.helper';
+import { ActionLibHardReset } from '../helpers/hard-reset';
 import { CallbackUtilities } from './callback-utilities';
 
 describe('UntilAllDestroyed', () => {
   beforeEach(() => {
-    ActionLibUnitTestHelper.hardReset();
+    ActionLibHardReset.hardReset();
   });
 
   describe('untilAllDestroyed', () => {

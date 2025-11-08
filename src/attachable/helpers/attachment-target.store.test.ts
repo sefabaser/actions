@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { ActionLibUnitTestHelper } from '../../helpers/unit-test.helper';
+import { ActionLibHardReset } from '../../helpers/hard-reset';
 import { IDAttachable } from '../id-attachable';
 import { AttachmentTargetStore } from './attachment-target.store';
 
 describe('AttachmentTargetStore', () => {
   beforeEach(() => {
-    ActionLibUnitTestHelper.hardReset();
+    ActionLibHardReset.hardReset();
   });
 
   describe('registerAttachmentTarget', () => {
@@ -155,7 +155,7 @@ describe('AttachmentTargetStore', () => {
       new TestClass1().attachToRoot();
       new TestClass2().attachToRoot();
 
-      ActionLibUnitTestHelper.hardReset();
+      ActionLibHardReset.hardReset();
 
       class TestClass3 extends IDAttachable {}
       let instance = new TestClass3().attachToRoot();

@@ -1,16 +1,16 @@
+import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
-import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
+import { ActionLibHardReset } from '../helpers/hard-reset';
 import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
-import { UnitTestHelper } from './delayed-sequential-calls.helper';
 import { Sequence } from './sequence';
 
 describe('Sequence', () => {
   beforeEach(() => {
-    ActionLibUnitTestHelper.hardReset();
+    ActionLibHardReset.hardReset();
     UnitTestHelper.reset();
   });
 

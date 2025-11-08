@@ -1,6 +1,6 @@
+import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { UnitTestHelper } from '../../sequence/delayed-sequential-calls.helper';
 import { Action } from '../action/action';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {

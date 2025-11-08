@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ActionLibUnitTestHelper, IDAttachable } from '..';
+import { ActionLibHardReset, IDAttachable } from '..';
 
 describe('IDAttachable', () => {
   beforeEach(() => {
-    ActionLibUnitTestHelper.hardReset();
+    ActionLibHardReset.hardReset();
   });
 
   describe('basic', () => {

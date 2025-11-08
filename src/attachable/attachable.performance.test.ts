@@ -1,7 +1,7 @@
+import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
 import { IDAttachable } from '../attachable/id-attachable';
-import { UnitTestHelper } from '../sequence/delayed-sequential-calls.helper';
 import { Attachable } from './attachable';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {

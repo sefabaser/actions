@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { ActionLibUnitTestHelper } from '../..';
+import { ActionLibHardReset } from '../../helpers/hard-reset';
 import { Variable } from './variable';
 
 describe(`Variable`, () => {
@@ -11,7 +11,7 @@ describe(`Variable`, () => {
 
   describe(`Basics`, () => {
     beforeEach(() => {
-      ActionLibUnitTestHelper.hardReset();
+      ActionLibHardReset.hardReset();
     });
 
     test('should be definable', () => {

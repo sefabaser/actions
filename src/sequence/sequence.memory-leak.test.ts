@@ -1,9 +1,8 @@
 import { takeNodeMinimalHeap } from '@memlab/core';
-import { Wait } from 'helpers-lib';
+import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from '../observables/action/action';
-import { UnitTestHelper } from './delayed-sequential-calls.helper';
 import { Sequence, SequenceClassNames, SequencePackageClassName } from './sequence';
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {

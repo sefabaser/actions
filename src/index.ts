@@ -2,7 +2,7 @@ export { Attachable, IAttachable, IAttachment } from './attachable/attachable';
 export { ClassID } from './attachable/helpers/class-id';
 export { IDAttachable } from './attachable/id-attachable';
 export { ActionLibDefaults } from './config';
-export { ActionLibUnitTestHelper } from './helpers/unit-test.helper';
+export { ActionLibHardReset } from './helpers/hard-reset';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';
 export { ObservableMap } from './observable-collections/observable-map/observable-map';
 export { ObservableSet } from './observable-collections/observable-set/observable-set';
