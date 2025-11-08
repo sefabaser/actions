@@ -13,7 +13,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min:  0.8124001026153564
     // default attachable: 0.46429991722106934
-    // no attachable: 0.25950002670288086
+    // no attachable: 0.24699997901916504
+    // queueMicrotask: 0.2100999355316162
   }, 60000);
 
   test('action subscribe 10x', async () => {
@@ -53,6 +54,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  8.138400077819824
     // default attachable: 7.991199970245361
     // no attachable: 5.665599822998047
+    // queueMicrotask: 5.307699918746948
   }, 60000);
 
   test('manual take next', async () => {
@@ -62,6 +64,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
     });
     // no attachable: 0.24489998817443848
+    // queueMicrotask: 0.2200000286102295
   }, 60000);
 
   test('take 1', async () => {
@@ -78,6 +81,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 0.9167001247406006
     // no attachable: 0.6552000045776367
     // manual destruction of the sequence: 0.6094000339508057
+    // queueMicrotask: 0.5599000453948975
   }, 60000);
 
   test('action to sequence read', async () => {
@@ -94,5 +98,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 0.8048000335693359
     // no attachable: 0.5906000137329102
     // manual destruction of the sequence: 0.5377998352050781
+    // queueMicrotask: 0.4574000835418701
   }, 60000);
 });
