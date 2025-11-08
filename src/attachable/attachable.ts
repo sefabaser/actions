@@ -64,7 +64,11 @@ export class Attachable implements IAttachable {
 
       let attachedEntities = this._attachments;
       this._attachments = undefined;
-      attachedEntities?.forEach(item => item.destroy());
+      if (attachedEntities) {
+        for (let entity of attachedEntities) {
+          entity.destroy();
+        }
+      }
 
       this._destroyed = true;
     }

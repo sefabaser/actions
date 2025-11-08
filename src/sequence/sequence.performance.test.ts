@@ -177,7 +177,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // After introducing packages: 223.7542998790741
     // removing links: 230.xxx -> 203.4695999622345
     // lazy on destroy listeners: 184.33080005645752
-    // queueMicrotask: 144.70129990577698
+    // queueMicrotask: 143.01080012321472
   }, 60000);
 
   test('combine new object', async () => {
