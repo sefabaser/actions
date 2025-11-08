@@ -482,7 +482,7 @@ export class Sequence<T = void> implements IAttachment {
             this.executor.ongoingPackageCount--;
           }
           if (queue.empty) {
-            throw new Error(`Sequence: Internal Error, all queue is checked but the item that called final couldn't be found!`);
+            throw new Error(`Sequence: Internal Error, entire queue is checked but the "final item" couldn't be found!`);
           }
         } else {
           while (queue.notEmpty) {

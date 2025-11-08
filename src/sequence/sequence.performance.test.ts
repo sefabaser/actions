@@ -110,7 +110,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min: 2.370800018310547
     // After introducing packages: 4.625699996948242 -> 5.069400072097778 -> 5.850499868392944
-    // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157 -> 4.654599905014038
+    // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157 -> 4.654599905014038 -> 4.55460000038147
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -154,7 +154,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // remove .clear: 5.663399934768677
     // lazy on destroy listeners: 5.742200136184692
     // removing isPipelineEmpty: 5.639800071716309
-    // fix lazy pending packages: 5.452199935913086
+    // fix lazy pending packages: 5.240200042724609
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
