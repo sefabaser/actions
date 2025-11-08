@@ -59,7 +59,8 @@ export class Notifier<T> {
 
   toSequence(): Sequence<T> {
     return Sequence.create<T>((resolve, context) => {
-      this.subscribe(resolve).attach(context.attachable);
+      let subscription = this.subscribe(resolve).attachToRoot();
+      return subscription.destroy.bind(subscription);
     });
   }
 

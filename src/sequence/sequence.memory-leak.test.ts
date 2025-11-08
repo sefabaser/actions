@@ -3,18 +3,16 @@ import { Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from '../observables/action/action';
-import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
+import { UnitTestHelper } from './delayed-sequential-calls.helper';
 import { Sequence, SequenceClassNames, SequencePackageClassName } from './sequence';
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {
-  let delayedCalls = new DelayedSequentialCallsHelper();
-
   beforeEach(() => {
-    delayedCalls.reset();
+    UnitTestHelper.reset();
   });
 
   async function checkMemoryLeaks(destroyReferences: () => void = () => {}) {
-    await delayedCalls.waitForAllPromises();
+    await UnitTestHelper.waitForAllOperations();
 
     let snapshot = await takeNodeMinimalHeap();
     if (snapshot.hasObjectWithClassName(SequencePackageClassName)) {
@@ -33,11 +31,11 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   describe('Single Sequence', () => {
     test('sequence chaining', async () => {
       let sequence = Sequence.create<string>(resolve => {
-        delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
+        UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
         .orderedMap(data =>
           Sequence.create<string>(resolve => {
-            delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+            UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })
         )
         .attachToRoot();
@@ -51,7 +49,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     }, 30000);
 
     test('destroying sequence in the middle of the chain', async () => {
-      let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+      let sequence = Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
         .take(2)
         .read(() => {})
         .attachToRoot();
@@ -84,7 +82,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     }, 30000);
 
     test('dropping some packages', async () => {
-      let sequence = Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
+      let sequence = Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
         .filter(value => value !== 'a')
         .attachToRoot();
 
@@ -174,7 +172,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .orderedMap(a1 => action2.map(a2 => a1 + a2))
         .orderedMap(a2 =>
           Sequence.create<string>(resolve => {
-            delayedCalls.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
+            UnitTestHelper.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
           }).orderedMap(s2 => action3.map(d3 => s2 + d3))
         )
         .map(data => {
@@ -182,15 +180,15 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
         .attachToRoot();
 
-      delayedCalls.callEachDelayed(['1', '2', '3'], value => {
+      UnitTestHelper.callEachDelayed(['1', '2', '3'], value => {
         action1.trigger(value);
       });
 
-      delayedCalls.callEachDelayed(['k', 'l', 'm'], value => {
+      UnitTestHelper.callEachDelayed(['k', 'l', 'm'], value => {
         action2.trigger(value);
       });
 
-      delayedCalls.callEachDelayed(['x', 'y', 'z', 'w'], value => {
+      UnitTestHelper.callEachDelayed(['x', 'y', 'z', 'w'], value => {
         action3.trigger(value);
       });
 
@@ -209,25 +207,25 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   describe('Multiple Sequences', () => {
     test('complex merge and combine destroyed by listener', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+        UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
       }).orderedMap(value =>
-        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+        Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
+        UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
       }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
       let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       ); // 20s2m 10s1m 21s2m 11s1m
 
       let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
       let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
       );
 
@@ -237,7 +235,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         s4: sequence4
       }).attachToRoot();
 
-      await delayedCalls.waitForAllPromises();
+      await UnitTestHelper.waitForAllOperations();
       combined.destroy();
 
       await expect(
@@ -254,25 +252,25 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
     test('complex merge and combine destroyed in the middle of process', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+        UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
       }).orderedMap(value =>
-        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+        Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
+        UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
       }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
       let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       );
 
       let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
       let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
       );
 
@@ -298,14 +296,14 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
     test('complex merge and combine destroyed by sequences', async () => {
       let sequence1 = Sequence.create<number>((resolve, executor) => {
-        delayedCalls.callEachDelayed(
+        UnitTestHelper.callEachDelayed(
           [10, 11],
           delayedValue => resolve(delayedValue),
           () => executor.final()
         );
       }).orderedMap(value =>
         Sequence.create<string>((resolve, executor) =>
-          delayedCalls.callEachDelayed(
+          UnitTestHelper.callEachDelayed(
             [value + 's1'],
             delayedValue => resolve(delayedValue),
             () => executor.final()
@@ -314,7 +312,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       );
 
       let sequence2 = Sequence.create<number>((resolve, executor) => {
-        delayedCalls.callEachDelayed(
+        UnitTestHelper.callEachDelayed(
           [20, 21],
           delayedValue => resolve(delayedValue),
           () => executor.final()
@@ -328,7 +326,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       );
 
@@ -341,7 +339,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         executor.final();
       }).orderedMap(value =>
         Sequence.create<string>((resolve, executor) => {
-          delayedCalls.callEachDelayed(
+          UnitTestHelper.callEachDelayed(
             [value + 's4'],
             delayedValue => resolve(delayedValue),
             () => executor.final()
@@ -355,7 +353,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         s4: sequence4
       }).attachToRoot();
 
-      await delayedCalls.waitForAllPromises();
+      await UnitTestHelper.waitForAllOperations();
 
       expect(combined.destroyed).toBeTruthy();
 

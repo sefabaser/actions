@@ -1,17 +1,17 @@
 import { describe, test } from 'vitest';
 
 import { IDAttachable } from '../attachable/id-attachable';
-import { PerformanceUnitTestHelper } from '../sequence/performance-unit-test.helper';
+import { UnitTestHelper } from '../sequence/delayed-sequential-calls.helper';
 import { Attachable } from './attachable';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('no op', async () => {
-    await PerformanceUnitTestHelper.testPerformance(() => {});
+    await UnitTestHelper.testPerformance(() => {});
     // Min:  0.0004000663757324219
   }, 60000);
 
   test('object create destroy', async () => {
-    await PerformanceUnitTestHelper.testPerformance(() => {
+    await UnitTestHelper.testPerformance(() => {
       let object = new Attachable().attachToRoot();
       object.destroy();
     });
@@ -19,7 +19,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('object create destroy', async () => {
-    await PerformanceUnitTestHelper.testPerformance(() => {
+    await UnitTestHelper.testPerformance(() => {
       let object = new IDAttachable().attachToRoot();
       object.destroy();
     });
@@ -27,7 +27,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('onDestroy callback', async () => {
-    await PerformanceUnitTestHelper.testPerformance(() => {
+    await UnitTestHelper.testPerformance(() => {
       let attachable = new IDAttachable().attachToRoot();
       attachable
         .onDestroy()

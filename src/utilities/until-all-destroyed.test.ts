@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { Attachable } from '../attachable/attachable';
 import { IDAttachable } from '../attachable/id-attachable';
 import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
-import { PerformanceUnitTestHelper } from '../sequence/performance-unit-test.helper';
+import { UnitTestHelper } from '../sequence/delayed-sequential-calls.helper';
 import { CallbackUtilities } from './callback-utilities';
 
 describe('UntilAllDestroyed', () => {
@@ -67,7 +67,7 @@ describe('UntilAllDestroyed', () => {
 
   describe.skipIf(!process.env.MANUAL)('performance', () => {
     test('performance', async () => {
-      await PerformanceUnitTestHelper.testPerformance(() => {
+      await UnitTestHelper.testPerformance(() => {
         let obj1 = new IDAttachable().attachToRoot();
         let obj2 = new IDAttachable().attachToRoot();
         let obj3 = new IDAttachable().attachToRoot();

@@ -5,14 +5,13 @@ import { ActionLibUnitTestHelper } from '../helpers/unit-test.helper';
 import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
-import { DelayedSequentialCallsHelper } from './delayed-sequential-calls.helper';
+import { UnitTestHelper } from './delayed-sequential-calls.helper';
 import { Sequence } from './sequence';
 
 describe('Sequence', () => {
-  let delayedCalls = new DelayedSequentialCallsHelper();
-
   beforeEach(() => {
     ActionLibUnitTestHelper.hardReset();
+    UnitTestHelper.reset();
   });
 
   describe('Setup - sequence without links', () => {
@@ -33,7 +32,7 @@ describe('Sequence', () => {
 
       test('plain sequence async triggers', () => {
         expect(
-          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['1, 2'], value => resolve(value))).attachToRoot()
+          Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['1, 2'], value => resolve(value))).attachToRoot()
         ).toBeDefined();
       });
 
@@ -42,10 +41,10 @@ describe('Sequence', () => {
           Sequence.create<string>(resolve => {
             resolve('a');
             resolve('b');
-            delayedCalls.callEachDelayed(['1, 2'], value => resolve(value));
+            UnitTestHelper.callEachDelayed(['1, 2'], value => resolve(value));
           }).attachToRoot()
         ).toBeDefined();
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
       });
 
       test('attach cannot be called before the end of the chain', async () => {
@@ -56,7 +55,7 @@ describe('Sequence', () => {
             .attachToRoot()
             .read(() => {})
         ).toThrow('After attaching a sequence you cannot add another operation.');
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
       });
     });
 
@@ -391,9 +390,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
       });
@@ -461,9 +460,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual([
           '1a',
@@ -605,9 +604,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
       });
@@ -811,9 +810,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
       });
@@ -839,13 +838,13 @@ describe('Sequence', () => {
             Sequence.create<string>(resolve => resolve('a'))
               .orderedMap(data =>
                 Sequence.create<string>(resolveInner => {
-                  delayedCalls.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+                  UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
                 })
               )
               .read(data => heap.push(data))
               .attachToRoot();
 
-            await delayedCalls.waitForAllPromises();
+            await UnitTestHelper.waitForAllOperations();
             expect(heap).toEqual(['aI']);
           });
 
@@ -889,7 +888,7 @@ describe('Sequence', () => {
                   if (innerCount % 2 === 0) {
                     resolveInner(response);
                   } else {
-                    delayedCalls.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                    UnitTestHelper.callEachDelayed([response], delayedData => resolveInner(delayedData));
                   }
                   innerCount++;
                 })
@@ -899,9 +898,9 @@ describe('Sequence', () => {
 
             resolve('x');
             resolve('y');
-            delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+            UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-            await delayedCalls.waitForAllPromises();
+            await UnitTestHelper.waitForAllOperations();
 
             expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
           });
@@ -925,13 +924,13 @@ describe('Sequence', () => {
             Sequence.create<string>(resolve => resolve('a'))
               .orderedMap(data => {
                 let action = new Action<string>();
-                delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
+                UnitTestHelper.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
                 return action;
               })
               .read(data => heap.push(data))
               .attachToRoot();
 
-            await delayedCalls.waitForAllPromises();
+            await UnitTestHelper.waitForAllOperations();
             expect(heap).toEqual(['aI']);
           });
 
@@ -954,7 +953,7 @@ describe('Sequence', () => {
                   response = new Variable<string>(data + 'I');
                 } else {
                   let action = new Action<string>();
-                  delayedCalls.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
+                  UnitTestHelper.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
                   response = action;
                 }
                 innerCount++;
@@ -966,9 +965,9 @@ describe('Sequence', () => {
 
             resolve('x');
             resolve('y');
-            delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+            UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-            await delayedCalls.waitForAllPromises();
+            await UnitTestHelper.waitForAllOperations();
 
             expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
           });
@@ -1048,7 +1047,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create<void>(resolve => resolve())
             .orderedMap(() => {
               innerSequence = Sequence.create(r => {
-                delayedCalls.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callEachDelayed([''], () => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
@@ -1065,7 +1064,7 @@ describe('Sequence', () => {
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
           expect(triggered).toEqual(false);
         });
 
@@ -1168,13 +1167,13 @@ describe('Sequence', () => {
           })
             .orderedMap(value =>
               Sequence.create<string>(resolve =>
-                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
+                UnitTestHelper.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
             )
             .read(value => heap.push(value))
             .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1a']);
         });
 
@@ -1188,13 +1187,13 @@ describe('Sequence', () => {
           })
             .orderedMap(value =>
               Sequence.create<string>(resolve =>
-                delayedCalls.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
+                UnitTestHelper.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
             )
             .read(value => heap.push(value))
             .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1a', '2a']);
         });
       });
@@ -1333,9 +1332,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'x', 'y', 'k', 't']);
       });
@@ -1375,9 +1374,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'x', 'k']);
       });
@@ -1399,9 +1398,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual([undefined, 'a', 'b', 'x', 'y', 'k']);
       });
@@ -1421,9 +1420,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('x');
-        delayedCalls.callEachDelayed(['k', 'k'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 'k'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'x', 'k']);
       });
@@ -1511,9 +1510,9 @@ describe('Sequence', () => {
 
         resolve('x');
         resolve('y');
-        delayedCalls.callEachDelayed(['k', 't'], data => resolve(data));
+        UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'x', 'y', 'k']);
       });
@@ -1693,7 +1692,7 @@ describe('Sequence', () => {
           .read(data => heap.push(data))
           .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'c']);
       });
@@ -1718,7 +1717,7 @@ describe('Sequence', () => {
           .read(data => heap.push(data))
           .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b', 'c']);
       });
@@ -1746,7 +1745,7 @@ describe('Sequence', () => {
         let merged = Sequence.merge(s1, s2);
         let read = merged.read(data => heap.push(data)).attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
 
         expect(heap).toEqual(['a', 'b']);
         expect(s1.destroyed).toBeTruthy();
@@ -1758,14 +1757,14 @@ describe('Sequence', () => {
       test('merge with delayed sequences', async () => {
         let heap: string[] = [];
         Sequence.merge(
-          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['1', '2'], resolve)),
-          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
-          Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['x', 'y'], resolve))
+          Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['1', '2'], resolve)),
+          Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
+          Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['x', 'y'], resolve))
         )
           .read(data => heap.push(data))
           .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
         expect(heap).toEqual(['1', 'a', 'x', '2', 'b', 'y']);
       });
     });
@@ -1829,7 +1828,7 @@ describe('Sequence', () => {
         })
           .orderedMap(() =>
             Sequence.create<void>(resolve => {
-              delayedCalls.callEachDelayed([1], () => resolve());
+              UnitTestHelper.callEachDelayed([1], () => resolve());
             })
           )
           .read(() => {});
@@ -1839,7 +1838,7 @@ describe('Sequence', () => {
           .read(value => heap.push(value))
           .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
       });
     });
   });
@@ -1901,7 +1900,7 @@ describe('Sequence', () => {
             .read(data => heap.push(data))
             .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
 
           expect(heap).toEqual([{ a: 'a', b: 1 }]);
           expect(s1.destroyed).toBeTruthy();
@@ -1912,13 +1911,13 @@ describe('Sequence', () => {
         test('combine with delayed sequences', async () => {
           let heap: { a: string; b: number }[] = [];
           Sequence.combine({
-            a: Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
-            b: Sequence.create<number>(resolve => delayedCalls.callEachDelayed([1, 2], resolve))
+            a: Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
+            b: Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
           })
             .read(data => heap.push(data))
             .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual([
             { a: 'a', b: 1 },
             { a: 'b', b: 1 },
@@ -1982,7 +1981,7 @@ describe('Sequence', () => {
             .read(data => heap.push(data))
             .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
 
           expect(heap).toEqual([['a', 1]]);
           expect(s1.destroyed).toBeTruthy();
@@ -1993,13 +1992,13 @@ describe('Sequence', () => {
         test('combine with delayed sequences', async () => {
           let heap: unknown[] = [];
           Sequence.combine([
-            Sequence.create<string>(resolve => delayedCalls.callEachDelayed(['a', 'b'], resolve)),
-            Sequence.create<number>(resolve => delayedCalls.callEachDelayed([1, 2], resolve))
+            Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
+            Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
           ])
             .read(data => heap.push(data))
             .attachToRoot();
 
-          await delayedCalls.waitForAllPromises();
+          await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual([
             ['a', 1],
             ['b', 1],
@@ -2068,7 +2067,7 @@ describe('Sequence', () => {
         })
           .orderedMap(() =>
             Sequence.create<void>(resolve => {
-              delayedCalls.callEachDelayed([1], () => resolve());
+              UnitTestHelper.callEachDelayed([1], () => resolve());
             })
           )
           .read(() => {});
@@ -2080,7 +2079,7 @@ describe('Sequence', () => {
           .read(value => heap.push(value))
           .attachToRoot();
 
-        await delayedCalls.waitForAllPromises();
+        await UnitTestHelper.waitForAllOperations();
       });
     });
   });
@@ -2093,7 +2092,7 @@ describe('Sequence', () => {
       action
         .orderedMap(data =>
           Sequence.create<string>(resolve => {
-            delayedCalls.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+            UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })
         )
         .read(data => {
@@ -2101,11 +2100,11 @@ describe('Sequence', () => {
         })
         .attachToRoot();
 
-      delayedCalls.callEachDelayed(['1', '2', '3'], value => {
+      UnitTestHelper.callEachDelayed(['1', '2', '3'], value => {
         action.trigger(value);
       });
 
-      await delayedCalls.waitForAllPromises();
+      await UnitTestHelper.waitForAllOperations();
       expect(heap).toEqual(['1a', '2a', '3a']);
     });
 
@@ -2167,25 +2166,25 @@ describe('Sequence', () => {
 
     test('complex merge and combine destroy after all complete', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
+        UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
       }).orderedMap(value =>
-        Sequence.create<string>(resolve => delayedCalls.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
+        Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
-        delayedCalls.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
+        UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
       }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
       let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       ); // 20s2m 10s1m 21s2m 11s1m
 
       let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
       let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
       );
 
@@ -2198,7 +2197,7 @@ describe('Sequence', () => {
         .read(value => heap.push(value))
         .attachToRoot();
 
-      await delayedCalls.waitForAllPromises();
+      await UnitTestHelper.waitForAllOperations();
 
       expect(heap).toEqual([
         {
@@ -2234,14 +2233,14 @@ describe('Sequence', () => {
 
     test('complex merge and combine destroyed by sequences', async () => {
       let sequence1 = Sequence.create<number>((resolve, context) => {
-        delayedCalls.callEachDelayed(
+        UnitTestHelper.callEachDelayed(
           [10, 11],
           delayedValue => resolve(delayedValue),
           () => context.final()
         );
       }).orderedMap(value =>
         Sequence.create<string>((resolve, context) =>
-          delayedCalls.callEachDelayed(
+          UnitTestHelper.callEachDelayed(
             [value + 's1'],
             delayedValue => resolve(delayedValue),
             () => context.final()
@@ -2250,7 +2249,7 @@ describe('Sequence', () => {
       );
 
       let sequence2 = Sequence.create<number>((resolve, context) => {
-        delayedCalls.callEachDelayed(
+        UnitTestHelper.callEachDelayed(
           [20, 21],
           delayedValue => resolve(delayedValue),
           () => context.final()
@@ -2264,7 +2263,7 @@ describe('Sequence', () => {
 
       let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
         Sequence.create<string>(resolve => {
-          delayedCalls.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
+          UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       );
 
@@ -2277,7 +2276,7 @@ describe('Sequence', () => {
         context.final();
       }).orderedMap(value =>
         Sequence.create<string>((resolve, context) => {
-          delayedCalls.callEachDelayed(
+          UnitTestHelper.callEachDelayed(
             [value + 's4'],
             delayedValue => resolve(delayedValue),
             () => context.final()
@@ -2294,7 +2293,7 @@ describe('Sequence', () => {
         .read(value => heap.push(value))
         .attachToRoot();
 
-      await delayedCalls.waitForAllPromises();
+      await UnitTestHelper.waitForAllOperations();
       expect(heap).toEqual([
         {
           m: '20s2m',
@@ -2356,7 +2355,7 @@ describe('Sequence', () => {
         .attachToRoot();
 
       combined.destroy();
-      await delayedCalls.waitForAllPromises();
+      await UnitTestHelper.waitForAllOperations();
 
       sequence1 = undefined as any;
       sequence2 = undefined as any;
