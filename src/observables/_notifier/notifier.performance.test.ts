@@ -54,7 +54,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  8.138400077819824
     // default attachable: 7.991199970245361
     // no attachable: 5.665599822998047
-    // queueMicrotask: 5.307699918746948
+    // queueMicrotask: 5.250499963760376
   }, 60000);
 
   test('manual take next', async () => {

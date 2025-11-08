@@ -18,7 +18,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  0.7418999671936035
     // default attachable: 0.39929986000061035
     // no attachable: 0.19089984893798828
-    // queueMicrotask: 0.16069984436035156
+    // queueMicrotask: 0.1549999713897705
   }, 60000);
 
   test('sequence single map', async () => {
@@ -35,7 +35,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  0.8095998764038086
     // default attachable: 0.42039990425109863
     // no attachable: 0.19029998779296875
-    // queueMicrotask: 0.16770005226135254
+    // queueMicrotask: 0.15720009803771973
   }, 60000);
 
   test('sequence single async map', async () => {
