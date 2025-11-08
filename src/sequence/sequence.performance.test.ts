@@ -2,21 +2,11 @@ import { ArrayHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
-import { IDAttachable } from '../attachable/id-attachable';
 import { Action } from '../observables/action/action';
 import { PerformanceUnitTestHelper } from './performance-unit-test.helper';
 import { Sequence } from './sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
-  test('onDestroy callback', async () => {
-    await PerformanceUnitTestHelper.testPerformance(() => {
-      let attachable = new IDAttachable().attachToRoot();
-      attachable.onDestroy(() => {}).attachToRoot();
-      attachable.destroy();
-    });
-    // Min:  0.6854000091552734
-  }, 60000);
-
   test('sequence single read', async () => {
     await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
@@ -30,7 +20,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       parent.destroy();
     });
     // Min:  0.7418999671936035
-    // default attachable: 0.41970014572143555
+    // default attachable: 0.4138000011444092
   }, 60000);
 
   test('sequence single map', async () => {

@@ -5,6 +5,11 @@ import { PerformanceUnitTestHelper } from '../sequence/performance-unit-test.hel
 import { Attachable } from './attachable';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  test('no op', async () => {
+    await PerformanceUnitTestHelper.testPerformance(() => {});
+    // Min:  0.0004000663757324219
+  }, 60000);
+
   test('object create destroy', async () => {
     await PerformanceUnitTestHelper.testPerformance(() => {
       let object = new Attachable().attachToRoot();
@@ -19,5 +24,17 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       object.destroy();
     });
     // Min:  0.38810014724731445
+  }, 60000);
+
+  test('onDestroy callback', async () => {
+    await PerformanceUnitTestHelper.testPerformance(() => {
+      let attachable = new IDAttachable().attachToRoot();
+      attachable
+        .onDestroy()
+        .read(() => {})
+        .attachToRoot();
+      attachable.destroy();
+    });
+    // Min:  0.7037999629974365
   }, 60000);
 });
