@@ -1,6 +1,7 @@
 import { ArrayHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
+import { Attachable } from '../attachable/attachable';
 import { IDAttachable } from '../attachable/id-attachable';
 import { Action } from '../observables/action/action';
 import { PerformanceUnitTestHelper } from './performance-unit-test.helper';
@@ -16,20 +17,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min:  0.6854000091552734
   }, 60000);
 
-  test('action to sequence read', async () => {
-    let action = new Action<void>();
-    await PerformanceUnitTestHelper.testPerformance(() => {
-      let parent = new IDAttachable().attachToRoot();
-      action
-        .toSequence()
-        .read(() => {})
-        .attach(parent);
-      action.trigger();
-      parent.destroy();
-    });
-    // Min:  1.2650001049041748
-  }, 60000);
-
   test('sequence single read', async () => {
     await PerformanceUnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
@@ -37,12 +24,13 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new IDAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       sequence.read(() => {}).attach(parent);
       resolve();
       parent.destroy();
     });
     // Min:  0.7418999671936035
+    // default attachable: 0.41970014572143555
   }, 60000);
 
   test('sequence single map', async () => {
@@ -52,12 +40,28 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new IDAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       sequence.map(() => {}).attach(parent);
       resolve();
       parent.destroy();
     });
     // Min:  0.8095998764038086
+    // default attachable: 0.42039990425109863
+  }, 60000);
+
+  test('action to sequence read', async () => {
+    let action = new Action<void>();
+    await PerformanceUnitTestHelper.testPerformance(() => {
+      let parent = new Attachable().attachToRoot();
+      action
+        .toSequence()
+        .read(() => {})
+        .attach(parent);
+      action.trigger();
+      parent.destroy();
+    });
+    // Min:  1.2650001049041748
+    // default attachable: 0.8048000335693359
   }, 60000);
 
   test('sequence single async map', async () => {
@@ -67,13 +71,14 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new IDAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       sequence.orderedMap(() => Sequence.create(r2 => r2())).attach(parent);
       resolve();
       parent.destroy();
     });
     // Min:  1.1162998676300049
     // After introducing packages: 2.077700138092041
+    // default attachable: 1.319700002670288
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
@@ -83,7 +88,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new IDAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       sequence
         .read(() => {})
         .read(() => {})
@@ -111,6 +116,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min: 2.370800018310547
     // After introducing packages: 4.625699996948242 -> 5.069400072097778 -> 5.850499868392944
     // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157 -> 4.654599905014038 -> 4.55460000038147
+    // default attachable: 4.045099973678589
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -120,7 +126,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      let parent = new IDAttachable().attachToRoot();
+      let parent = new Attachable().attachToRoot();
       sequence
         .map(() => {})
         .map(() => {})
@@ -155,6 +161,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // lazy on destroy listeners: 5.742200136184692
     // removing isPipelineEmpty: 5.639800071716309
     // fix lazy pending packages: 5.240200042724609
+    // default attachable: 4.639800071716309
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
@@ -165,7 +172,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
           resolve = r as any;
         });
 
-        let parent = new IDAttachable().attachToRoot();
+        let parent = new Attachable().attachToRoot();
         sequence
           .orderedMap(() => Sequence.create(r2 => r2()))
           .orderedMap(() => Sequence.create(r2 => r2()))
@@ -191,7 +198,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve();
         parent.destroy();
       },
-      { sampleCount: 10, repetationPerSample: 1000 }
+      { sampleCount: 50, repetationPerSample: 1000 }
     );
     // Min: 101.85249996185303
     // After introducing packages: 223.7542998790741
@@ -211,6 +218,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       combination.destroy();
       // Min:  13.876399993896484 -> 12.01830005645752 -> 11.235599994659424
+      // default attachable: 11.232700109481812
     });
   }, 60000);
 
@@ -223,6 +231,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       combination.destroy();
       // Min:  12.509200096130371
+      // default attachable: 11.661400079727173
     });
   }, 60000);
 });
