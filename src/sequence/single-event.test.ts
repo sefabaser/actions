@@ -84,6 +84,28 @@ describe('SingleEvent', () => {
         singleEvent.destroy();
         expect(() => resolve('test')).not.toThrow();
       });
+
+      test('after attaching a resolved event should destroy by itself', () => {
+        let singleEvent = SingleEvent.create<void>(resolve => resolve())
+          .read(() => {})
+          .attach(new Attachable().attachToRoot());
+
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
+
+      test('after attaching a resolved event should destroy by itself', () => {
+        let resolve!: () => void;
+        let singleEvent = SingleEvent.create<void>(r => {
+          resolve = r;
+        })
+          .read(() => {})
+          .attach(new Attachable().attachToRoot());
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        resolve();
+
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
     });
 
     describe('Attachment Errors', () => {
