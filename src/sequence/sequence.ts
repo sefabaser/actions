@@ -6,7 +6,7 @@ import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/not
 export type NotStream<T> = T extends Sequence<any> ? (T extends Notifier<any> ? never : never) : T;
 export type StreamType<T = void> = Notifier<T> | Sequence<T>;
 
-type SequencePipelineDestructor = (sequencePackage?: SequencePackage) => void;
+type SequencePipelineDestructor = (finalContext?: SequenceContext) => void;
 type SequencePipelineIterator<A = unknown, B = unknown> = (
   data: A,
   context: ISequenceLinkContext,
@@ -122,11 +122,13 @@ class SequenceExecuter extends Attachable {
       this._pipeline.push({ iterator, destructor });
 
       // console.log('-> enter pipeline', this._pendingPackages.empty ? ' no pending' : ' some pending');
-      let pendingPackages = this._pendingPackages;
-      this._pendingPackages = new Queue();
-      while (pendingPackages?.notEmpty) {
-        let pendingPackage = pendingPackages.pop()!;
-        this.iteratePackage(pendingPackage);
+      if (this._pendingPackages) {
+        let pendingPackages = this._pendingPackages;
+        this._pendingPackages = new Queue();
+        while (pendingPackages.notEmpty) {
+          let pendingPackage = pendingPackages.pop()!;
+          this.iteratePackage(pendingPackage);
+        }
       }
     }
   }
@@ -176,8 +178,9 @@ class SequenceExecuter extends Attachable {
                 if (index > sequencePackage.pipelineIndex) {
                   break;
                 } else {
-                  let item = this._pipeline[index];
-                  item.destructor!(index === sequencePackage.pipelineIndex ? sequencePackage : undefined);
+                  this._pipeline[index].destructor!(
+                    index === sequencePackage.pipelineIndex ? sequencePackage.ongoingContext : undefined
+                  );
                 }
               }
             }
@@ -471,9 +474,9 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalPackage?: SequencePackage) => {
-        if (finalPackage) {
-          while (queue.notEmpty && queue.peekLast()?.context !== finalPackage.ongoingContext) {
+      (finalContext?: SequenceContext) => {
+        if (finalContext) {
+          while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
             let lastInTheLine = queue.dequeue()!;
             lastInTheLine.context.destroyAttachment();
             this.executor.ongoingPackageCount--;

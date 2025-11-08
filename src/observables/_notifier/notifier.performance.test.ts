@@ -14,7 +14,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    // Min:  0.8376998901367188
+    // Min:  0.8124001026153564
   }, 60000);
 
   test('action subscribe 10x', async () => {

@@ -27,7 +27,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       parent.destroy();
     });
-    // Min:  1.2650001049041748 -> 1.1787998676300049
+    // Min:  1.2650001049041748
   }, 60000);
 
   test('sequence single read', async () => {
@@ -110,7 +110,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min: 2.370800018310547
     // After introducing packages: 4.625699996948242 -> 5.069400072097778 -> 5.850499868392944
-    // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157
+    // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157 -> 4.654599905014038
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -154,6 +154,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // remove .clear: 5.663399934768677
     // lazy on destroy listeners: 5.742200136184692
     // removing isPipelineEmpty: 5.639800071716309
+    // fix lazy pending packages: 5.452199935913086
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
