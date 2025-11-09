@@ -8,7 +8,7 @@ export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
   static fromSequence<S>(sequence: Sequence<S>): {
-    attach: (parent: IAttachable | string) => Notifier<S>;
+    attach: (parent: IAttachable | number) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
     if (sequence.attachIsCalled) {
@@ -18,7 +18,7 @@ export class Notifier<T> {
     let notifier = new Notifier<S>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
     return {
-      attach: (parent: IAttachable | string) => {
+      attach: (parent: IAttachable | number) => {
         sequence.attach(parent);
         return notifier;
       },

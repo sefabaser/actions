@@ -308,7 +308,7 @@ describe('IDAttachable', () => {
 
     test('invalid id', () => {
       class Child extends IDAttachable {}
-      expect(Child.validateId('invalidId')).toBe(false);
+      expect(Child.validateId(9999)).toBe(false);
     });
   });
 });

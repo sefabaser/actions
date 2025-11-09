@@ -33,6 +33,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.35089993476867676
     // storage change: 0.2955000400543213
     // id gen change: 0.19920015335083008
+    // number ids: 0.17100000381469727
   }, 60000);
 
   test('IDAttachable create, attach and destroy', async () => {
@@ -43,7 +44,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min:  0.601099967956543
     // storage change: 0.5199000835418701
-    // id gen change: 0.4336998462677002
+    // id gen change: 0.4216001033782959
+    // number ids: 0.3815000057220459
   }, 60000);
 
   test('onDestroy callback', async () => {
@@ -57,5 +59,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // single event: 0.6326999664306641
     // storage change: 0.5597000122070312
     // id gen change: 0.47520017623901367
+    // number ids: 0.4409000873565674
   }, 60000);
 });

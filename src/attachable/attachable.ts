@@ -6,7 +6,7 @@ export interface IAttachment {
   destroyed: boolean;
   attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: IAttachable | string): this;
+  attach(parent: IAttachable | number): this;
   attachToRoot(): this;
 }
 
@@ -82,14 +82,14 @@ export class Attachable implements IAttachable {
     }
   }
 
-  attach(parent: IAttachable | string): this {
+  attach(parent: IAttachable | number): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      this._attachedParent = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
+      this._attachedParent = Comparator.isNumber(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
       this._attachedParent.setAttachment(this);
     }
     return this;

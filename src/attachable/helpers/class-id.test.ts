@@ -35,7 +35,7 @@ describe('ClassId', () => {
 
     test('middle class should be able to access instance classId of its children', () => {
       class Mid extends ClassID {
-        foo(instance: Mid): string {
+        foo(instance: Mid): number {
           return instance.classId;
         }
       }
@@ -64,20 +64,20 @@ describe('ClassId', () => {
     test('hardReset', () => {
       ClassID.hardReset();
       class Child1 extends ClassID {}
-      expect(Child1.id).toBe('1');
+      expect(Child1.id).toBe(1);
       ClassID.hardReset();
       class Child2 extends ClassID {}
-      expect(Child2.id).toBe('1');
+      expect(Child2.id).toBe(1);
     });
   });
 
   describe('Without Inheritance', () => {
     class Foo {
-      static get id(): string {
+      static get id(): number {
         return ClassID.getClassID(this);
       }
 
-      get classId(): string {
+      get classId(): number {
         return (this.constructor as typeof Foo).id;
       }
     }
@@ -113,7 +113,7 @@ describe('ClassId', () => {
 
     test('middle class should be able to access instance classId of its children', () => {
       class Mid extends Foo {
-        foo(instance: Mid): string {
+        foo(instance: Mid): number {
           return instance.classId;
         }
       }
@@ -142,10 +142,10 @@ describe('ClassId', () => {
     test('hardReset', () => {
       ClassID.hardReset();
       class Child1 extends Foo {}
-      expect(Child1.id).toBe('1');
+      expect(Child1.id).toBe(1);
       ClassID.hardReset();
       class Child2 extends Foo {}
-      expect(Child2.id).toBe('1');
+      expect(Child2.id).toBe(1);
     });
   });
 });

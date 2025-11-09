@@ -1,12 +1,11 @@
-import { IAttachable } from '../attachable';
 import { IDAttachable } from '../id-attachable';
 
 /** @internal */
 export class AttachmentTargetStore {
   private static nextAvailableId = 0;
-  private static storage = new Map<string, { instance: IDAttachable; class: typeof IDAttachable }>();
+  private static storage = new Map<number, { instance: IDAttachable; class: typeof IDAttachable }>();
 
-  static findAttachmentTarget(attachableCandidate: string): IAttachable {
+  static findAttachmentTarget(attachableCandidate: number): IDAttachable {
     let item = this.storage.get(attachableCandidate);
     if (!item) {
       throw new Error(`Attachable: attachable not found by id! id: ${attachableCandidate}`);
@@ -14,10 +13,10 @@ export class AttachmentTargetStore {
     return item.instance;
   }
 
-  static registerIDAttachable(attachmentTarget: IDAttachable): string {
+  static registerIDAttachable(attachmentTarget: IDAttachable): number {
     let Class = attachmentTarget.constructor as typeof IDAttachable;
 
-    let id = this.nextAvailableId++ + '';
+    let id = this.nextAvailableId++;
 
     this.storage.set(id, { instance: attachmentTarget, class: Class });
     return id;
@@ -27,7 +26,7 @@ export class AttachmentTargetStore {
     this.storage.delete(attachmentTarget.id);
   }
 
-  static validateIdForClass(id: string, expectedConstructor: typeof IDAttachable): boolean {
+  static validateIdForClass(id: number, expectedConstructor: typeof IDAttachable): boolean {
     let item = this.storage.get(id);
     return item?.class === expectedConstructor;
   }

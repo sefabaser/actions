@@ -2,22 +2,22 @@ export type AnyClass = abstract new (...args: any[]) => any;
 
 export class ClassID {
   private static nextClassID = 1;
-  private static classToClassID = new WeakMap<AnyClass, string>();
+  private static classToClassID = new WeakMap<AnyClass, number>();
 
-  static get id(): string {
+  static get id(): number {
     return this.getClassID(this);
   }
 
-  static getClassID(Class: AnyClass): string {
+  static getClassID(Class: AnyClass): number {
     let id = ClassID.classToClassID.get(Class);
     if (!id) {
-      id = `${ClassID.nextClassID++}`;
+      id = ClassID.nextClassID++;
       ClassID.classToClassID.set(Class, id);
     }
     return id;
   }
 
-  get classId(): string {
+  get classId(): number {
     return (this.constructor as typeof ClassID).id;
   }
 
@@ -27,6 +27,6 @@ export class ClassID {
    */
   static hardReset(): void {
     this.nextClassID = 1;
-    this.classToClassID = new WeakMap<typeof ClassID, string>();
+    this.classToClassID = new WeakMap<typeof ClassID, number>();
   }
 }

@@ -6,18 +6,18 @@ import { ClassID } from './helpers/class-id';
 
 export class IDAttachable extends Attachable {
   // ----------------------------- CLASSID -----------------------------
-  static get id(): string {
+  static get id(): number {
     return ClassID.getClassID(this);
   }
 
-  get classId(): string {
+  get classId(): number {
     return (this.constructor as typeof IDAttachable).id;
   }
   // ----------------------------- END CLASSID -----------------------------
 
-  readonly id: string = AttachmentTargetStore.registerIDAttachable(this);
+  readonly id: number = AttachmentTargetStore.registerIDAttachable(this);
 
-  static validateId(this: typeof IDAttachable, id: string): boolean {
+  static validateId(this: typeof IDAttachable, id: number): boolean {
     return AttachmentTargetStore.validateIdForClass(id, this);
   }
 

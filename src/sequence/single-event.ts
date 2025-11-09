@@ -91,7 +91,7 @@ class SingleEventExecuter extends Attachable {
     }
   }
 
-  attach(parent: IAttachable | string): this {
+  attach(parent: IAttachable | number): this {
     if (this.pipelineIndex >= this._pipeline.length && this.resolved) {
       this.destroy();
     }
@@ -231,7 +231,7 @@ export class SingleEvent<T = void> implements IAttachment {
     this.executor.destroy();
   }
 
-  attach(parent: IAttachable | string): this {
+  attach(parent: IAttachable | number): this {
     this.executor.attach(parent);
     return this;
   }

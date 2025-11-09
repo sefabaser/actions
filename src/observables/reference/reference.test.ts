@@ -139,7 +139,7 @@ describe('Reference', () => {
 
       refVar.value = target.id;
 
-      let receivedValue: string | undefined;
+      let receivedValue: number | undefined;
       refVar
         .subscribe(value => {
           receivedValue = value;
@@ -154,7 +154,7 @@ describe('Reference', () => {
       let target1 = new IDAttachable().attachToRoot();
       let target2 = new IDAttachable().attachToRoot();
 
-      let receivedValues: (string | undefined)[] = [];
+      let receivedValues: (number | undefined)[] = [];
       refVar
         .subscribe(value => {
           receivedValues.push(value);
@@ -173,7 +173,7 @@ describe('Reference', () => {
 
       refVar.value = target.id;
 
-      let receivedValues: (string | undefined)[] = [];
+      let receivedValues: (number | undefined)[] = [];
       refVar
         .subscribe(value => {
           receivedValues.push(value);
@@ -189,8 +189,8 @@ describe('Reference', () => {
       let refVar = new Reference().attach(parent);
       let target = new IDAttachable().attachToRoot();
 
-      let received1: string | undefined;
-      let received2: string | undefined;
+      let received1: number | undefined;
+      let received2: number | undefined;
 
       refVar
         .subscribe(value => {
@@ -244,7 +244,7 @@ describe('Reference', () => {
       let refVar = new Reference().attach(parent);
 
       expect(() => {
-        refVar.value = 'invalid-id';
+        refVar.value = 9999;
       }).toThrow('Attachable: attachable not found by id!');
     });
 
@@ -341,7 +341,7 @@ describe('Reference', () => {
 
   describe('Reference path', () => {
     test('can use path to extract id from object', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       refVar.value = { id: target.id };
@@ -352,7 +352,7 @@ describe('Reference', () => {
     });
 
     test('can use nested path to extract id from object', () => {
-      let refVar = new Reference<{ user: { profile: { id: string } } }>({ path: 'user.profile.id' }).attach(parent);
+      let refVar = new Reference<{ user: { profile: { id: number } } }>({ path: 'user.profile.id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       refVar.value = {
@@ -377,7 +377,7 @@ describe('Reference', () => {
 
     test('initial value with path works correctly', () => {
       let target = new IDAttachable().attachToRoot();
-      let refVar = new Reference<{ id: string }>({
+      let refVar = new Reference<{ id: number }>({
         path: 'id',
         initialValue: { id: target.id }
       }).attach(parent);
@@ -389,7 +389,7 @@ describe('Reference', () => {
     });
 
     test('can change from one object to another', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       let target1 = new IDAttachable().attachToRoot();
       let target2 = new IDAttachable().attachToRoot();
 
@@ -404,7 +404,7 @@ describe('Reference', () => {
     });
 
     test('throws error when using object without path', () => {
-      let refVar = new Reference<{ id: string }>(undefined as any).attach(parent);
+      let refVar = new Reference<{ id: number }>(undefined as any).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       expect(() => {
@@ -412,20 +412,20 @@ describe('Reference', () => {
       }).toThrow('Reference: the value and the path is not matching. Value type: "object, path: "undefined"');
     });
 
-    test('throws error when using string with path', () => {
-      let refVar = new Reference<string>({ path: 'id' } as any).attach(parent);
+    test('throws error when using number with path', () => {
+      let refVar = new Reference<number>({ path: 'id' } as any).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       expect(() => {
         refVar.value = target.id;
-      }).toThrow('Reference: the value and the path is not matching. Value type: "string, path: "id"');
+      }).toThrow('Reference: the value and the path is not matching. Value type: "number, path: "id"');
     });
 
     test('subscribers notified when object reference destroyed', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
-      let heap: ({ id: string } | undefined)[] = [];
+      let heap: ({ id: number } | undefined)[] = [];
       refVar
         .subscribe(value => {
           heap.push(value);
@@ -440,7 +440,7 @@ describe('Reference', () => {
 
     test('path with additional object properties preserved', () => {
       interface UserData {
-        id: string;
+        id: number;
         name: string;
         age: number;
       }
@@ -462,7 +462,7 @@ describe('Reference', () => {
     });
 
     test('can set to undefined to clear object reference', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       refVar.value = { id: target.id };
@@ -476,7 +476,7 @@ describe('Reference', () => {
     });
 
     test('setting same object value does not create duplicate subscriptions', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       let obj = { id: target.id };
@@ -489,7 +489,7 @@ describe('Reference', () => {
 
     test('object reference with array in path', () => {
       interface DataWithArray {
-        items: Array<{ id: string }>;
+        items: Array<{ id: number }>;
         selectedIndex: number;
       }
 
@@ -497,7 +497,7 @@ describe('Reference', () => {
       let target = new IDAttachable().attachToRoot();
 
       let data: DataWithArray = {
-        items: [{ id: target.id }, { id: 'other-id' }],
+        items: [{ id: target.id }, { id: 9999 }],
         selectedIndex: 0
       };
 
@@ -509,7 +509,7 @@ describe('Reference', () => {
     });
 
     test('destroyed reference with path cannot be set', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       let target = new IDAttachable().attachToRoot();
 
       refVar.destroy();
@@ -520,7 +520,7 @@ describe('Reference', () => {
     });
 
     test('listenerCount works with object references', () => {
-      let refVar = new Reference<{ id: string }>({ path: 'id' }).attach(parent);
+      let refVar = new Reference<{ id: number }>({ path: 'id' }).attach(parent);
       expect(refVar.listenerCount).toBe(0);
 
       refVar.subscribe(() => {}).attachToRoot();

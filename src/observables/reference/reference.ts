@@ -5,17 +5,22 @@ import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
-export interface ObjectReferenceOptions<T> {
+export interface ObjectReferenceOptions<T extends number | object> {
   readonly initialValue?: T;
   readonly path: string;
 }
 
-export interface StringReferenceOptions<T> {
+export interface IDReferenceOptions<T extends number | object> {
   readonly initialValue?: T;
 }
 
+interface Options<T extends number | object> {
+  readonly initialValue: T | undefined;
+  readonly path: string | undefined;
+}
+
 // TODO should extend variable
-export class Reference<T = string> extends Attachable implements IVariable<T | undefined> {
+export class Reference<T extends number | object = number> extends Attachable implements IVariable<T | undefined> {
   get value(): T | undefined {
     if (this.destroyed) {
       return undefined;
@@ -37,14 +42,14 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
 
   private variable: Variable<T | undefined>;
   private destroySubscription: IAttachment | undefined;
-  private options: { initialValue: T | undefined; path: string | undefined };
+  private options: Options<T>;
 
-  constructor(...args: T extends string ? [options?: StringReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]) {
+  constructor(...args: T extends number ? [options?: IDReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]) {
     super();
     this.options = {
       initialValue: undefined,
       path: undefined,
-      ...args[0]
+      ...(args[0] as Partial<Options<T>>)
     };
 
     this.variable = new Variable<T | undefined>(undefined, { notifyOnChange: true });
@@ -88,7 +93,7 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
     return this.variable.subscribe(callback);
   }
 
-  attach(parent: IAttachable | string): this {
+  attach(parent: IAttachable | number): this {
     super.attach(parent);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;
@@ -107,8 +112,8 @@ export class Reference<T = string> extends Attachable implements IVariable<T | u
     super.destroy();
   }
 
-  private getReferenceId(value: T, path: string | undefined): string {
-    if (Comparator.isString(value) && path === undefined) {
+  private getReferenceId(value: T, path: string | undefined): number {
+    if (Comparator.isNumber(value) && path === undefined) {
       return value;
     } else if (Comparator.isObject(value) && path !== undefined) {
       return JsonHelper.deepFind(value, path);
