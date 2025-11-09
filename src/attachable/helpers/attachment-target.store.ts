@@ -2,7 +2,7 @@ import { IDAttachable } from '../id-attachable';
 
 /** @internal */
 export class AttachmentTargetStore {
-  private static nextAvailableId = 0;
+  private static nextAvailableId = 1;
   private static storage = new Map<number, { instance: IDAttachable; class: typeof IDAttachable }>();
 
   static findAttachmentTarget(attachableCandidate: number): IDAttachable {
@@ -35,7 +35,7 @@ export class AttachmentTargetStore {
    * Required to be called before or after each unit test to reset the store
    */
   static hardReset(): void {
-    this.nextAvailableId = 0;
+    this.nextAvailableId = 1;
     this.storage.clear();
   }
 }
