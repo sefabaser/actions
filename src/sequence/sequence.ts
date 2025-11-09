@@ -77,7 +77,7 @@ class SequenceExecuter extends Attachable {
 
   private _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   private _asyncPipelineIndices?: Set<number>;
-  private _pendingPackages?: Queue<SequencePackage>;
+  private _waitingForNewLink?: Queue<SequencePackage>;
   private _finalized?: boolean;
   ongoingPackageCount = 0;
 
@@ -86,7 +86,7 @@ class SequenceExecuter extends Attachable {
       super.destroy();
 
       this._pipeline = undefined as any;
-      this._pendingPackages = undefined as any;
+      this._waitingForNewLink = undefined as any;
 
       if (this._onDestroyListeners) {
         let listeners = this._onDestroyListeners;
@@ -101,7 +101,6 @@ class SequenceExecuter extends Attachable {
   trigger(data: unknown): void {
     if (!this._finalized && !this.destroyed) {
       this.ongoingPackageCount++;
-      // console.log(data, ' + initial trigger');
       this.iteratePackage(new SequencePackage(data));
     }
   }
@@ -121,13 +120,16 @@ class SequenceExecuter extends Attachable {
 
       this._pipeline.push({ iterator, destructor });
 
-      // console.log('-> enter pipeline', this._pendingPackages.empty ? ' no pending' : ' some pending');
-      if (this._pendingPackages) {
-        let pendingPackages = this._pendingPackages;
-        this._pendingPackages = new Queue();
-        while (pendingPackages.notEmpty) {
-          let pendingPackage = pendingPackages.pop()!;
-          this.iteratePackage(pendingPackage);
+      if (this._waitingForNewLink) {
+        let waitingPackages = this._waitingForNewLink;
+        this._waitingForNewLink = new Queue();
+        let startedAsFinalized = this._finalized;
+        while (waitingPackages.notEmpty) {
+          let waitingPackage = waitingPackages.pop()!;
+          this.iteratePackage(waitingPackage);
+          if (startedAsFinalized !== this._finalized) {
+            break;
+          }
         }
       }
     }
@@ -135,7 +137,6 @@ class SequenceExecuter extends Attachable {
 
   final() {
     if (this.attachIsCalled && this.ongoingPackageCount === 0) {
-      // console.log('final destroy');
       this.destroy();
     } else {
       this._finalized = true;
@@ -158,14 +159,13 @@ class SequenceExecuter extends Attachable {
   }
 
   private onAttach(): void {
-    while (this._pendingPackages?.notEmpty) {
-      let pendingPackage = this._pendingPackages.pop()!;
-      pendingPackage.destroy();
+    while (this._waitingForNewLink?.notEmpty) {
+      let waitingPackage = this._waitingForNewLink.pop()!;
+      waitingPackage.destroy();
       this.ongoingPackageCount--;
     }
 
     if (this._finalized && this.ongoingPackageCount === 0) {
-      // console.log('attach destroy');
       this.destroy();
     }
   }
@@ -173,8 +173,6 @@ class SequenceExecuter extends Attachable {
   private iteratePackage(sequencePackage: SequencePackage): void {
     if (!this.destroyed) {
       if (sequencePackage.pipelineIndex < this._pipeline.length) {
-        // console.log('iterate ', sequencePackage.data, sequencePackage.pipelineIndex);
-
         let context = new SequenceContext(
           this,
           () => {
@@ -207,18 +205,16 @@ class SequenceExecuter extends Attachable {
           this.iteratePackage(sequencePackage);
         });
       } else {
-        // console.log('end of pipeline ', sequencePackage.data, sequencePackage.pipelineIndex, this._pipeline.length);
         if (!this.attachIsCalled) {
-          if (!this._pendingPackages) {
-            this._pendingPackages = new Queue();
+          if (!this._waitingForNewLink) {
+            this._waitingForNewLink = new Queue();
           }
-          this._pendingPackages.add(sequencePackage);
+          this._waitingForNewLink.add(sequencePackage);
         } else {
           sequencePackage.destroy();
           this.ongoingPackageCount--;
 
           if (this._finalized && this.ongoingPackageCount === 0) {
-            // console.log('finalized last package destroy');
             this.destroy();
           }
         }
@@ -410,6 +406,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   // TODO: other async map functions
+
   /**
    * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
    *
@@ -467,6 +464,7 @@ export class Sequence<T = void> implements IAttachment {
     let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>(
       (data, context, resolve) => {
+        console.log(data);
         let executionReturn: StreamType<K>;
 
         let queuer: ExecutionOrderQueuer = { context };
@@ -481,11 +479,9 @@ export class Sequence<T = void> implements IAttachment {
 
         executionReturn
           .subscribe(resolvedData => {
-            // console.log('*** ', resolvedData);
             queuer.callback = () => resolve(resolvedData);
 
             if (queue.peek() === queuer) {
-              // console.log('       it is the next in queue');
               queue.pop();
               resolve(resolvedData);
 
@@ -500,6 +496,7 @@ export class Sequence<T = void> implements IAttachment {
       },
       (finalContext?: SequenceContext) => {
         if (finalContext) {
+          console.log('final context ', queue.notEmpty, queue.peekLast()?.context !== finalContext);
           while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
             let lastInTheLine = queue.dequeue()!;
             lastInTheLine.context.destroyAttachment();

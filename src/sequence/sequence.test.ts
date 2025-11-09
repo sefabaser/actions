@@ -1005,8 +1005,68 @@ describe('Sequence', () => {
           expect(heap).toEqual([2, 3, 1]);
         });
 
-        test('finalizing', () => {
-          // TODO
+        test('finalizing on arrive', () => {
+          let heap: unknown[] = [];
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+
+          Sequence.create<number>(resolve => {
+            resolve(1); // will be "in the room"
+            resolve(2); // will be "in the room" finalize
+            resolve(3); // will be "not entered the room yet"
+          })
+            .asyncMap((value, context) => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                context.final();
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          action2.trigger();
+          action3.trigger();
+          action1.trigger();
+
+          expect(heap).toEqual([2, 1]);
+        });
+
+        test('finalizing on resolve', () => {
+          let heap: unknown[] = [];
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+
+          Sequence.create<number>(resolve => {
+            resolve(1); // will be "in the room"
+            resolve(2); // will be "in the room" finalize on resolve
+            resolve(3); // will be "in the room"
+          })
+            .asyncMap((value, context) => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => {
+                  context.final();
+                  return value;
+                });
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          action2.trigger();
+          action3.trigger();
+          action1.trigger();
+
+          expect(heap).toEqual([2, 3, 1]);
         });
       });
     });
@@ -1510,8 +1570,68 @@ describe('Sequence', () => {
           expect(heap).toEqual([1, 2, 3]);
         });
 
-        test('finalizing', () => {
-          // TODO
+        test('finalizing on arrive', () => {
+          let heap: unknown[] = [];
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+
+          Sequence.create<number>(resolve => {
+            resolve(1); // will be "in the room"
+            resolve(2); // will be "in the room" finalize
+            resolve(3); // will be "not entered the room yet"
+          })
+            .orderedMap((value, context) => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                context.final();
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          action2.trigger();
+          action3.trigger();
+          action1.trigger();
+
+          expect(heap).toEqual([1, 2]);
+        });
+
+        test('finalizing on resolve', () => {
+          let heap: unknown[] = [];
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+
+          Sequence.create<number>(resolve => {
+            resolve(1); // will be "in the room"
+            resolve(2); // will be "in the room" finalize on resolve
+            resolve(3); // will be "in the room"
+          })
+            .orderedMap((value, context) => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => {
+                  context.final();
+                  return value;
+                });
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          action2.trigger();
+          action3.trigger();
+          action1.trigger();
+
+          expect(heap).toEqual([1, 2]);
         });
       });
     });
