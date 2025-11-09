@@ -8,7 +8,8 @@ export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
   static fromSequence<S>(sequence: Sequence<S>): {
-    attach: (parent: IAttachable | number) => Notifier<S>;
+    attach: (parent: IAttachable) => Notifier<S>;
+    attachById: (parent: number) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
     if (sequence.attachIsCalled) {
@@ -18,8 +19,12 @@ export class Notifier<T> {
     let notifier = new Notifier<S>();
     sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
     return {
-      attach: (parent: IAttachable | number) => {
+      attach: (parent: IAttachable) => {
         sequence.attach(parent);
+        return notifier;
+      },
+      attachById: (id: number) => {
+        sequence.attachById(id);
         return notifier;
       },
       attachToRoot: () => {
@@ -54,7 +59,12 @@ export class Notifier<T> {
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    return this.baseSubscribe(callback);
+    let subscriptionId = this.getNextAvailableSubscriptionId();
+    this.listenersMap.set(subscriptionId, callback);
+
+    return new ActionSubscription(() => {
+      this.listenersMap.delete(subscriptionId);
+    });
   }
 
   toSequence(): Sequence<T> {
@@ -87,14 +97,5 @@ export class Notifier<T> {
 
   private getNextAvailableSubscriptionId(): number {
     return this.nextAvailableSubscriptionId++;
-  }
-
-  private baseSubscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    let subscriptionId = this.getNextAvailableSubscriptionId();
-    this.listenersMap.set(subscriptionId, callback);
-
-    return new ActionSubscription(() => {
-      this.listenersMap.delete(subscriptionId);
-    });
   }
 }

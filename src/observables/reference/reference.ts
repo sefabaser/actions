@@ -93,8 +93,14 @@ export class Reference<T extends number | object = number> extends Attachable im
     return this.variable.subscribe(callback);
   }
 
-  attach(parent: IAttachable | number): this {
+  attach(parent: IAttachable): this {
     super.attach(parent);
+    this.destroySubscription?.attach(this.attachedParent!);
+    return this;
+  }
+
+  attachById(id: number): this {
+    super.attachById(id);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;
   }

@@ -68,11 +68,11 @@ describe('IDAttachable', () => {
       expect(destroyCalled).toBeTruthy();
     });
 
-    test('attach by parent id string', () => {
+    test('attach by parent id', () => {
       let parent = new IDAttachable().attachToRoot();
       let child = new IDAttachable();
 
-      child.attach(parent.id);
+      child.attachById(parent.id);
 
       expect(child.destroyed).toBe(false);
     });

@@ -1,12 +1,11 @@
-import { Comparator } from 'helpers-lib';
-
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 
 export interface IAttachment {
   destroyed: boolean;
   attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: IAttachable | number): this;
+  attach(parent: IAttachable): this;
+  attachById(parent: number): this;
   attachToRoot(): this;
 }
 
@@ -82,14 +81,27 @@ export class Attachable implements IAttachable {
     }
   }
 
-  attach(parent: IAttachable | number): this {
+  attach(parent: IAttachable): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      this._attachedParent = Comparator.isNumber(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
+      this._attachedParent = parent;
+      this._attachedParent.setAttachment(this);
+    }
+    return this;
+  }
+
+  attachById(id: number): this {
+    if (this._attachIsCalled) {
+      throw new Error(`Attachable: The object is already attached to something!`);
+    }
+
+    this._attachIsCalled = true;
+    if (!this._destroyed) {
+      this._attachedParent = AttachmentTargetStore.findAttachmentTarget(id);
       this._attachedParent.setAttachment(this);
     }
     return this;

@@ -81,7 +81,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 0.9167001247406006
     // no attachable: 0.6552000045776367
     // manual destruction of the sequence: 0.6094000339508057
-    // queueMicrotask: 0.5599000453948975
+    // queueMicrotask: 0.5446999073028564
   }, 60000);
 
   test('action to sequence read', async () => {

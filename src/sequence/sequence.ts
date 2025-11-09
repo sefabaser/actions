@@ -142,9 +142,14 @@ class SequenceExecuter extends Attachable {
     }
   }
 
-  attach(parent: IAttachable | number): this {
+  attach(parent: IAttachable): this {
     this.onAttach();
     return super.attach(parent);
+  }
+
+  attachById(id: number): this {
+    this.onAttach();
+    return super.attachById(id);
   }
 
   attachToRoot(): this {
@@ -509,18 +514,20 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   destroy(): void {
-    // console.log('sequence destroy call');
     this.executor.destroy();
   }
 
-  attach(parent: IAttachable | number): this {
-    // console.log('// attach');
+  attach(parent: IAttachable): this {
     this.executor.attach(parent);
     return this;
   }
 
+  attachById(parent: number): this {
+    this.executor.attachById(parent);
+    return this;
+  }
+
   attachToRoot(): this {
-    // console.log('// attach');
     this.executor.attachToRoot();
     return this;
   }
