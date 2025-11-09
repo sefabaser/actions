@@ -27,25 +27,56 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     this.set(value);
   }
 
-  private options: VariableOptions;
-
   private currentValue!: T;
 
-  constructor(value: T, options?: Partial<VariableOptions>) {
+  constructor(value: T, partialOptions?: Partial<VariableOptions>) {
     super();
     this.currentValue = value;
-    this.options = {
+    let options = {
       notifyOnChange: ActionLibDefaults.variable.notifyOnChange,
       clone: ActionLibDefaults.variable.cloneBeforeNotification,
-      ...options
+      ...partialOptions
     };
+
+    if (options?.notifyOnChange) {
+      this.set = options?.clone ? this.notifyOnChangeCloneSet.bind(this) : this.notifyOnChangeNoCloneSet.bind(this);
+    } else {
+      this.set = options?.clone ? this.notifyAlwaysCloneSet.bind(this) : this.notifyAlwaysNoCloneSet.bind(this);
+    }
   }
 
-  set(data: T): this {
-    let previousData = this.currentValue;
-    this.currentValue = this.options.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
+  set(_: T): this {
+    return this;
+  }
 
-    if (!this.options.notifyOnChange || !Comparator.isEqual(previousData, data)) {
+  private notifyAlwaysNoCloneSet(data: T): this {
+    this.currentValue = data;
+    this.triggerAll(data);
+    return this;
+  }
+
+  private notifyAlwaysCloneSet(data: T): this {
+    this.currentValue = JsonHelper.deepCopy(data);
+    this.triggerAll(data);
+    return this;
+  }
+
+  private notifyOnChangeNoCloneSet(data: T): this {
+    let previousData = this.currentValue;
+    this.currentValue = data;
+
+    if (!Comparator.isEqual(previousData, data)) {
+      this.triggerAll(data);
+    }
+
+    return this;
+  }
+
+  private notifyOnChangeCloneSet(data: T): this {
+    let previousData = this.currentValue;
+    this.currentValue = JsonHelper.deepCopy(data);
+
+    if (!Comparator.isEqual(previousData, data)) {
       this.triggerAll(data);
     }
 

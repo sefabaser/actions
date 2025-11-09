@@ -2,6 +2,7 @@ import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
 import { Action } from '../action/action';
+import { Variable } from '../variable/variable';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('action subscribe single', async () => {
@@ -56,7 +57,45 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 7.991199970245361
     // no attachable: 5.665599822998047
     // queueMicrotask: 5.21779990196228
-    // trigger all change: 4.3343000411987305
+    // trigger all change: 4.310899972915649
+  }, 60000);
+
+  test('variable subscribe and set 10x', async () => {
+    let variable = new Variable<string>('');
+    await UnitTestHelper.testPerformance(() => {
+      let subscription0 = variable.subscribe(() => {}).attachToRoot();
+      let subscription1 = variable.subscribe(() => {}).attachToRoot();
+      let subscription2 = variable.subscribe(() => {}).attachToRoot();
+      let subscription3 = variable.subscribe(() => {}).attachToRoot();
+      let subscription4 = variable.subscribe(() => {}).attachToRoot();
+      let subscription5 = variable.subscribe(() => {}).attachToRoot();
+      let subscription6 = variable.subscribe(() => {}).attachToRoot();
+      let subscription7 = variable.subscribe(() => {}).attachToRoot();
+      let subscription8 = variable.subscribe(() => {}).attachToRoot();
+      let subscription9 = variable.subscribe(() => {}).attachToRoot();
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      variable.set('');
+      subscription0.destroy();
+      subscription1.destroy();
+      subscription2.destroy();
+      subscription3.destroy();
+      subscription4.destroy();
+      subscription5.destroy();
+      subscription6.destroy();
+      subscription7.destroy();
+      subscription8.destroy();
+      subscription9.destroy();
+    });
+    // 4.546999931335449
+    // splitting set functions: 4.5386998653411865
   }, 60000);
 
   test('manual take next', async () => {

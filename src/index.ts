@@ -23,5 +23,5 @@ export {
   VariableOptions
 } from './observables/variable/variable';
 export { Sequence } from './sequence/sequence';
-export { ActionSubscription, IDestroyable } from './utilities/action-subscription';
+export { ActionSubscription } from './utilities/action-subscription';
 export { CallbackUtilities } from './utilities/callback-utilities';
