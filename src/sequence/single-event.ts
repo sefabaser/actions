@@ -1,8 +1,6 @@
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
-import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
-
-export type NotStream<T> = T extends SingleEvent<any> ? (T extends Notifier<any> ? never : never) : T;
-export type StreamType<T = void> = Notifier<T> | SingleEvent<T>;
+import { NotifierCallbackFunction } from '../observables/_notifier/notifier';
+import { AsyncOperation, SyncOperation } from './sequence';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
   data: A,
@@ -190,7 +188,7 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, context: ISingleEventContext) => NotStream<K>): SingleEvent<K> {
+  map<K>(callback: (data: T, context: ISingleEventContext) => SyncOperation<K>): SingleEvent<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
@@ -209,11 +207,11 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<K>(this.executor);
   }
 
-  asyncMap<K>(callback: (data: T, context: ISingleEventContext) => StreamType<K>): SingleEvent<K> {
+  asyncMap<K>(callback: (data: T, context: ISingleEventContext) => AsyncOperation<K>): SingleEvent<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: StreamType<K>;
+      let executionReturn: AsyncOperation<K>;
 
       try {
         executionReturn = callback(data, context);

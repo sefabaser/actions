@@ -22,6 +22,7 @@ export {
   VariableListenerCallbackFunction,
   VariableOptions
 } from './observables/variable/variable';
-export { Sequence } from './sequence/sequence';
+export { AsyncOperation, ISequenceCreatorContext, ISequenceLinkContext, Sequence, SyncOperation } from './sequence/sequence';
+export { ISingleEventContext, SingleEvent } from './sequence/single-event';
 export { ActionSubscription } from './utilities/action-subscription';
 export { CallbackUtilities } from './utilities/callback-utilities';

@@ -1,7 +1,7 @@
 import { IAttachable } from '../..';
 import { IAttachment } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { ISequenceLinkContext, NotStream, Sequence, StreamType } from '../../sequence/sequence';
+import { AsyncOperation, ISequenceLinkContext, Sequence, SyncOperation } from '../../sequence/sequence';
 import { ActionSubscription } from '../../utilities/action-subscription';
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
@@ -65,11 +65,11 @@ export class Notifier<T> {
     });
   }
 
-  map<K>(callback: (data: T, context: ISequenceLinkContext) => NotStream<K>): Sequence<K> {
+  map<K>(callback: (data: T, context: ISequenceLinkContext) => SyncOperation<K>): Sequence<K> {
     return this.toSequence().map(callback);
   }
 
-  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => StreamType<K>): Sequence<K> {
+  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     return this.toSequence().orderedMap(callback);
   }
 

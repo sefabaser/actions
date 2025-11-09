@@ -5,9 +5,13 @@ import { Attachable } from '../attachable/attachable';
 import { ActionLibHardReset } from '../helpers/hard-reset';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
+import { Sequence } from './sequence';
 import { SingleEvent } from './single-event';
 
 describe('SingleEvent', () => {
+  let dummySequence = <T>(value: T) => Sequence.create<T>(resolve => resolve(value));
+  let dummySingleEvent = <T>(value: T) => SingleEvent.create<T>(resolve => resolve(value));
+
   beforeEach(() => {
     ActionLibHardReset.hardReset();
     UnitTestHelper.reset();
@@ -534,14 +538,12 @@ describe('SingleEvent', () => {
   });
 
   describe('Async Map', () => {
-    let dummyAsync = <T>(value: T) => SingleEvent.create<T>(resolve => resolve(value));
-
     describe('Triggers', () => {
       test('simple single event sync trigger', () => {
         let heap: string[] = [];
 
         SingleEvent.create<string>(resolve => resolve('a'))
-          .asyncMap(data => dummyAsync(data))
+          .asyncMap(data => dummySingleEvent(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -554,7 +556,7 @@ describe('SingleEvent', () => {
         SingleEvent.create<string>(resolve => {
           UnitTestHelper.callEachDelayed(['a'], data => resolve(data));
         })
-          .asyncMap(data => dummyAsync(data))
+          .asyncMap(data => dummySingleEvent(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -565,6 +567,57 @@ describe('SingleEvent', () => {
     });
 
     describe('Behavior', () => {
+      describe('asyncMap returns sequence', () => {
+        test('instant resolve', () => {
+          let heap: unknown[] = [];
+
+          SingleEvent.create<string>(resolve => resolve('a'))
+            .asyncMap(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          expect(heap).toEqual(['aI']);
+        });
+
+        test('async resolve', async () => {
+          let heap: unknown[] = [];
+
+          SingleEvent.create<string>(resolve => resolve('a'))
+            .asyncMap(data =>
+              Sequence.create<string>(resolveInner => {
+                UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+              })
+            )
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          await UnitTestHelper.waitForAllOperations();
+          expect(heap).toEqual(['aI']);
+        });
+
+        test('data chaining', async () => {
+          let heap: unknown[] = [];
+
+          SingleEvent.create<string>(resolve => resolve('a'))
+            .asyncMap(data => {
+              heap.push(data);
+              return dummySequence(1);
+            })
+            .asyncMap(data => {
+              heap.push(data);
+              return dummySequence(undefined);
+            })
+            .asyncMap(data => {
+              heap.push(data);
+              return dummySequence('final');
+            })
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          expect(heap).toEqual(['a', 1, undefined, 'final']);
+        });
+      });
+
       describe('asyncMap returns single event', () => {
         test('instant resolve single event', () => {
           let heap: unknown[] = [];
@@ -599,15 +652,15 @@ describe('SingleEvent', () => {
           SingleEvent.create<string>(resolve => resolve('a'))
             .asyncMap(data => {
               heap.push(data);
-              return dummyAsync(1);
+              return dummySingleEvent(1);
             })
             .asyncMap(data => {
               heap.push(data);
-              return dummyAsync(undefined);
+              return dummySingleEvent(undefined);
             })
             .asyncMap(data => {
               heap.push(data);
-              return dummyAsync('final');
+              return dummySingleEvent('final');
             })
             .read(data => heap.push(data))
             .attachToRoot();
@@ -662,7 +715,7 @@ describe('SingleEvent', () => {
             })
             .asyncMap(() => {
               triggered = true;
-              return dummyAsync(undefined);
+              return dummySingleEvent(undefined);
             })
             .attachToRoot();
 
@@ -689,7 +742,7 @@ describe('SingleEvent', () => {
             .asyncMap(() => action)
             .asyncMap(() => {
               triggered = true;
-              return dummyAsync(undefined);
+              return dummySingleEvent(undefined);
             })
             .attachToRoot();
 

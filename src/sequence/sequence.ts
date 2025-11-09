@@ -2,9 +2,16 @@ import { Comparator, Queue } from 'helpers-lib';
 
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
 import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
+import { SingleEvent } from './single-event';
 
-export type NotStream<T> = T extends Sequence<any> ? (T extends Notifier<any> ? never : never) : T;
-export type StreamType<T = void> = Notifier<T> | Sequence<T>;
+export type SyncOperation<T> = T extends Sequence<any>
+  ? T extends Notifier<any>
+    ? T extends SingleEvent<any>
+      ? never
+      : never
+    : never
+  : T;
+export type AsyncOperation<T = void> = Notifier<T> | Sequence<T> | SingleEvent<T>;
 
 type SequencePipelineDestructor = (finalContext?: SequenceContext) => void;
 type SequencePipelineIterator<A = unknown, B = unknown> = (
@@ -228,7 +235,7 @@ class SequenceExecuter extends Attachable {
 }
 
 export class Sequence<T = void> implements IAttachment {
-  static merge<S>(...streams: StreamType<S>[]): Sequence<S> {
+  static merge<S>(...streams: AsyncOperation<S>[]): Sequence<S> {
     let activeSequences = this.validateAndConvertToSet(streams);
 
     let subscriptions: IAttachment[] = [];
@@ -248,11 +255,13 @@ export class Sequence<T = void> implements IAttachment {
     return mergedSequence;
   }
 
-  static combine<const S extends readonly StreamType<any>[]>(streams: S): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
-  static combine<S extends Record<string, StreamType<any>>>(
+  static combine<const S extends readonly AsyncOperation<any>[]>(
+    streams: S
+  ): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combine<S extends Record<string, AsyncOperation<any>>>(
     streamsObject: S
   ): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
-  static combine<S extends Record<string, StreamType<any>> | readonly StreamType<any>[]>(input: S): Sequence<any> {
+  static combine<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(input: S): Sequence<any> {
     let isArray = Comparator.isArray(input);
     let streams = Object.values(input);
     let activeStreams = this.validateAndConvertToSet(streams);
@@ -301,7 +310,7 @@ export class Sequence<T = void> implements IAttachment {
     }, {} as any);
   }
 
-  private static validateAndConvertToSet(streams: StreamType<unknown>[]) {
+  private static validateAndConvertToSet(streams: AsyncOperation<unknown>[]) {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
       for (let i = 0; i < streams.length; i++) {
@@ -315,7 +324,7 @@ export class Sequence<T = void> implements IAttachment {
     return streamsSet;
   }
 
-  private static waitUntilAllSequencesDestroyed(streams: Set<StreamType<unknown>>, callback: () => void): void {
+  private static waitUntilAllSequencesDestroyed(streams: Set<AsyncOperation<unknown>>, callback: () => void): void {
     let notifierFound = false;
     for (let stream of streams) {
       if (stream instanceof Notifier) {
@@ -391,7 +400,7 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, context: ISequenceLinkContext) => NotStream<K>): Sequence<K> {
+  map<K>(callback: (data: T, context: ISequenceLinkContext) => SyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
@@ -428,11 +437,11 @@ export class Sequence<T = void> implements IAttachment {
    * @C ----------------I——>✓---------------------
    * @R ---------------------B-C---A-----------------
    */
-  asyncMap<K>(callback: (data: T, context: ISequenceLinkContext) => StreamType<K>): Sequence<K> {
+  asyncMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: StreamType<K>;
+      let executionReturn: AsyncOperation<K>;
 
       try {
         executionReturn = callback(data, context);
@@ -463,13 +472,13 @@ export class Sequence<T = void> implements IAttachment {
    * @C ----------------I——I- - - - >✓--------------
    * @R ----------------------------ABC--------------
    */
-  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => StreamType<K>): Sequence<K> {
+  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>(
       (data, context, resolve) => {
-        let executionReturn: StreamType<K>;
+        let executionReturn: AsyncOperation<K>;
 
         let queuer: ExecutionOrderQueuer = { context };
         queue.add(queuer);

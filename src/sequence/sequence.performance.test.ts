@@ -45,6 +45,20 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
+      sequence.asyncMap(() => Sequence.create(r2 => r2())).attachToRoot();
+      resolve();
+      sequence.destroy();
+    });
+    // 0.7476999759674072
+  }, 60000);
+
+  test('sequence single ordered map', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let resolve!: () => void;
+      let sequence = Sequence.create(r => {
+        resolve = r as any;
+      });
+
       sequence.orderedMap(() => Sequence.create(r2 => r2())).attachToRoot();
       resolve();
       sequence.destroy();
@@ -53,6 +67,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // After introducing packages: 2.077700138092041
     // default attachable: 1.319700002670288
     // queueMicrotask: 0.9242000579833984
+    // 0.8559999465942383
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {

@@ -7,8 +7,12 @@ import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
 import { Sequence } from './sequence';
+import { SingleEvent } from './single-event';
 
 describe('Sequence', () => {
+  let dummySequence = <T>(value: T) => Sequence.create<T>(resolve => resolve(value));
+  let dummySingleEvent = <T>(value: T) => SingleEvent.create<T>(resolve => resolve(value));
+
   beforeEach(() => {
     ActionLibHardReset.hardReset();
     UnitTestHelper.reset();
@@ -785,8 +789,6 @@ describe('Sequence', () => {
   });
 
   describe('Async Map', () => {
-    let dummyAsync = <T>(value: T) => Sequence.create<T>(resolve => resolve(value));
-
     describe('Triggers', () => {
       test('simple sequence sync triggers', () => {
         let heap: string[] = [];
@@ -796,7 +798,7 @@ describe('Sequence', () => {
           resolve = r;
           resolve('a');
         })
-          .asyncMap(data => dummyAsync(data))
+          .asyncMap(data => dummySequence(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -811,7 +813,7 @@ describe('Sequence', () => {
           resolve('b');
           resolve('c');
         })
-          .asyncMap(data => dummyAsync(data))
+          .asyncMap(data => dummySequence(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -827,7 +829,7 @@ describe('Sequence', () => {
           resolve('a');
           resolve('b');
         })
-          .asyncMap(data => dummyAsync(data))
+          .asyncMap(data => dummySequence(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -844,7 +846,7 @@ describe('Sequence', () => {
     describe('Behavior', () => {
       describe('all async maps common', () => {
         describe('map returns sequence', () => {
-          test('instant resolve sequence', () => {
+          test('instant resolve', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
@@ -877,15 +879,15 @@ describe('Sequence', () => {
             Sequence.create<string>(resolve => resolve('a'))
               .asyncMap(data => {
                 heap.push(data);
-                return dummyAsync(1);
+                return dummySequence(1);
               })
               .asyncMap(data => {
                 heap.push(data);
-                return dummyAsync(undefined);
+                return dummySequence(undefined);
               })
               .asyncMap(data => {
                 heap.push(data);
-                return dummyAsync(undefined);
+                return dummySequence(undefined);
               })
               .attachToRoot();
 
@@ -905,6 +907,92 @@ describe('Sequence', () => {
             })
               .asyncMap(data =>
                 Sequence.create<string>(resolveInner => {
+                  let response = data + 'I';
+
+                  // 1 sync response, 1 async response on each call
+                  if (innerCount % 2 === 0) {
+                    resolveInner(response);
+                  } else {
+                    UnitTestHelper.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                  }
+                  innerCount++;
+                })
+              )
+              .read(data => results.add(data))
+              .attachToRoot();
+
+            resolve('x');
+            resolve('y');
+            UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
+
+            await UnitTestHelper.waitForAllOperations();
+
+            expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+          });
+        });
+
+        describe('map returns single event', () => {
+          test('instant resolve', () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .asyncMap(data => SingleEvent.create<string>(resolveInner => resolveInner(data + 'I')))
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('async resolve', async () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .asyncMap(data =>
+                SingleEvent.create<string>(resolveInner => {
+                  UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+                })
+              )
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            await UnitTestHelper.waitForAllOperations();
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('data chaining', () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .asyncMap(data => {
+                heap.push(data);
+                return dummySingleEvent(1);
+              })
+              .asyncMap(data => {
+                heap.push(data);
+                return dummySingleEvent(undefined);
+              })
+              .asyncMap(data => {
+                heap.push(data);
+                return dummySingleEvent(undefined);
+              })
+              .attachToRoot();
+
+            expect(heap).toEqual(['a', 1, undefined]);
+          });
+
+          test('mixed resolves', async () => {
+            let results = new Set<string>();
+
+            let resolve!: (data: string) => void;
+
+            let innerCount = 0;
+            Sequence.create<string>(r => {
+              resolve = r;
+              resolve('a');
+              resolve('b');
+            })
+              .asyncMap(data =>
+                SingleEvent.create<string>(resolveInner => {
                   let response = data + 'I';
 
                   // 1 sync response, 1 async response on each call
@@ -1110,7 +1198,7 @@ describe('Sequence', () => {
             })
             .asyncMap(() => {
               triggered = true;
-              return dummyAsync(undefined);
+              return dummySequence(undefined);
             })
             .attachToRoot();
 
@@ -1143,7 +1231,7 @@ describe('Sequence', () => {
             })
             .asyncMap(() => {
               triggered = true;
-              return dummyAsync(undefined);
+              return dummySequence(undefined);
             })
             .attachToRoot();
 
@@ -1173,7 +1261,7 @@ describe('Sequence', () => {
             .asyncMap(() => action)
             .asyncMap(() => {
               triggered = true;
-              return dummyAsync(undefined);
+              return dummySequence(undefined);
             })
             .attachToRoot();
 
@@ -1198,7 +1286,7 @@ describe('Sequence', () => {
             .asyncMap(() => action)
             .asyncMap(() => {
               triggered = true;
-              return dummyAsync(undefined);
+              return dummySequence(undefined);
             })
             .attachToRoot();
 
@@ -1470,6 +1558,92 @@ describe('Sequence', () => {
             })
               .orderedMap(data =>
                 Sequence.create<string>(resolveInner => {
+                  let response = data + 'I';
+
+                  // 1 sync response, 1 async response on each call
+                  if (innerCount % 2 === 0) {
+                    resolveInner(response);
+                  } else {
+                    UnitTestHelper.callEachDelayed([response], delayedData => resolveInner(delayedData));
+                  }
+                  innerCount++;
+                })
+              )
+              .read(data => results.add(data))
+              .attachToRoot();
+
+            resolve('x');
+            resolve('y');
+            UnitTestHelper.callEachDelayed(['k', 't'], data => resolve(data));
+
+            await UnitTestHelper.waitForAllOperations();
+
+            expect(results).toEqual(new Set(['aI', 'bI', 'xI', 'yI', 'kI', 'tI']));
+          });
+        });
+
+        describe('map returns single event', () => {
+          test('instant resolve', () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data => SingleEvent.create<string>(resolveInner => resolveInner(data + 'I')))
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('async resolve', async () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data =>
+                SingleEvent.create<string>(resolveInner => {
+                  UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
+                })
+              )
+              .read(data => heap.push(data))
+              .attachToRoot();
+
+            await UnitTestHelper.waitForAllOperations();
+            expect(heap).toEqual(['aI']);
+          });
+
+          test('data chaining', () => {
+            let heap: unknown[] = [];
+
+            Sequence.create<string>(resolve => resolve('a'))
+              .orderedMap(data => {
+                heap.push(data);
+                return dummySingleEvent(1);
+              })
+              .orderedMap(data => {
+                heap.push(data);
+                return dummySingleEvent(undefined);
+              })
+              .orderedMap(data => {
+                heap.push(data);
+                return dummySingleEvent(undefined);
+              })
+              .attachToRoot();
+
+            expect(heap).toEqual(['a', 1, undefined]);
+          });
+
+          test('mixed resolves', async () => {
+            let results = new Set<string>();
+
+            let resolve!: (data: string) => void;
+
+            let innerCount = 0;
+            Sequence.create<string>(r => {
+              resolve = r;
+              resolve('a');
+              resolve('b');
+            })
+              .orderedMap(data =>
+                SingleEvent.create<string>(resolveInner => {
                   let response = data + 'I';
 
                   // 1 sync response, 1 async response on each call
