@@ -16,7 +16,7 @@ describe('AttachmentTargetStore', () => {
       let instance = new TestClass().attachToRoot();
       let id = instance.id;
 
-      expect(id).toBe('1:1');
+      expect(id).toBe('0');
     });
 
     test('generates sequential ids for multiple instances of same class', () => {
@@ -26,7 +26,7 @@ describe('AttachmentTargetStore', () => {
       let instance2 = new TestClass().attachToRoot();
       let instance3 = new TestClass().attachToRoot();
 
-      expect([instance1.id, instance2.id, instance3.id]).toEqual(['1:1', '1:2', '1:3']);
+      expect([instance1.id, instance2.id, instance3.id]).toEqual(['0', '1', '2']);
     });
 
     test('generates different class ids for different classes', () => {
@@ -36,8 +36,8 @@ describe('AttachmentTargetStore', () => {
       let instance1 = new TestClass1().attachToRoot();
       let instance2 = new TestClass2().attachToRoot();
 
-      expect(instance1.id).toBe('1:1');
-      expect(instance2.id).toBe('2:1');
+      expect(instance1.id).toBe('0');
+      expect(instance2.id).toBe('1');
     });
 
     test('maintains separate numbering for different classes', () => {
@@ -49,7 +49,7 @@ describe('AttachmentTargetStore', () => {
       let instance1b = new TestClass1().attachToRoot();
       let instance2b = new TestClass2().attachToRoot();
 
-      expect([instance1a.id, instance2a.id, instance1b.id, instance2b.id]).toEqual(['1:1', '2:1', '1:2', '2:2']);
+      expect([instance1a.id, instance2a.id, instance1b.id, instance2b.id]).toEqual(['0', '1', '2', '3']);
     });
   });
 
@@ -160,7 +160,7 @@ describe('AttachmentTargetStore', () => {
       class TestClass3 extends IDAttachable {}
       let instance = new TestClass3().attachToRoot();
 
-      expect(instance.id).toBe('1:1');
+      expect(instance.id).toBe('0');
     });
 
     test('resets instance id counters', () => {
@@ -173,7 +173,7 @@ describe('AttachmentTargetStore', () => {
 
       let instance = new TestClass().attachToRoot();
 
-      expect(instance.id).toBe('1:1');
+      expect(instance.id).toBe('0');
     });
 
     test('clears all registered attachables', () => {
@@ -216,7 +216,7 @@ describe('AttachmentTargetStore', () => {
       let c2 = new ClassC().attachToRoot();
       let c3 = new ClassC().attachToRoot();
 
-      expect([a1.id, a2.id, b1.id, c1.id, c2.id, c3.id]).toEqual(['1:1', '1:2', '2:1', '3:1', '3:2', '3:3']);
+      expect([a1.id, a2.id, b1.id, c1.id, c2.id, c3.id]).toEqual(['0', '1', '2', '3', '4', '5']);
     });
 
     test('finds correct instances after complex registration', () => {
@@ -248,7 +248,7 @@ describe('AttachmentTargetStore', () => {
       let instance2 = new TestClass().attachToRoot();
       let id2 = instance2.id;
 
-      expect(id2).toBe('1:2');
+      expect(id2).toBe('1');
       expect(() => {
         AttachmentTargetStore.findAttachmentTarget(id1);
       }).toThrow();

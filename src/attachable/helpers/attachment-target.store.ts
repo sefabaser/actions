@@ -3,49 +3,40 @@ import { IDAttachable } from '../id-attachable';
 
 /** @internal */
 export class AttachmentTargetStore {
-  private static nextAvailableIds = new WeakMap<typeof IDAttachable, number>();
-
-  private static idToAttachmentTarget = new Map<string, IDAttachable>();
-  private static idToAttachmentTargetClass = new Map<string, typeof IDAttachable>();
+  private static nextAvailableId = 0;
+  private static storage = new Map<string, { instance: IDAttachable; class: typeof IDAttachable }>();
 
   static findAttachmentTarget(attachableCandidate: string): IAttachable {
-    let attachmentTarget = this.idToAttachmentTarget.get(attachableCandidate);
-    if (!attachmentTarget) {
+    let item = this.storage.get(attachableCandidate);
+    if (!item) {
       throw new Error(`Attachable: attachable not found by id! id: ${attachableCandidate}`);
     }
-    return attachmentTarget;
+    return item.instance;
   }
 
   static registerIDAttachable(attachmentTarget: IDAttachable): string {
     let Class = attachmentTarget.constructor as typeof IDAttachable;
 
-    let numberPartOfTheId = this.nextAvailableIds.get(Class) || 1;
-    this.nextAvailableIds.set(Class, numberPartOfTheId + 1);
+    let id = this.nextAvailableId++ + '';
 
-    let classId = Class.id;
-    let id = `${classId}:${numberPartOfTheId}`;
-
-    this.idToAttachmentTarget.set(id, attachmentTarget);
-    this.idToAttachmentTargetClass.set(id, Class);
+    this.storage.set(id, { instance: attachmentTarget, class: Class });
     return id;
   }
 
   static unregisterIDAttachable(attachmentTarget: IDAttachable): void {
-    this.idToAttachmentTarget.delete(attachmentTarget.id);
-    this.idToAttachmentTargetClass.delete(attachmentTarget.id);
+    this.storage.delete(attachmentTarget.id);
   }
 
   static validateIdForClass(id: string, expectedConstructor: typeof IDAttachable): boolean {
-    let actualConstructor = this.idToAttachmentTargetClass.get(id);
-    return actualConstructor === expectedConstructor;
+    let item = this.storage.get(id);
+    return item?.class === expectedConstructor;
   }
 
   /**
    * Required to be called before or after each unit test to reset the store
    */
   static hardReset(): void {
-    this.nextAvailableIds = new WeakMap<typeof IDAttachable, number>();
-    this.idToAttachmentTarget.clear();
-    this.idToAttachmentTargetClass.clear();
+    this.nextAvailableId = 0;
+    this.storage.clear();
   }
 }
