@@ -10,7 +10,12 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
     this.map.set(key, item);
     if (this._untilAddedListeners) {
       if (this._untilAddedListeners.has(key)) {
-        this._untilAddedListeners.get(key)?.forEach(callback => CallbackHelper.triggerCallback(undefined, callback));
+        let listeners = this._untilAddedListeners.get(key);
+        if (listeners) {
+          for (let listener of listeners) {
+            CallbackHelper.triggerCallback(undefined, listener);
+          }
+        }
         this._untilAddedListeners.delete(key);
 
         if (this._untilAddedListeners.size === 0) {
@@ -25,9 +30,12 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
     this.map.delete(key);
     if (this._untilRemovedListeners) {
       if (this._untilRemovedListeners.has(key)) {
-        this._untilRemovedListeners.get(key)?.forEach(callback => {
-          CallbackHelper.triggerCallback(undefined, callback);
-        });
+        let listeners = this._untilRemovedListeners.get(key);
+        if (listeners) {
+          for (let listener of listeners) {
+            CallbackHelper.triggerCallback(undefined, listener);
+          }
+        }
         this._untilRemovedListeners.delete(key);
 
         if (this._untilRemovedListeners.size === 0) {

@@ -18,7 +18,11 @@ export class CallbackUtilities {
         .take(1)
         .read(() => resolve())
         .attach(context.attachable);
-      return () => allEffectChannels.forEach(channel => channel.destroy());
+      return () => {
+        for (let i = 0; i < allEffectChannels.length; i++) {
+          allEffectChannels[i].destroy();
+        }
+      };
     });
   }
 }

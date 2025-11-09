@@ -181,18 +181,25 @@ describe('Notifier', () => {
 
     test('iterate without listeners', () =>
       new Promise<void>(done => {
-        notifier.forEach(() => {});
+        notifier.triggerAll('');
         done();
       }));
 
     test('iterate through listeners', () => {
-      notifier.subscribe(() => {}).attachToRoot();
-      notifier.subscribe(() => {}).attachToRoot();
-
       let count = 0;
-      notifier.forEach(_ => {
-        count++;
-      });
+
+      notifier
+        .subscribe(() => {
+          count++;
+        })
+        .attachToRoot();
+      notifier
+        .subscribe(() => {
+          count++;
+        })
+        .attachToRoot();
+
+      notifier.triggerAll('');
 
       expect(count).toEqual(2);
     });
@@ -203,7 +210,7 @@ describe('Notifier', () => {
       notifier.subscribe(message => heap.push(message)).attachToRoot();
       notifier.subscribe(message => heap.push(message)).attachToRoot();
 
-      notifier.forEach(listenerCallback => listenerCallback('message'));
+      notifier.triggerAll('message');
 
       expect(heap).toEqual(['message', 'message']);
     });
@@ -216,7 +223,7 @@ describe('Notifier', () => {
       notifier.subscribe(message => heap.push('3' + message)).attachToRoot();
 
       secondSubscription.destroy();
-      notifier.forEach(listenerCallback => listenerCallback('message'));
+      notifier.triggerAll('message');
 
       expect(heap).toEqual(['1message', '3message']);
     });
@@ -242,9 +249,7 @@ describe('Notifier', () => {
         })
         .attachToRoot();
 
-      notifier.forEach(listenerCallback => {
-        listenerCallback('sample');
-      });
+      notifier.triggerAll('sample');
 
       expect(listener1).toEqual(true);
       expect(listener2).toEqual(true);
@@ -279,7 +284,7 @@ describe('Notifier', () => {
         .read(() => (triggered = true))
         .attachToRoot();
 
-      notifier.forEach(listener => listener());
+      notifier.triggerAll();
       expect(triggered).toEqual(true);
     });
 

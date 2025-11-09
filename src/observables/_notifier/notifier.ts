@@ -17,7 +17,7 @@ export class Notifier<T> {
     }
 
     let notifier = new Notifier<S>();
-    sequence.subscribe(data => notifier.forEach(callback => CallbackHelper.triggerCallback(data, callback)));
+    sequence.subscribe(data => notifier.triggerAll(data));
     return {
       attach: (parent: IAttachable) => {
         sequence.attach(parent);
@@ -50,12 +50,11 @@ export class Notifier<T> {
   }
 
   /** @internal */
-  forEach(callback: (listenerCallbackFunction: NotifierCallbackFunction<T>) => void): Notifier<T> {
+  triggerAll(data: T): void {
     let listeners = [...this.listenersMap.values()];
     for (let i = 0; i < listeners.length; i++) {
-      CallbackHelper.triggerCallback(listeners[i], callback);
+      CallbackHelper.triggerCallback(data, listeners[i]);
     }
-    return this;
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
@@ -68,7 +67,7 @@ export class Notifier<T> {
   }
 
   toSequence(): Sequence<T> {
-    return Sequence.create<T>((resolve, context) => {
+    return Sequence.create<T>(resolve => {
       let subscription = this.subscribe(resolve).attachToRoot();
       return subscription.destroy.bind(subscription);
     });

@@ -233,11 +233,15 @@ export class Sequence<T = void> implements IAttachment {
 
     let subscriptions: IAttachment[] = [];
     let mergedSequence = Sequence.create<S>(resolve => {
-      streams.forEach(stream => {
-        let subscription = stream.subscribe(resolve).attachToRoot(); // Each handled manually
+      for (let i = 0; i < streams.length; i++) {
+        let subscription = streams[i].subscribe(resolve).attachToRoot(); // Each handled manually
         subscriptions.push(subscription);
-      });
-      return () => subscriptions.forEach(subscription => subscription.destroy());
+      }
+      return () => {
+        for (let i = 0; i < streams.length; i++) {
+          subscriptions[i].destroy();
+        }
+      };
     });
 
     this.waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence.executor.final());
@@ -259,7 +263,8 @@ export class Sequence<T = void> implements IAttachment {
 
     let subscriptions: IAttachment[] = [];
     let combinedSequence = Sequence.create<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : never }>(resolve => {
-      keys.forEach(key => {
+      for (let i = 0; i < keys.length; i++) {
+        let key = keys[i];
         let stream = (input as any)[key];
         let subscription = stream
           .subscribe((data: any) => {
@@ -275,9 +280,13 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attachToRoot(); // Each handled manually
         subscriptions.push(subscription);
-      });
+      }
 
-      return () => subscriptions.forEach(subscription => subscription.destroy());
+      return () => {
+        for (let i = 0; i < streams.length; i++) {
+          subscriptions[i].destroy();
+        }
+      };
     });
 
     this.waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence.executor.final());
@@ -295,11 +304,12 @@ export class Sequence<T = void> implements IAttachment {
   private static validateAndConvertToSet(streams: StreamType<unknown>[]) {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
-      streams.forEach(stream => {
+      for (let i = 0; i < streams.length; i++) {
+        let stream = streams[i];
         if (stream instanceof Sequence) {
           stream.executor['_attachIsCalled'] = true;
         }
-      });
+      }
       throw new Error('Each given sequence to merge or combine has to be diferent.');
     }
     return streamsSet;
@@ -307,11 +317,11 @@ export class Sequence<T = void> implements IAttachment {
 
   private static waitUntilAllSequencesDestroyed(streams: Set<StreamType<unknown>>, callback: () => void): void {
     let notifierFound = false;
-    streams.forEach(stream => {
+    for (let stream of streams) {
       if (stream instanceof Notifier) {
         notifierFound = true;
       }
-    });
+    }
 
     if (!notifierFound) {
       let sequences = streams as Set<Sequence<unknown>>;
@@ -323,13 +333,13 @@ export class Sequence<T = void> implements IAttachment {
         }
       };
 
-      sequences.forEach(sequence => {
+      for (let sequence of sequences) {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
           sequence.executor.onDestroyListeners.add(() => oneDestroyed(sequence));
         }
-      });
+      }
     }
   }
 

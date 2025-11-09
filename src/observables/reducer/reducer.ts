@@ -168,9 +168,9 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
       }
 
       let response: S[] = [];
-      collection.forEach(item => {
+      for (let item of collection.values()) {
         response.push(item);
-      });
+      }
       return response;
     }, options);
   }
@@ -265,7 +265,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.forEach(callback => CallbackHelper.triggerCallback(value, callback));
+      this.triggerAll(value);
       this.previousBroadcast = value;
     }
   }

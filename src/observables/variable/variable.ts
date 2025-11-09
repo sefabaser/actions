@@ -50,7 +50,7 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     this.currentValue = this.options.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
 
     if (!this.options.notifyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.forEach(callback => CallbackHelper.triggerCallback(data, callback));
+      this.triggerAll(data);
     }
 
     return this;
