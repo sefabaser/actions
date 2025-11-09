@@ -38,10 +38,10 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
       ...partialOptions
     };
 
-    if (options?.notifyOnChange) {
-      this.set = options?.clone ? this.notifyOnChangeCloneSet.bind(this) : this.notifyOnChangeNoCloneSet.bind(this);
+    if (options.notifyOnChange) {
+      this.set = options.clone ? this.notifyOnChangeCloneSet.bind(this) : this.notifyOnChangeNoCloneSet.bind(this);
     } else {
-      this.set = options?.clone ? this.notifyAlwaysCloneSet.bind(this) : this.notifyAlwaysNoCloneSet.bind(this);
+      this.set = options.clone ? this.notifyAlwaysCloneSet.bind(this) : this.notifyAlwaysNoCloneSet.bind(this);
     }
   }
 
