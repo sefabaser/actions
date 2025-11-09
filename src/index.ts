@@ -20,8 +20,7 @@ export {
   IVariable,
   Variable,
   VariableListenerCallbackFunction,
-  VariableOptions,
-  VariableSubscriptionOptions
+  VariableOptions
 } from './observables/variable/variable';
 export { Sequence } from './sequence/sequence';
 export { ActionSubscription, IDestroyable } from './utilities/action-subscription';

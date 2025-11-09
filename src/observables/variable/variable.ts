@@ -12,10 +12,6 @@ export interface VariableOptions {
   readonly notifyOnChange: boolean;
 }
 
-export interface VariableSubscriptionOptions {
-  readonly listenOnlyNewChanges: boolean;
-}
-
 export interface IVariable<T> {
   value: T;
   listenerCount: number;
@@ -56,10 +52,8 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): IAttachment {
-    if (!options?.listenOnlyNewChanges) {
-      CallbackHelper.triggerCallback(this.currentValue, callback);
-    }
+  subscribe(callback: VariableListenerCallbackFunction<T>): IAttachment {
+    CallbackHelper.triggerCallback(this.currentValue, callback);
     return super.subscribe(callback);
   }
 }

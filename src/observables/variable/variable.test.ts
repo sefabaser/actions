@@ -90,12 +90,10 @@ describe(`Variable`, () => {
       variable.set(data);
 
       variable
-        .subscribe(
-          value => {
-            triggeredWith = value;
-          },
-          { listenOnlyNewChanges: true }
-        )
+        .skip(1)
+        .read(value => {
+          triggeredWith = value;
+        })
         .attachToRoot();
 
       expect(triggeredWith).toEqual(undefined);

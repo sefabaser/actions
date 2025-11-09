@@ -81,12 +81,16 @@ export class Notifier<T> {
     return this.toSequence().orderedMap(callback);
   }
 
+  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {
+    return this.toSequence().filter(callback);
+  }
+
   take(count: number): Sequence<T> {
     return this.toSequence().take(count);
   }
 
-  filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {
-    return this.toSequence().filter(callback);
+  skip(count: number): Sequence<T> {
+    return this.toSequence().skip(count);
   }
 
   /** @internal */
