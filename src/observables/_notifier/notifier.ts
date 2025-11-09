@@ -1,8 +1,20 @@
 import { IAttachable } from '../..';
-import { IAttachment } from '../../attachable/attachable';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { AsyncOperation, ISequenceLinkContext, Sequence, SyncOperation } from '../../sequence/sequence';
-import { ActionSubscription } from '../../utilities/action-subscription';
+
+export class ActionSubscription extends Attachable {
+  constructor(private destroyCallback: () => void) {
+    super();
+  }
+
+  destroy(): void {
+    if (!this.destroyed) {
+      this.destroyCallback();
+      super.destroy();
+    }
+  }
+}
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
 

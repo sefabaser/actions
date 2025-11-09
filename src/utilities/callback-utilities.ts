@@ -2,6 +2,7 @@ import { Attachable } from '../attachable/attachable';
 import { Reducer } from '../observables/reducer/reducer';
 import { Sequence } from '../sequence/sequence';
 
+// TODO: change the name
 export class CallbackUtilities {
   /**
    * @param attachables Entities that will be waited until all of them to be destroyed
