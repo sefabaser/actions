@@ -52,7 +52,7 @@ describe('SingleEvent', () => {
       expect(singleEvent.destroyed).toBeFalsy();
     });
 
-    test('destroying single event', () => {
+    test('destroying single event directly', () => {
       let singleEvent = SingleEvent.create<void>(() => {})
         .read(() => {})
         .attachToRoot();
@@ -61,6 +61,29 @@ describe('SingleEvent', () => {
       singleEvent.destroy();
       expect(singleEvent.destroyed).toBeTruthy();
       expect(singleEvent['executor']['_pipeline']).toEqual(undefined);
+    });
+
+    test('destroying single event via constructor context', () => {
+      let sequence = SingleEvent.create<void>((resolve, context) => {
+        resolve();
+        context.destroy();
+      }).attachToRoot();
+
+      expect(sequence.destroyed).toBeTruthy();
+      expect(sequence['executor']['_pipeline']).toEqual(undefined);
+    });
+
+    test('destroying single event via iterator context', () => {
+      let sequence = SingleEvent.create<void>(resolve => {
+        resolve();
+      })
+        .read((_, context) => {
+          context.destroy();
+        })
+        .attachToRoot();
+
+      expect(sequence.destroyed).toBeTruthy();
+      expect(sequence['executor']['_pipeline']).toEqual(undefined);
     });
 
     test('destroying parent should destroy single event', () => {
@@ -722,7 +745,7 @@ describe('SingleEvent', () => {
         let variable = new Variable<number>(1);
         let triggered = false;
 
-        let sequence = SingleEvent.create<void>((resolve, context) => {
+        let sequence = SingleEvent.create<void>(resolve => {
           resolve();
         })
           .map((_, context) => {
@@ -744,7 +767,7 @@ describe('SingleEvent', () => {
         let variable = new Variable<number>(1);
         let triggered = false;
 
-        let sequence = SingleEvent.create<void>((resolve, context) => {
+        let sequence = SingleEvent.create<void>(resolve => {
           resolve();
         })
           .asyncMap((_, context) => {

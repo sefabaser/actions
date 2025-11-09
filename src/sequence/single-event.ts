@@ -12,7 +12,7 @@ type SingleEventPipelineIterator<A = unknown, B = unknown> = (
 
 export interface ISingleEventContext {
   readonly attachable: IAttachable;
-  // TODO: destroy single event function
+  destroy(): void;
 }
 
 class SingleEventContext implements ISingleEventContext {
@@ -25,6 +25,10 @@ class SingleEventContext implements ISingleEventContext {
   }
 
   constructor(private executor: SingleEventExecuter) {}
+
+  destroy(): void {
+    this.executor.destroy();
+  }
 
   /** @internal */
   destroyAttachment() {
@@ -45,7 +49,7 @@ class SingleEventExecuter extends Attachable {
   private resolved = false;
   private currentData: unknown;
   private pipelineIndex = 0;
-  private pending = false;
+  private waitingForNewLink = false;
   private ongoingContext?: SingleEventContext;
 
   destroy(): void {
@@ -85,28 +89,28 @@ class SingleEventExecuter extends Attachable {
 
       this._pipeline.push(iterator);
 
-      if (this.pending) {
+      if (this.waitingForNewLink) {
         this.iteratePackage();
       }
     }
   }
 
   attach(parent: IAttachable): this {
-    if (this.pipelineIndex >= this._pipeline.length && this.resolved) {
+    if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
       this.destroy();
     }
     return super.attach(parent);
   }
 
   attachById(id: number): this {
-    if (this.pipelineIndex >= this._pipeline.length && this.resolved) {
+    if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
       this.destroy();
     }
     return super.attachById(id);
   }
 
   attachToRoot(): this {
-    if (this.pipelineIndex >= this._pipeline.length && this.resolved) {
+    if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
       this.destroy();
     }
     return super.attachToRoot();
@@ -127,7 +131,7 @@ class SingleEventExecuter extends Attachable {
         });
       } else {
         if (!this.attachIsCalled) {
-          this.pending = true;
+          this.waitingForNewLink = true;
         } else {
           this.destroy();
         }
@@ -144,7 +148,8 @@ export class SingleEvent<T = void> implements IAttachment {
 
     try {
       let destroyCallback = executor(singleEventExecutor.trigger.bind(singleEventExecutor), {
-        attachable: singleEventExecutor
+        attachable: singleEventExecutor,
+        destroy: () => singleEventExecutor.destroy()
       });
       if (destroyCallback) {
         singleEventExecutor.onDestroyListeners.add(destroyCallback);
