@@ -11,7 +11,7 @@ class SampleModel {
 
 describe('Notifier', () => {
   let triggerNotifierWith = <T>(data: T, notifier: Notifier<T>) => {
-    notifier.listeners.forEach(listener => CallbackHelper.triggerCallback(data, listener));
+    notifier['listenersMap'].forEach(listener => CallbackHelper.triggerCallback(data, listener));
   };
 
   describe('Basics', () => {
