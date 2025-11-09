@@ -17,14 +17,14 @@ type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier
 export interface ISequenceCreatorContext {
   attachable: IAttachable;
   final(): void;
-  // TODO: destroy sequence function
+  destroy(): void;
 }
 
 export interface ISequenceLinkContext {
   attachable: IAttachable;
   final(): void;
   drop(): void;
-  // TODO: destroy sequence function
+  destroy(): void;
   /** @internal */
   destroyAttachment(): void;
 }
@@ -43,6 +43,10 @@ class SequenceContext implements ISequenceLinkContext {
     public final: () => void,
     public drop: () => void
   ) {}
+
+  destroy(): void {
+    this.executor.destroy();
+  }
 
   /** @internal */
   destroyAttachment() {
@@ -347,7 +351,8 @@ export class Sequence<T = void> implements IAttachment {
     try {
       let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor), {
         attachable: sequenceExecutor,
-        final: sequenceExecutor.final.bind(sequenceExecutor)
+        final: sequenceExecutor.final.bind(sequenceExecutor),
+        destroy: sequenceExecutor.destroy.bind(sequenceExecutor)
       });
       if (destroyCallback) {
         sequenceExecutor.onDestroyListeners.add(destroyCallback);
@@ -464,7 +469,6 @@ export class Sequence<T = void> implements IAttachment {
     let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>(
       (data, context, resolve) => {
-        console.log(data);
         let executionReturn: StreamType<K>;
 
         let queuer: ExecutionOrderQueuer = { context };
@@ -496,7 +500,6 @@ export class Sequence<T = void> implements IAttachment {
       },
       (finalContext?: SequenceContext) => {
         if (finalContext) {
-          console.log('final context ', queue.notEmpty, queue.peekLast()?.context !== finalContext);
           while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
             let lastInTheLine = queue.dequeue()!;
             lastInTheLine.context.destroyAttachment();

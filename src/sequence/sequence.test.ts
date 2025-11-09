@@ -235,11 +235,34 @@ describe('Sequence', () => {
     });
 
     describe('Destruction', () => {
-      test('destroying sequence', () => {
+      test('destroying sequence directly', () => {
         let sequence = Sequence.create<void>(resolve => resolve()).attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
         sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence['executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('destroying sequence via constructor context', () => {
+        let sequence = Sequence.create<void>((resolve, context) => {
+          resolve();
+          context.destroy();
+        }).attachToRoot();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence['executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('destroying sequence via iterator context', () => {
+        let sequence = Sequence.create<void>(resolve => {
+          resolve();
+        })
+          .read((_, context) => {
+            context.destroy();
+          })
+          .attachToRoot();
+
         expect(sequence.destroyed).toBeTruthy();
         expect(sequence['executor']['_pipeline']).toEqual(undefined);
       });
