@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { Attachable } from '../attachable/attachable';
 import { IDAttachable } from '../attachable/id-attachable';
 import { ActionLibHardReset } from '../helpers/hard-reset';
-import { CallbackUtilities } from './callback-utilities';
+import { ActionLibUtilities } from './action-lib-utilities';
 
 describe('UntilAllDestroyed', () => {
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe('UntilAllDestroyed', () => {
       let obj3 = new Attachable().attachToRoot();
 
       let triggered = false;
-      CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3])
+      ActionLibUtilities.untilAllDestroyed([obj1, obj2, obj3])
         .read(() => {
           triggered = true;
         })
@@ -41,7 +41,7 @@ describe('UntilAllDestroyed', () => {
       let obj2 = new Attachable().attachToRoot();
       let obj3 = new Attachable().attachToRoot();
 
-      CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3])
+      ActionLibUtilities.untilAllDestroyed([obj1, obj2, obj3])
         .read(() => {
           triggered = true;
         })
@@ -56,7 +56,7 @@ describe('UntilAllDestroyed', () => {
     test('all destroy subscriptions should be destroyed when sequence is destroyed', () => {
       let obj = new Attachable().attachToRoot();
 
-      let sequence = CallbackUtilities.untilAllDestroyed([obj]).attachToRoot();
+      let sequence = ActionLibUtilities.untilAllDestroyed([obj]).attachToRoot();
       expect(obj['_attachments']?.size).toEqual(1);
       expect(sequence['executor']['_attachments']?.size).toEqual(1);
       sequence.destroy();
@@ -72,7 +72,7 @@ describe('UntilAllDestroyed', () => {
         let obj2 = new IDAttachable().attachToRoot();
         let obj3 = new IDAttachable().attachToRoot();
 
-        CallbackUtilities.untilAllDestroyed([obj1, obj2, obj3])
+        ActionLibUtilities.untilAllDestroyed([obj1, obj2, obj3])
           .read(() => {})
           .attachToRoot();
       });

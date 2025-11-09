@@ -24,4 +24,4 @@ export {
 } from './observables/variable/variable';
 export { AsyncOperation, ISequenceCreatorContext, ISequenceLinkContext, Sequence, SyncOperation } from './sequence/sequence';
 export { ISingleEventContext, SingleEvent } from './sequence/single-event';
-export { CallbackUtilities } from './utilities/callback-utilities';
+export { ActionLibUtilities } from './utilities/action-lib-utilities';

@@ -831,7 +831,6 @@ describe('SingleEvent', () => {
                   resolve();
                 })
                 .attach(context.attachable);
-              console.log(variable.listenerCount);
             });
           })
           .attachToRoot();
