@@ -161,6 +161,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // Min: 11.43939995765686
+    // 10.742999792098999
   }, 60000);
 
   test('combine new object', async () => {
@@ -191,6 +192,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       // Min:  12.509200096130371
       // default attachable: 11.661400079727173
       // queueMicrotask: 9.956599950790405
+      // 9.698499917984009
     });
   }, 60000);
 });

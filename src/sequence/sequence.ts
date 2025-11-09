@@ -409,6 +409,19 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<K>(this.executor);
   }
 
+  // TODO: other async map functions
+
+  /**
+   *
+   * @Dropping_Packages Never
+   * @Keeping_Package_Order Always
+   * @Parallel_Execution Instant initiation in parallel
+   *
+   * @A ---I—————————>✓-----------------
+   * @B -----------I———I- - - - ->✓----------------
+   * @C ----------------I——I- - - - >✓--------------
+   * @R ----------------------------ABC--------------
+   */
   orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => StreamType<K>): Sequence<K> {
     this.prepareToBeLinked();
 

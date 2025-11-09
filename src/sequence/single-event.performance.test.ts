@@ -49,6 +49,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // sequence: 0.9242000579833984
     // 0.4514000415802002
+    // 0.42370009422302246
   }, 60000);
 
   test('sequence 10x read', async () => {
@@ -106,6 +107,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 5.396200180053711
+    // 5.273400068283081
   }, 60000);
 
   test('destroyed by attachable', async () => {
@@ -121,5 +123,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
     });
     // 0.8601999282836914
+    // 0.8238000869750977
   }, 60000);
 });

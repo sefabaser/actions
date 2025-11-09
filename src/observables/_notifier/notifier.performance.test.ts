@@ -17,6 +17,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 0.24699997901916504
     // queueMicrotask: 0.2100999355316162
     // trigger all change: 0.19009995460510254
+    // 0.18709993362426758
   }, 60000);
 
   test('action subscribe 10x', async () => {

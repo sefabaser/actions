@@ -11,7 +11,7 @@ type SingleEventPipelineIterator<A = unknown, B = unknown> = (
 ) => void;
 
 export interface ISingleEventContext {
-  attachable: IAttachable;
+  readonly attachable: IAttachable;
   // TODO: destroy single event function
 }
 
@@ -181,6 +181,7 @@ export class SingleEvent<T = void> implements IAttachment {
 
       resolve(data);
     });
+
     return new SingleEvent<T>(this.executor);
   }
 
@@ -229,11 +230,6 @@ export class SingleEvent<T = void> implements IAttachment {
     this.linked = true;
   }
 
-  /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    return this.read(callback);
-  }
-
   destroy(): void {
     this.executor.destroy();
   }
@@ -251,6 +247,11 @@ export class SingleEvent<T = void> implements IAttachment {
   attachToRoot(): this {
     this.executor.attachToRoot();
     return this;
+  }
+
+  /** @internal */
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
+    return this.read(callback);
   }
 }
 
