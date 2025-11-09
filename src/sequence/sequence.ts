@@ -410,12 +410,51 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   // TODO: other async map functions
+  /**
+   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
+   *
+   * **Execution**: Each incoming package starts to **execute instantly** and **resolve instantly** without waiting. Which can break package order.
+   *
+   * **Sample Use Case**: Showing an animation for each package, regardless of what other packages are doing.
+   *
+   * - `✅ Never Drops Packages`
+   * - `❌ Keeps Package Order`
+   * - `✅ Parallel Execution`
+   *
+   * @A ---I—————————>✓-----------------
+   * @B -----------I———>✓------------------------
+   * @C ----------------I——>✓---------------------
+   * @R ---------------------B-C---A-----------------
+   */
+  asyncMap<K>(callback: (data: T, context: ISequenceLinkContext) => StreamType<K>): Sequence<K> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, K>((data, context, resolve) => {
+      let executionReturn: StreamType<K>;
+
+      try {
+        executionReturn = callback(data, context);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      executionReturn.subscribe(resolve).attach(context.attachable);
+    });
+
+    return new Sequence<K>(this.executor);
+  }
 
   /**
+   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
    *
-   * @Dropping_Packages Never
-   * @Keeping_Package_Order Always
-   * @Parallel_Execution Instant initiation in parallel
+   * **Execution**: Each incoming package starts to **execute instantly** but **waits before resolve** the package before them to resolve to keep the order.
+   *
+   * **Sample Use Case**: Using async translation service, before storing ordered event history.
+   *
+   * - `✅ Never Drops Packages`
+   * - `✅ Keeps Package Order`
+   * - `✅ Parallel Execution`
    *
    * @A ---I—————————>✓-----------------
    * @B -----------I———I- - - - ->✓----------------
