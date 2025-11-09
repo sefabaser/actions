@@ -119,13 +119,19 @@ describe('IDAttachable', () => {
     });
 
     test('attach to self should throw error', () => {
+      vi.useFakeTimers();
+
       let sample = new IDAttachable();
+
       expect(() => {
         sample.attach(sample);
+        vi.runAllTimers();
       }).toThrow('Circular attachment detected!');
     });
 
     test('circular attachment should throw error', () => {
+      vi.useFakeTimers();
+
       class Sample extends IDAttachable {}
 
       let sample1 = new Sample();
@@ -134,6 +140,7 @@ describe('IDAttachable', () => {
       expect(() => {
         sample2.attach(sample1);
         sample1.attach(sample2);
+        vi.runAllTimers();
       }).toThrow('Circular attachment detected!');
     });
   });
@@ -143,11 +150,13 @@ describe('IDAttachable', () => {
       let callbackInvoked = false;
       let sample = new IDAttachable().attachToRoot();
 
-      sample
+      let sub = sample
         .onDestroy(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
+
+      expect(sub.destroyed).toBeFalsy();
 
       sample.destroy();
       expect(callbackInvoked).toBeTruthy();
@@ -275,22 +284,6 @@ describe('IDAttachable', () => {
           callbackInvoked = true;
         })
         .attach(sample);
-
-      sample.destroy();
-      expect(callbackInvoked).toBeTruthy();
-    });
-
-    test('onDestroy should be triggered if it is listened by take(1)', () => {
-      let callbackInvoked = false;
-      let sample = new IDAttachable().attachToRoot();
-
-      sample
-        .onDestroy()
-        .take(1)
-        .read(() => {
-          callbackInvoked = true;
-        })
-        .attachToRoot();
 
       sample.destroy();
       expect(callbackInvoked).toBeTruthy();

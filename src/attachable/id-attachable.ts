@@ -1,5 +1,5 @@
 import { CallbackHelper } from '../helpers/callback.helper';
-import { Sequence } from '../sequence/sequence';
+import { SingleEvent } from '../sequence/single-event';
 import { Attachable } from './attachable';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassID } from './helpers/class-id';
@@ -29,24 +29,28 @@ export class IDAttachable extends Attachable {
 
       let listeners = this._onDestroyListeners;
       this._onDestroyListeners = undefined;
-      listeners?.forEach(listener => listener());
+      if (listeners) {
+        for (let listener of listeners) {
+          listener();
+        }
+      }
 
       super.destroy();
     }
   }
 
-  onDestroy(callback?: () => void): Sequence<void> {
+  onDestroy(callback?: () => void): SingleEvent<void> {
     if (this.destroyed) {
       if (callback) {
         CallbackHelper.triggerCallback(undefined, callback);
       }
-      return Sequence.create<void>(resolve => resolve());
+      return SingleEvent.create<void>(resolve => resolve());
     } else {
       if (!this._onDestroyListeners) {
         this._onDestroyListeners = new Set();
       }
 
-      return Sequence.create<void>(resolve => {
+      return SingleEvent.create<void>(resolve => {
         let listener = () => {
           if (callback) {
             CallbackHelper.triggerCallback(undefined, callback);

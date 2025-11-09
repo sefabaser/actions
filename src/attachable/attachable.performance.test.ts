@@ -5,24 +5,6 @@ import { IDAttachable } from '../attachable/id-attachable';
 import { Attachable } from './attachable';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
-  test('no op', async () => {
-    let i = 0;
-    await UnitTestHelper.testPerformance(() => {
-      i++;
-      i++;
-      i++;
-      i++;
-      i++;
-      i++;
-      i++;
-      i++;
-      i++;
-      i++;
-    });
-    console.log(i);
-    // Min:  0.0004000663757324219
-  }, 60000);
-
   test('Attachable create and destroy', async () => {
     await UnitTestHelper.testPerformance(() => {
       let object = new Attachable().attachToRoot();
@@ -58,6 +40,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       attachable.destroy();
     });
     // Min:  0.7037999629974365
-    // queueMicrotask: 0.6494998931884766
+    // queueMicrotask: 0.6399998664855957
+    // single event: 0.6361000537872314
   }, 60000);
 });

@@ -13,174 +13,178 @@ describe('SingleEvent', () => {
     UnitTestHelper.reset();
   });
 
-  describe('Setup - single event without links', () => {
-    describe('Triggers', () => {
-      test('plain single event no trigger', () => {
-        expect(SingleEvent.create<string>(() => {}).attachToRoot()).toBeDefined();
-      });
-
-      test('plain single event sync trigger', () => {
-        expect(SingleEvent.create<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
-      });
-
-      test('plain single event async trigger', () => {
-        expect(
-          SingleEvent.create<string>(resolve => UnitTestHelper.callEachDelayed(['1'], value => resolve(value))).attachToRoot()
-        ).toBeDefined();
-      });
-
-      test('attach cannot be called before the end of the chain', () => {
-        let singleEvent = SingleEvent.create<string>(() => {});
-        singleEvent.read(() => {}).attachToRoot();
-        expect(() => singleEvent.read(() => {})).toThrow('A sequence can only be linked once.');
-      });
+  describe('Triggers', () => {
+    test('plain single event no trigger', () => {
+      expect(SingleEvent.create<string>(() => {}).attachToRoot()).toBeDefined();
     });
 
-    describe('Destruction', () => {
-      test('destroying single event', () => {
-        let singleEvent = SingleEvent.create<void>(() => {})
-          .read(() => {})
-          .attachToRoot();
+    test('plain single event sync trigger', () => {
+      expect(SingleEvent.create<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
+    });
 
-        expect(singleEvent.destroyed).toBeFalsy();
-        singleEvent.destroy();
-        expect(singleEvent.destroyed).toBeTruthy();
-        expect(singleEvent['executor']['_pipeline']).toEqual(undefined);
-      });
+    test('multiple resolve should throw error', () => {
+      let resolve!: () => void;
+      SingleEvent.create<void>(r => {
+        resolve = r;
+      }).attachToRoot();
 
-      test('destroying parent should destroy single event', () => {
-        let parent = new Attachable().attachToRoot();
+      expect(() => resolve()).not.toThrow('Single Event: It can only resolve once.');
+      expect(() => resolve()).toThrow('Single Event: It can only resolve once.');
+    });
 
-        let singleEvent = SingleEvent.create<void>(() => {})
-          .read(() => {})
-          .attach(parent);
+    test('plain single event async trigger', () => {
+      expect(
+        SingleEvent.create<string>(resolve => UnitTestHelper.callEachDelayed(['1'], value => resolve(value))).attachToRoot()
+      ).toBeDefined();
+    });
 
-        expect(singleEvent.destroyed).toBeFalsy();
-        parent.destroy();
-        expect(singleEvent.destroyed).toBeTruthy();
-      });
+    test('attach cannot be called before the end of the chain', () => {
+      let singleEvent = SingleEvent.create<string>(() => {});
+      singleEvent.read(() => {}).attachToRoot();
+      expect(() => singleEvent.read(() => {})).toThrow('Single Event: A single event can only be linked once.');
+    });
+  });
 
-      test('destroy single event callback', () => {
-        let triggered = false;
-        let singleEvent = SingleEvent.create<void>(() => {
-          return () => {
-            triggered = true;
-          };
-        })
-          .read(() => {})
-          .attachToRoot();
+  describe('Destruction', () => {
+    test('Should not be destroyed after attach if it is not resolved', () => {
+      let singleEvent = SingleEvent.create<string>(() => {}).attachToRoot();
 
-        expect(triggered).toBeFalsy();
-        singleEvent.destroy();
-        expect(triggered).toBeTruthy();
-      });
+      expect(singleEvent.destroyed).toBeFalsy();
+    });
 
-      test('resolve after destruction should not throw error', () => {
-        let resolve!: (data: string) => void;
-        let singleEvent = SingleEvent.create<string>(r => {
-          resolve = r;
-        }).attachToRoot();
+    test('destroying single event', () => {
+      let singleEvent = SingleEvent.create<void>(() => {})
+        .read(() => {})
+        .attachToRoot();
 
-        singleEvent.destroy();
-        expect(() => resolve('test')).not.toThrow();
-      });
+      expect(singleEvent.destroyed).toBeFalsy();
+      singleEvent.destroy();
+      expect(singleEvent.destroyed).toBeTruthy();
+      expect(singleEvent['executor']['_pipeline']).toEqual(undefined);
+    });
 
-      test('after attaching a resolved event should destroy by itself', () => {
-        let singleEvent = SingleEvent.create<void>(resolve => resolve())
+    test('destroying parent should destroy single event', () => {
+      let parent = new Attachable().attachToRoot();
+
+      let singleEvent = SingleEvent.create<void>(() => {})
+        .read(() => {})
+        .attach(parent);
+
+      expect(singleEvent.destroyed).toBeFalsy();
+      parent.destroy();
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+
+    test('destroy single event callback', () => {
+      let triggered = false;
+      let singleEvent = SingleEvent.create<void>(() => {
+        return () => {
+          triggered = true;
+        };
+      })
+        .read(() => {})
+        .attachToRoot();
+
+      expect(triggered).toBeFalsy();
+      singleEvent.destroy();
+      expect(triggered).toBeTruthy();
+    });
+
+    test('resolve after destruction should not throw error', () => {
+      let resolve!: (data: string) => void;
+      let singleEvent = SingleEvent.create<string>(r => {
+        resolve = r;
+      }).attachToRoot();
+
+      singleEvent.destroy();
+      expect(() => resolve('test')).not.toThrow();
+    });
+
+    test('after attaching a resolved event should destroy by itself', () => {
+      let singleEvent = SingleEvent.create<void>(resolve => resolve())
+        .read(() => {})
+        .attach(new Attachable().attachToRoot());
+
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+
+    test('after attaching a resolved event should destroy by itself', () => {
+      let resolve!: () => void;
+      let singleEvent = SingleEvent.create<void>(r => {
+        resolve = r;
+      })
+        .read(() => {})
+        .attach(new Attachable().attachToRoot());
+
+      expect(singleEvent.destroyed).toBeFalsy();
+      resolve();
+
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+  });
+
+  describe('Attachment Errors', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    test('not attaching to anything should throw error', () => {
+      expect(() => {
+        SingleEvent.create<void>(resolve => resolve());
+        vi.runAllTimers();
+      }).toThrow('Attachable: The object is not attached to anything!');
+    });
+
+    test('attaching to a target should not throw error', () => {
+      expect(() => {
+        SingleEvent.create<void>(resolve => resolve())
           .read(() => {})
           .attach(new Attachable().attachToRoot());
 
-        expect(singleEvent.destroyed).toBeTruthy();
-      });
+        vi.runAllTimers();
+      }).not.toThrow('Attachable: The object is not attached to anything!');
+    });
 
-      test('after attaching a resolved event should destroy by itself', () => {
-        let resolve!: () => void;
-        let singleEvent = SingleEvent.create<void>(r => {
-          resolve = r;
-        })
+    test('attaching to root should not throw error', () => {
+      expect(() => {
+        SingleEvent.create<void>(resolve => resolve())
+          .read(() => {})
+          .attachToRoot();
+
+        vi.runAllTimers();
+      }).not.toThrow('Attachable: The object is not attached to anything!');
+    });
+
+    test('not attaching the chain to a target should throw error', () => {
+      expect(() => {
+        SingleEvent.create<void>(resolve => resolve())
+          .read(() => {})
+          .read(() => {});
+
+        vi.runAllTimers();
+      }).toThrow('Attachable: The object is not attached to anything!');
+    });
+
+    test('attaching the chain to a target should not throw error', () => {
+      expect(() => {
+        SingleEvent.create<void>(resolve => resolve())
+          .read(() => {})
           .read(() => {})
           .attach(new Attachable().attachToRoot());
 
-        expect(singleEvent.destroyed).toBeFalsy();
-        resolve();
-
-        expect(singleEvent.destroyed).toBeTruthy();
-      });
+        vi.runAllTimers();
+      }).not.toThrow('Attachable: The object is not attached to anything!');
     });
 
-    describe('Attachment Errors', () => {
-      beforeEach(() => {
-        vi.useFakeTimers();
-      });
+    test('attaching the chain to root should not throw error', () => {
+      expect(() => {
+        SingleEvent.create<void>(resolve => resolve())
+          .read(() => {})
+          .read(() => {})
+          .attachToRoot();
 
-      test('not attaching to anything should throw error', () => {
-        expect(() => {
-          SingleEvent.create<void>(resolve => resolve());
-          vi.runAllTimers();
-        }).toThrow('Attachable: The object is not attached to anything!');
-      });
-
-      test('attaching to a target should not throw error', () => {
-        expect(() => {
-          SingleEvent.create<void>(resolve => resolve())
-            .read(() => {})
-            .attach(new Attachable().attachToRoot());
-
-          vi.runAllTimers();
-        }).not.toThrow('Attachable: The object is not attached to anything!');
-      });
-
-      test('attaching to root should not throw error', () => {
-        expect(() => {
-          SingleEvent.create<void>(resolve => resolve())
-            .read(() => {})
-            .attachToRoot();
-
-          vi.runAllTimers();
-        }).not.toThrow('Attachable: The object is not attached to anything!');
-      });
-
-      test('not attaching the chain to a target should throw error', () => {
-        expect(() => {
-          SingleEvent.create<void>(resolve => resolve())
-            .read(() => {})
-            .read(() => {});
-
-          vi.runAllTimers();
-        }).toThrow('Attachable: The object is not attached to anything!');
-      });
-
-      test('attaching the chain to a target should not throw error', () => {
-        expect(() => {
-          SingleEvent.create<void>(resolve => resolve())
-            .read(() => {})
-            .read(() => {})
-            .attach(new Attachable().attachToRoot());
-
-          vi.runAllTimers();
-        }).not.toThrow('Attachable: The object is not attached to anything!');
-      });
-
-      test('attaching the chain to root should not throw error', () => {
-        expect(() => {
-          SingleEvent.create<void>(resolve => resolve())
-            .read(() => {})
-            .read(() => {})
-            .attachToRoot();
-
-          vi.runAllTimers();
-        }).not.toThrow('Attachable: The object is not attached to anything!');
-      });
-    });
-
-    describe('Edge Cases', () => {
-      test('Each single event can be linkable once', () => {
-        expect(() => {
-          let singleEvent = SingleEvent.create<string>(resolve => resolve('a'));
-          singleEvent.read(() => {}).attachToRoot();
-          singleEvent.read(() => {});
-        }).toThrow('A sequence can only be linked once.');
-      });
+        vi.runAllTimers();
+      }).not.toThrow('Attachable: The object is not attached to anything!');
     });
   });
 
@@ -294,9 +298,6 @@ describe('SingleEvent', () => {
         resolve('first');
         expect(heap).toEqual(['first']);
         expect(singleEvent.destroyed).toBeTruthy();
-
-        resolve('second');
-        expect(heap).toEqual(['first']);
       });
     });
 
@@ -809,6 +810,16 @@ describe('SingleEvent', () => {
 
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test('Each single event can be linkable once', () => {
+      expect(() => {
+        let singleEvent = SingleEvent.create<string>(resolve => resolve('a'));
+        singleEvent.read(() => {}).attachToRoot();
+        singleEvent.read(() => {});
+      }).toThrow('Single Event: A single event can only be linked once.');
     });
   });
 });

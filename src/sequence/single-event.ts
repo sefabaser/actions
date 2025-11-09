@@ -12,7 +12,7 @@ type SingleEventPipelineIterator<A = unknown, B = unknown> = (
 
 export interface ISingleEventContext {
   attachable: IAttachable;
-  // TODO: destroy sequence function
+  // TODO: destroy single event function
 }
 
 class SingleEventContext implements ISingleEventContext {
@@ -42,6 +42,7 @@ class SingleEventExecuter extends Attachable {
   }
 
   private _pipeline: SingleEventPipelineIterator[] = [];
+  private resolved = false;
   private currentData: unknown;
   private pipelineIndex = 0;
   private pending = false;
@@ -65,7 +66,12 @@ class SingleEventExecuter extends Attachable {
   }
 
   trigger(data: unknown): void {
+    if (this.resolved) {
+      throw new Error('Single Event: It can only resolve once.');
+    }
+
     if (!this.destroyed) {
+      this.resolved = true;
       this.currentData = data;
       this.iteratePackage();
     }
@@ -74,7 +80,7 @@ class SingleEventExecuter extends Attachable {
   enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
     if (!this.destroyed) {
       if (this.attachIsCalled) {
-        throw new Error('After attaching a sequence you cannot add another operation.');
+        throw new Error('Single Event: After attaching, you cannot add another operation.');
       }
 
       this._pipeline.push(iterator);
@@ -86,14 +92,14 @@ class SingleEventExecuter extends Attachable {
   }
 
   attach(parent: IAttachable | string): this {
-    if (this.pipelineIndex >= this._pipeline.length) {
+    if (this.pipelineIndex >= this._pipeline.length && this.resolved) {
       this.destroy();
     }
     return super.attach(parent);
   }
 
   attachToRoot(): this {
-    if (this.pipelineIndex >= this._pipeline.length) {
+    if (this.pipelineIndex >= this._pipeline.length && this.resolved) {
       this.destroy();
     }
     return super.attachToRoot();
@@ -127,20 +133,20 @@ export class SingleEvent<T = void> implements IAttachment {
   static create<S = void>(
     executor: (resolve: (data: S) => void, context: ISingleEventContext) => (() => void) | void
   ): SingleEvent<S> {
-    let sequenceExecutor = new SingleEventExecuter();
+    let singleEventExecutor = new SingleEventExecuter();
 
     try {
-      let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor), {
-        attachable: sequenceExecutor
+      let destroyCallback = executor(singleEventExecutor.trigger.bind(singleEventExecutor), {
+        attachable: singleEventExecutor
       });
       if (destroyCallback) {
-        sequenceExecutor.onDestroyListeners.add(destroyCallback);
+        singleEventExecutor.onDestroyListeners.add(destroyCallback);
       }
     } catch (e) {
       console.error(e);
     }
 
-    return new SingleEvent<S>(sequenceExecutor);
+    return new SingleEvent<S>(singleEventExecutor);
   }
 
   get destroyed(): boolean {
@@ -211,7 +217,7 @@ export class SingleEvent<T = void> implements IAttachment {
 
   private prepareToBeLinked(): void {
     if (this.linked) {
-      throw new Error('A sequence can only be linked once.');
+      throw new Error('Single Event: A single event can only be linked once.');
     }
     this.linked = true;
   }
