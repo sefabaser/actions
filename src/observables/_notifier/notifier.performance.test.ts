@@ -142,6 +142,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 0.5906000137329102
     // manual destruction of the sequence: 0.5377998352050781
     // queueMicrotask: 0.4397001266479492
-    // trigger all change: 0.4524998664855957
+    // trigger all change: 0.43720006942749023
   }, 60000);
 });

@@ -45,20 +45,12 @@ export class Notifier<T> {
     let wrapper = new Notifier<T>();
     wrapper.listenersMap = this.listenersMap;
     wrapper.nextAvailableSubscriptionId = this.nextAvailableSubscriptionId;
-    wrapper.subscribe = callback => this.subscribe(callback);
+    wrapper.subscribe = this.subscribe.bind(this);
     return wrapper;
   }
 
-  /** @internal */
-  triggerAll(data: T): void {
-    let listeners = [...this.listenersMap.values()];
-    for (let i = 0; i < listeners.length; i++) {
-      CallbackHelper.triggerCallback(data, listeners[i]);
-    }
-  }
-
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    let subscriptionId = this.getNextAvailableSubscriptionId();
+    let subscriptionId = this.nextAvailableSubscriptionId++;
     this.listenersMap.set(subscriptionId, callback);
 
     return new ActionSubscription(() => {
@@ -94,11 +86,10 @@ export class Notifier<T> {
   }
 
   /** @internal */
-  get listeners(): NotifierCallbackFunction<T>[] {
-    return [...this.listenersMap.values()];
-  }
-
-  private getNextAvailableSubscriptionId(): number {
-    return this.nextAvailableSubscriptionId++;
+  triggerAll(data: T): void {
+    let listeners = [...this.listenersMap.values()];
+    for (let i = 0; i < listeners.length; i++) {
+      CallbackHelper.triggerCallback(data, listeners[i]);
+    }
   }
 }

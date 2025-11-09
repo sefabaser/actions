@@ -57,7 +57,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // storage change: 0.5199000835418701
     // id gen change: 0.4216001033782959
     // number ids: 0.3815000057220459
-    // attach by id seperation: 0.36929988861083984
+    // attach by id seperation: 0.3644998073577881
   }, 60000);
 
   test('onDestroy callback', async () => {
