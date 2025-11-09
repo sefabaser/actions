@@ -41,6 +41,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min:  0.7037999629974365
     // queueMicrotask: 0.6399998664855957
-    // single event: 0.6361000537872314
+    // single event: 0.6326999664306641
   }, 60000);
 });

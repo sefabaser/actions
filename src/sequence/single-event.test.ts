@@ -718,6 +718,53 @@ describe('SingleEvent', () => {
         expect(action.listenerCount).toEqual(0);
       });
 
+      test('destroying subscriptions via attachment, instantly finalizing sequence, in map', () => {
+        let variable = new Variable<number>(1);
+        let triggered = false;
+
+        let sequence = SingleEvent.create<void>((resolve, context) => {
+          resolve();
+        })
+          .map((_, context) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
+              })
+              .attach(context.attachable);
+            expect(variable.listenerCount).toEqual(1);
+          })
+          .attachToRoot();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+      });
+
+      test('destroying subscriptions via attachment, instantly finalizing sequence, in returned single event', () => {
+        let variable = new Variable<number>(1);
+        let triggered = false;
+
+        let sequence = SingleEvent.create<void>((resolve, context) => {
+          resolve();
+        })
+          .asyncMap((_, context) => {
+            return SingleEvent.create(resolve => {
+              variable
+                .subscribe(() => {
+                  triggered = true;
+                  resolve();
+                })
+                .attach(context.attachable);
+              console.log(variable.listenerCount);
+            });
+          })
+          .attachToRoot();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(variable.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+      });
+
       test('destroying via context attachable during async operation', async () => {
         let variable = new Variable<number>(1);
         let triggered = false;

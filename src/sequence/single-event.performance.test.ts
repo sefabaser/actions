@@ -1,6 +1,7 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
+import { Variable } from '../observables/variable/variable';
 import { SingleEvent } from './single-event';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
@@ -105,5 +106,20 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 5.396200180053711
+  }, 60000);
+
+  test('destroyed by attachable', async () => {
+    let variable = new Variable<number>(0);
+
+    await UnitTestHelper.testPerformance(() => {
+      SingleEvent.create(resolve => resolve())
+        .asyncMap((_, context) => {
+          return SingleEvent.create(resolve => {
+            variable.subscribe(() => resolve()).attach(context.attachable);
+          });
+        })
+        .attachToRoot();
+    });
+    // 0.8601999282836914
   }, 60000);
 });
