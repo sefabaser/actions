@@ -104,6 +104,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       sequence.destroy();
     });
-    // 5.402599811553955
+    // 5.396200180053711
   }, 60000);
 });

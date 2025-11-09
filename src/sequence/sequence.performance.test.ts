@@ -139,45 +139,28 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
-    await UnitTestHelper.testPerformance(
-      () => {
-        let resolve!: () => void;
-        let sequence = Sequence.create(r => {
-          resolve = r as any;
-        });
+    await UnitTestHelper.testPerformance(() => {
+      let resolve!: () => void;
+      let sequence = Sequence.create(r => {
+        resolve = r as any;
+      });
 
-        sequence
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .orderedMap(() => Sequence.create(r2 => r2()))
-          .attachToRoot();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        resolve();
-        sequence.destroy();
-      },
-      { sampleCount: 50, repetationPerSample: 1000 }
-    );
-    // Min: 101.85249996185303
-    // After introducing packages: 223.7542998790741
-    // removing links: 230.xxx -> 203.4695999622345
-    // lazy on destroy listeners: 184.33080005645752
-    // queueMicrotask: 143.01080012321472
+      sequence
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .orderedMap(() => Sequence.create(r2 => r2()))
+        .attachToRoot();
+      resolve();
+      sequence.destroy();
+    });
+    // Min: 11.43939995765686
   }, 60000);
 
   test('combine new object', async () => {

@@ -52,6 +52,14 @@ export class Attachable implements IAttachable {
       if (!this._attachIsCalled && !this._destroyed) {
         throw new Error(`Attachable: The object is not attached to anything!`);
       }
+
+      let currentParent: IAttachable | undefined = this.attachedParent;
+      while (currentParent) {
+        if (currentParent === this) {
+          throw new Error(`Circular attachment detected!`);
+        }
+        currentParent = currentParent.attachedParent;
+      }
     });
   }
 
@@ -81,18 +89,8 @@ export class Attachable implements IAttachable {
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      let parentEntity = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
-
-      let currentParent: IAttachable | undefined = parentEntity;
-      while (currentParent) {
-        if (currentParent === this) {
-          throw new Error(`Circular attachment detected!`);
-        }
-        currentParent = currentParent.attachedParent;
-      }
-
-      parentEntity.setAttachment(this);
-      this._attachedParent = parentEntity;
+      this._attachedParent = Comparator.isString(parent) ? AttachmentTargetStore.findAttachmentTarget(parent) : parent;
+      this._attachedParent.setAttachment(this);
     }
     return this;
   }

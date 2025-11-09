@@ -32,6 +32,16 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.06649994850158691
   }, 60000);
 
+  test('Attachable create, attach and destroy', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let parent = new Attachable().attachToRoot();
+      new Attachable().attach(parent);
+      parent.destroy();
+    });
+    // Min:  0.24699997901916504
+    // lazy circular dep check: 0.24099993705749512
+  }, 60000);
+
   test('IDAttachable create and destroy', async () => {
     await UnitTestHelper.testPerformance(() => {
       let object = new IDAttachable().attachToRoot();
