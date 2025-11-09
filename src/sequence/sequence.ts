@@ -390,49 +390,6 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
-    this.prepareToBeLinked();
-
-    let previousValue: T | undefined;
-    this.executor.enterPipeline<T, T>((data, context, resolve) => {
-      let passedTheFilter: boolean;
-      try {
-        passedTheFilter = callback(data, previousValue, context);
-      } catch (e) {
-        console.error('Sequence callback function error: ', e);
-        return;
-      }
-
-      if (passedTheFilter) {
-        resolve(data);
-        previousValue = data;
-      } else {
-        context.drop();
-      }
-    });
-    return new Sequence<T>(this.executor);
-  }
-
-  take(count: number): Sequence<T> {
-    this.prepareToBeLinked();
-
-    let taken = 0;
-
-    this.executor.enterPipeline<T, T>((data, context, resolve) => {
-      taken++;
-
-      if (taken >= count) {
-        context.final();
-      }
-
-      if (taken <= count) {
-        resolve(data);
-      }
-    });
-
-    return new Sequence<T>(this.executor);
-  }
-
   map<K>(callback: (data: T, context: ISequenceLinkContext) => NotStream<K>): Sequence<K> {
     this.prepareToBeLinked();
 
@@ -509,6 +466,70 @@ export class Sequence<T = void> implements IAttachment {
     );
 
     return new Sequence<K>(this.executor);
+  }
+
+  filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
+    this.prepareToBeLinked();
+
+    let previousValue: T | undefined;
+    this.executor.enterPipeline<T, T>((data, context, resolve) => {
+      let passedTheFilter: boolean;
+      try {
+        passedTheFilter = callback(data, previousValue, context);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      if (passedTheFilter) {
+        resolve(data);
+        previousValue = data;
+      } else {
+        context.drop();
+      }
+    });
+    return new Sequence<T>(this.executor);
+  }
+
+  take(count: number): Sequence<T> {
+    this.prepareToBeLinked();
+
+    let taken = 0;
+
+    this.executor.enterPipeline<T, T>((data, context, resolve) => {
+      taken++;
+
+      if (taken >= count) {
+        context.final();
+      }
+
+      if (taken <= count) {
+        resolve(data);
+      }
+    });
+
+    return new Sequence<T>(this.executor);
+  }
+
+  skip(count: number): Sequence<T> {
+    this.prepareToBeLinked();
+
+    let skipped = 0;
+    let blocked = count > 0;
+
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      if (blocked) {
+        skipped++;
+        if (skipped > count) {
+          blocked = false;
+          resolve(data);
+        }
+      } else {
+        resolve(data);
+      }
+    });
+
+    return new Sequence<T>(this.executor);
   }
 
   private prepareToBeLinked(): void {
