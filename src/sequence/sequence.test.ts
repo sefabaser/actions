@@ -6,7 +6,7 @@ import { ActionLibHardReset } from '../helpers/hard-reset';
 import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
 import { Variable } from '../observables/variable/variable';
-import { Sequence } from './sequence';
+import { ISequenceCreatorContext, Sequence } from './sequence';
 import { SingleEvent } from './single-event';
 
 describe('Sequence', () => {
@@ -294,8 +294,26 @@ describe('Sequence', () => {
         expect(triggered).toBeTruthy();
       });
 
-      // TODO
-      test('resolve after destruction should not throw error', () => {});
+      test('resolve after destruction should not throw error', () => {
+        let triggerCount = 0;
+
+        let resolve!: () => void;
+        let context: ISequenceCreatorContext;
+
+        let sequence = Sequence.create((r, c) => {
+          resolve = r;
+          context = c;
+        })
+          .read(() => triggerCount++)
+          .attachToRoot();
+
+        expect(() => resolve()).not.toThrowError();
+        expect(() => context.destroy()).not.toThrowError();
+        expect(() => resolve()).not.toThrowError();
+
+        expect(triggerCount).toEqual(1);
+        expect(sequence.destroyed).toBeTruthy();
+      });
     });
 
     describe('Attachment Errors', () => {
