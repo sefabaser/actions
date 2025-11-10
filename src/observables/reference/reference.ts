@@ -3,7 +3,7 @@ import { Comparator, JsonHelper } from 'helpers-lib';
 import { IAttachable } from '../..';
 import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
-import { IVariable, Variable, VariableListenerCallbackFunction } from '../variable/variable';
+import { Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T extends number | object> {
   readonly initialValue?: T;
@@ -19,8 +19,7 @@ interface Options<T extends number | object> {
   readonly path: string | undefined;
 }
 
-// TODO should extend variable
-export class Reference<T extends number | object = number> extends Attachable implements IVariable<T | undefined> {
+export class Reference<T extends number | object = number> extends Attachable {
   get value(): T | undefined {
     if (this.destroyed) {
       return undefined;

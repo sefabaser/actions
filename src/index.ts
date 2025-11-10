@@ -18,7 +18,6 @@ export {
 } from './observables/reducer/reducer';
 export { Reference } from './observables/reference/reference';
 export {
-  IVariable,
   Variable,
   VariableListenerCallbackFunction,
   VariableOptions

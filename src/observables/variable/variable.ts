@@ -12,14 +12,7 @@ export interface VariableOptions {
   readonly notifyOnChange: boolean;
 }
 
-export interface IVariable<T> {
-  value: T;
-  listenerCount: number;
-  set(data: T): this;
-  subscribe(callback: VariableListenerCallbackFunction<T>): IAttachment;
-}
-
-export class Variable<T> extends Notifier<T> implements IVariable<T> {
+export class Variable<T> extends Notifier<T> {
   get value(): T {
     return this.currentValue;
   }
