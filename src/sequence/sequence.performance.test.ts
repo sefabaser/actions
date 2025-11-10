@@ -180,7 +180,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min: 11.43939995765686
     // 10.742999792098999
-    // read single changes: 9.979599952697754
+    // read single changes: 9.607899904251099
   }, 60000);
 
   test('combine new object', async () => {

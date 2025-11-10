@@ -1191,7 +1191,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create(resolve => resolve())
             .asyncMapDirect(() => {
               innerSequence = Sequence.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
@@ -1844,7 +1844,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create(resolve => resolve())
             .asyncMapOrdered(() => {
               innerSequence = Sequence.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
@@ -2495,7 +2495,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create(resolve => resolve())
             .asyncMapLatest(() => {
               innerSequence = Sequence.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
@@ -3229,7 +3229,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create(resolve => resolve())
             .asyncMapQueue(() => {
               innerSequence = Sequence.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
@@ -3884,7 +3884,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create(resolve => resolve())
             .asyncMapDropOngoing(() => {
               innerSequence = Sequence.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
@@ -4538,7 +4538,7 @@ describe('Sequence', () => {
           let sequence = Sequence.create(resolve => resolve())
             .asyncMapDropIncoming(() => {
               innerSequence = Sequence.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;

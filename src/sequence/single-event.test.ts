@@ -708,7 +708,7 @@ describe('SingleEvent', () => {
           let singleEvent = SingleEvent.create<void>(resolve => resolve())
             .asyncMap(() => {
               innerSingleEvent = SingleEvent.create(r => {
-                UnitTestHelper.callEachDelayed([''], () => r(''));
+                UnitTestHelper.callDelayed(() => r(''));
               });
               expect(innerSingleEvent['executor']['_pipeline'].length).toEqual(0);
               return innerSingleEvent;
