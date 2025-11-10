@@ -19,6 +19,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // sequence: 0.1549999713897705
     // 0.1466999053955078
+    // arrow function resolve: 0.14529991149902344
   }, 60000);
 
   test('sequence single map', async () => {
@@ -34,6 +35,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // sequence: 0.15720009803771973
     // 0.14890003204345703
+    // arrow function resolve: 0.1482996940612793
   }, 60000);
 
   test('sequence single async map', async () => {
@@ -50,6 +52,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // sequence: 0.9242000579833984
     // 0.4514000415802002
     // 0.42370009422302246
+    // arrow function resolve: 0.411099910736084
   }, 60000);
 
   test('sequence 10x read', async () => {
@@ -69,6 +72,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.511199951171875
+    // arrow function resolve: 0.42190027236938477
   }, 60000);
 
   test('sequence 10x map', async () => {
@@ -88,6 +92,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.5051000118255615
+    // arrow function resolve: 0.44080018997192383
   }, 60000);
 
   test('sequence 10x async map', async () => {

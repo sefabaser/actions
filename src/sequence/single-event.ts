@@ -118,14 +118,7 @@ class SingleEventExecuter extends Attachable {
       if (this.pipelineIndex < this._pipeline.length) {
         this.ongoingContext = new SingleEventContext(this);
 
-        this._pipeline[this.pipelineIndex](this.currentData, this.ongoingContext, returnData => {
-          this.ongoingContext?.drop();
-          this.ongoingContext = undefined;
-
-          this.currentData = returnData;
-          this.pipelineIndex++;
-          this.iteratePackage();
-        });
+        this._pipeline[this.pipelineIndex](this.currentData, this.ongoingContext, this.resolve);
       } else {
         if (!this.attachIsCalled) {
           this.waitingForNewLink = true;
@@ -135,6 +128,15 @@ class SingleEventExecuter extends Attachable {
       }
     }
   }
+
+  private resolve = (returnData: unknown) => {
+    this.ongoingContext?.drop();
+    this.ongoingContext = undefined;
+
+    this.currentData = returnData;
+    this.pipelineIndex++;
+    this.iteratePackage();
+  };
 }
 
 export class SingleEvent<T = void> implements IAttachment {
