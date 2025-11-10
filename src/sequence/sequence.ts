@@ -435,7 +435,7 @@ export class Sequence<T = void> implements IAttachment {
    * @C --------------I——>✓-------------------------
    * @R -------------------B-C-----A-------------------
    */
-  asyncMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
@@ -576,7 +576,7 @@ export class Sequence<T = void> implements IAttachment {
    *
    * **Sample Use Case**: Payment operation, one can be processed if the previous one ends in success.
    *
-   * **⚠️Careful**: Can create a bottleneck! The feeding speed should not exceed the digestion speed if packages being sent regularly.
+   * **⚠️Careful**: Can create a bottleneck! The feeding speed should not exceed the digestion speed.
    *
    * - `✅ Never Drops Packages`
    * - `✅ Respects Package Order`
@@ -590,7 +590,45 @@ export class Sequence<T = void> implements IAttachment {
   asyncMapQueue<K>(
     callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
   ): Sequence<K> {
-    throw new Error('not implemented yet');
+    this.prepareToBeLinked();
+
+    let queue = new Queue<ExecutionOrderQueuer>();
+    let previousResult: K | undefined;
+
+    this.executor.enterPipeline<T, K>(
+      (data, context, resolve) => {
+        let execute = () => {
+          let executionReturn: AsyncOperation<K>;
+          try {
+            executionReturn = callback(data, previousResult, context);
+          } catch (e) {
+            console.error('Sequence callback function error: ', e);
+            return;
+          }
+
+          executionReturn
+            .readSingle(resolvedData => {
+              queue.pop();
+              resolve(resolvedData);
+              queue.peek()?.callback!();
+            })
+            .attach(context.attachable);
+        };
+
+        let queueWasEmpty = queue.empty;
+        let queuer: ExecutionOrderQueuer = { context, callback: execute };
+        queue.add(queuer);
+
+        if (queueWasEmpty) {
+          execute();
+        }
+      },
+      (finalContext?: SequenceContext) => {
+        this.destroyPackagesUntilCurrent(queue, finalContext);
+      }
+    );
+
+    return new Sequence<K>(this.executor);
   }
 
   /**

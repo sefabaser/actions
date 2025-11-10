@@ -47,7 +47,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      sequence.asyncMap(() => Sequence.create(r2 => r2())).attachToRoot();
+      sequence.asyncMapDirect(() => Sequence.create(r2 => r2())).attachToRoot();
       resolve();
       sequence.destroy();
     });
