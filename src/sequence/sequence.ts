@@ -506,21 +506,7 @@ export class Sequence<T = void> implements IAttachment {
           .attach(context.attachable);
       },
       (finalContext?: SequenceContext) => {
-        if (finalContext) {
-          while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
-            let lastInTheLine = queue.dequeue()!;
-            lastInTheLine.context.destroyAttachment();
-            this.executor.ongoingPackageCount--;
-          }
-          if (queue.empty) {
-            throw new Error(`Sequence: Internal Error, entire queue is checked but the "final item" couldn't be found!`);
-          }
-        } else {
-          while (queue.notEmpty) {
-            queue.pop()!.context.destroyAttachment();
-            this.executor.ongoingPackageCount--;
-          }
-        }
+        this.destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
 
@@ -543,7 +529,46 @@ export class Sequence<T = void> implements IAttachment {
    * @R -------------------B-C-------------------------
    */
   asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    throw new Error('not implemented yet');
+    this.prepareToBeLinked();
+
+    let queue = new Queue<ExecutionOrderQueuer>();
+    this.executor.enterPipeline<T, K>(
+      (data, context, resolve) => {
+        let executionReturn: AsyncOperation<K>;
+
+        let queuer: ExecutionOrderQueuer = { context };
+        queue.add(queuer);
+
+        try {
+          executionReturn = callback(data, context);
+        } catch (e) {
+          console.error('Sequence callback function error: ', e);
+          return;
+        }
+
+        executionReturn
+          .readSingle(resolvedData => {
+            while (queue.notEmpty) {
+              let firstInTheLine = queue.pop();
+
+              if (firstInTheLine && firstInTheLine.context !== context) {
+                firstInTheLine.context.destroyAttachment();
+                this.executor.ongoingPackageCount--;
+              } else {
+                break;
+              }
+            }
+
+            resolve(resolvedData);
+          })
+          .attach(context.attachable);
+      },
+      (finalContext?: SequenceContext) => {
+        this.destroyPackagesUntilCurrent(queue, finalContext);
+      }
+    );
+
+    return new Sequence<K>(this.executor);
   }
 
   /**
@@ -730,6 +755,24 @@ export class Sequence<T = void> implements IAttachment {
     });
 
     return new Sequence<T>(this.executor);
+  }
+
+  private destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: SequenceContext): void {
+    if (finalContext) {
+      while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
+        let lastInTheLine = queue.dequeue()!;
+        lastInTheLine.context.destroyAttachment();
+        this.executor.ongoingPackageCount--;
+      }
+      if (queue.empty) {
+        throw new Error(`Sequence: Internal Error, entire queue is checked but the "final item" couldn't be found!`);
+      }
+    } else {
+      while (queue.notEmpty) {
+        queue.pop()!.context.destroyAttachment();
+        this.executor.ongoingPackageCount--;
+      }
+    }
   }
 }
 
