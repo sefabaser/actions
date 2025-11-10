@@ -1,7 +1,7 @@
 import { Comparator, Queue } from 'helpers-lib';
 
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
-import { Notifier, NotifierCallbackFunction } from '../observables/_notifier/notifier';
+import { Notifier } from '../observables/_notifier/notifier';
 import { SingleEvent } from './single-event';
 
 export type SyncOperation<T> = T extends Sequence<any>
@@ -276,7 +276,7 @@ export class Sequence<T = void> implements IAttachment {
         let key = keys[i];
         let stream = (input as any)[key];
         let subscription = stream
-          .subscribe((data: any) => {
+          .subscribe((data: unknown) => {
             latestValues[key] = data;
             if (unresolvedKeys.size === 0) {
               resolve(isArray ? [...latestValues] : this.shallowCopy(latestValues));
@@ -422,7 +422,7 @@ export class Sequence<T = void> implements IAttachment {
   // TODO: other async map functions
 
   /**
-   * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting. Which can break package order.
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.
    *
    * **Sample Use Case**: Showing an animation for each package, regardless of what other packages are doing.
    *
@@ -448,14 +448,14 @@ export class Sequence<T = void> implements IAttachment {
         return;
       }
 
-      executionReturn.subscribe(resolve).attach(context.attachable);
+      executionReturn.readSingle(resolve).attach(context.attachable);
     });
 
     return new Sequence<K>(this.executor);
   }
 
   /**
-   * **Execution**: Each incoming package **executes instantly** but **waits before resolve** the package before them to resolve to keep the order.
+   * **Execution**: Each incoming package **executes directly** but **waits before resolve** the package before them to resolve to keep the order.
    *
    * **Sample Use Case**: Using async translation service, before storing ordered event history.
    *
@@ -489,7 +489,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          .subscribe(resolvedData => {
+          .readSingle(resolvedData => {
             queuer.callback = () => resolve(resolvedData);
 
             if (queue.peek() === queuer) {
@@ -528,7 +528,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting.
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting.
    * The latest value is important, the packages that lacks behind are dropped.
    *
    * **Sample Use Case**: Converting a state with translating some keys in it with an async “translate” function.
@@ -547,7 +547,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * **Execution**: Each incoming package **executes sequentially** and **resolves instantly** without waiting.
+   * **Execution**: Each incoming package **executes sequentially** and **resolves directly** without waiting.
    *
    * **Sample Use Case**: Payment operation, one can be processed if the previous one ends in success.
    *
@@ -569,7 +569,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting.
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting.
    * If a new package comes while another is in progress, the one in progress will be dropped.
    *
    * **Sample Use Case**: Auto completion with async operation. If value changes the old operation becomes invalid.
@@ -588,7 +588,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting.
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting.
    * If a package is in progress, the newcomers will be dropped.
    *
    * **Sample Use Case**: Refresh button. While in progress, the new requests gets ignored.
@@ -677,11 +677,6 @@ export class Sequence<T = void> implements IAttachment {
     this.linked = true;
   }
 
-  /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    return this.read(callback);
-  }
-
   destroy(): void {
     this.executor.destroy();
   }
@@ -699,6 +694,42 @@ export class Sequence<T = void> implements IAttachment {
   attachToRoot(): this {
     this.executor.attachToRoot();
     return this;
+  }
+
+  /** @internal */
+  readSingle(callback: (data: T) => void): Sequence<T> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      try {
+        callback(data);
+        this.destroy();
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      resolve(data);
+    });
+
+    return new Sequence<T>(this.executor);
+  }
+
+  /** @internal */
+  subscribe(callback: (data: T) => void): Sequence<T> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+      resolve(data);
+    });
+
+    return new Sequence<T>(this.executor);
   }
 }
 

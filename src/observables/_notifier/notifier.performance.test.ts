@@ -18,6 +18,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.2100999355316162
     // trigger all change: 0.19009995460510254
     // 0.18709993362426758
+    // read single changes: 0.17210006713867188
   }, 60000);
 
   test('action subscribe 10x', async () => {
@@ -59,6 +60,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 5.665599822998047
     // queueMicrotask: 5.21779990196228
     // trigger all change: 4.310899972915649
+    // read single changes: 4.26609992980957
   }, 60000);
 
   test('variable subscribe and set 10x', async () => {
@@ -97,6 +99,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // 4.546999931335449
     // splitting set functions: 4.5386998653411865
+    // read single changes: 4.561299800872803
   }, 60000);
 
   test('manual take next', async () => {
@@ -108,6 +111,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 0.24489998817443848
     // queueMicrotask: 0.2200000286102295
     // trigger all change: 0.20089983940124512
+    // read single changes: 0.17659997940063477
   }, 60000);
 
   test('take 1', async () => {
@@ -126,6 +130,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // manual destruction of the sequence: 0.6094000339508057
     // queueMicrotask: 0.5446999073028564
     // trigger all change: 0.5025999546051025
+    // read single changes: 0.5067000389099121
   }, 60000);
 
   test('action to sequence read', async () => {
@@ -144,5 +149,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // manual destruction of the sequence: 0.5377998352050781
     // queueMicrotask: 0.4397001266479492
     // trigger all change: 0.43720006942749023
+    // read single changes: 0.4247000217437744
   }, 60000);
 });

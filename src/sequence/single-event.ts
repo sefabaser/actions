@@ -1,5 +1,4 @@
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
-import { NotifierCallbackFunction } from '../observables/_notifier/notifier';
 import { AsyncOperation, SyncOperation } from './sequence';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
@@ -207,6 +206,16 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<K>(this.executor);
   }
 
+  /**
+   * **Execution**: The incoming package **executes directly** and **directly resolves** after async operation responds.
+   *
+   * - `✅ Never Drops Packages`
+   * - `✅ Respects Package Order`
+   * - `❌ Parallel Execution`
+   *
+   * @A ---I—————————>✓-------------------
+   * @R ----------------------------A-------------------
+   */
   asyncMap<K>(callback: (data: T, context: ISingleEventContext) => AsyncOperation<K>): SingleEvent<K> {
     this.prepareToBeLinked();
 
@@ -220,7 +229,7 @@ export class SingleEvent<T = void> implements IAttachment {
         return;
       }
 
-      executionReturn.subscribe(resolve).attach(context.attachable);
+      executionReturn.readSingle(resolve).attach(context.attachable);
     });
 
     return new SingleEvent<K>(this.executor);
@@ -253,8 +262,39 @@ export class SingleEvent<T = void> implements IAttachment {
   }
 
   /** @internal */
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    return this.read(callback);
+  readSingle(callback: (data: T) => void): SingleEvent<T> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      try {
+        callback(data);
+        this.destroy();
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      resolve(data);
+    });
+
+    return new SingleEvent<T>(this.executor);
+  }
+
+  /** @internal */
+  subscribe(callback: (data: T) => void): SingleEvent<T> {
+    this.prepareToBeLinked();
+
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+      resolve(data);
+    });
+
+    return new SingleEvent<T>(this.executor);
   }
 }
 

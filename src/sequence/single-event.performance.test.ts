@@ -124,5 +124,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // 0.8601999282836914
     // 0.8238000869750977
+    // read single changes: 0.8571000099182129
   }, 60000);
 });

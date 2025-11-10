@@ -1,6 +1,6 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachment } from '../../attachable/attachable';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Notifier } from '../_notifier/notifier';
@@ -86,5 +86,11 @@ export class Variable<T> extends Notifier<T> implements IVariable<T> {
   subscribe(callback: VariableListenerCallbackFunction<T>): IAttachment {
     CallbackHelper.triggerCallback(this.currentValue, callback);
     return super.subscribe(callback);
+  }
+
+  /** @internal */
+  readSingle(callback: (data: T) => void): IAttachment {
+    CallbackHelper.triggerCallback(this.currentValue, callback);
+    return Attachable.getDestroyed();
   }
 }

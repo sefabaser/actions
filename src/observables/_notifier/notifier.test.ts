@@ -36,7 +36,7 @@ describe('Notifier', () => {
       expect(notifier['listenersMap'].size).toEqual(0);
     });
 
-    test('loop through listeners', () => {
+    test('trigger listeners', () => {
       let listener1TriggeredWith: any;
       let listener2TriggeredWith: any;
 
@@ -109,6 +109,23 @@ describe('Notifier', () => {
       expect(subscription2Called).toBe(true);
 
       consoleErrorSpy.mockRestore();
+    });
+
+    test('read single', () => {
+      let listenerTriggeredWith: any;
+
+      let subscription = notifier
+        .readSingle(message => {
+          listenerTriggeredWith = message;
+        })
+        .attachToRoot();
+
+      expect(subscription.destroyed).toBeFalsy();
+      expect(listenerTriggeredWith).toEqual(undefined);
+
+      triggerNotifierWith({ testData: 'sample' }, notifier);
+      expect(subscription.destroyed).toBeTruthy();
+      expect(listenerTriggeredWith).toEqual({ testData: 'sample' });
     });
   });
 
@@ -326,7 +343,7 @@ describe('Notifier', () => {
       let externalNotifier = new Notifier<string>();
 
       let parent = new Attachable().attachToRoot();
-      let sequence = Sequence.create(resolve => resolve()).orderedMap(() => externalNotifier);
+      let sequence = Sequence.create(resolve => resolve()).asyncMapOrdered(() => externalNotifier);
       Notifier.fromSequence(sequence).attach(parent);
 
       expect(externalNotifier.listenerCount).toEqual(1);

@@ -269,4 +269,10 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
       this.previousBroadcast = value;
     }
   }
+
+  /** @internal */
+  readSingle(callback: (data: ResponseType) => void): IAttachment {
+    CallbackHelper.triggerCallback(this.previousBroadcast, callback);
+    return Attachable.getDestroyed();
+  }
 }

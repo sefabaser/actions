@@ -19,6 +19,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 0.39929986000061035
     // no attachable: 0.19089984893798828
     // queueMicrotask: 0.1549999713897705
+    // read single changes: 0.15610003471374512
   }, 60000);
 
   test('sequence single map', async () => {
@@ -36,6 +37,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 0.42039990425109863
     // no attachable: 0.19029998779296875
     // queueMicrotask: 0.15720009803771973
+    // read single changes: 0.15710020065307617
   }, 60000);
 
   test('sequence single async map', async () => {
@@ -50,6 +52,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.7476999759674072
+    // read single changes: 0.6476001739501953
   }, 60000);
 
   test('sequence single ordered map', async () => {
@@ -59,15 +62,15 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      sequence.orderedMap(() => Sequence.create(r2 => r2())).attachToRoot();
+      sequence.asyncMapOrdered(() => Sequence.create(r2 => r2())).attachToRoot();
       resolve();
       sequence.destroy();
     });
-    // Min:  1.1162998676300049
     // After introducing packages: 2.077700138092041
     // default attachable: 1.319700002670288
     // queueMicrotask: 0.9242000579833984
     // 0.8559999465942383
+    // read single changes: 0.7562999725341797
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
@@ -142,7 +145,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min: 2.625300168991089
     // After introducing packages: 4.673799991607666 -> 5.293299913406372 -> 5.682100057601929 -> 7.014800071716309
-    // After map orderedMap seperation: 6.359500169754028
+    // After map asyncMapOrdered seperation: 6.359500169754028
     // removing links: 5.994100093841553
     // lazy pending packages: 5.787899971008301
     // remove .clear: 5.663399934768677
@@ -161,22 +164,23 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       });
 
       sequence
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
-        .orderedMap(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
+        .asyncMapOrdered(() => Sequence.create(r2 => r2()))
         .attachToRoot();
       resolve();
       sequence.destroy();
     });
     // Min: 11.43939995765686
     // 10.742999792098999
+    // read single changes: 9.979599952697754
   }, 60000);
 
   test('combine new object', async () => {
@@ -190,9 +194,10 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .read(() => {})
         .attachToRoot();
       combination.destroy();
-      // Min:  13.876399993896484 -> 12.01830005645752 -> 11.235599994659424
+      // Min:  13.876399993896484
       // default attachable: 11.232700109481812
       // queueMicrotask: 10.21969985961914
+      // read single changes: 10.207499980926514
     });
   }, 60000);
 
@@ -208,6 +213,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       // default attachable: 11.661400079727173
       // queueMicrotask: 9.956599950790405
       // 9.698499917984009
+      // read single changes: 9.804400205612183
     });
   }, 60000);
 });

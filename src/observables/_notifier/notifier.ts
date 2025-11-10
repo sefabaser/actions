@@ -29,7 +29,7 @@ export class Notifier<T> {
     }
 
     let notifier = new Notifier<S>();
-    sequence.subscribe(data => notifier.triggerAll(data));
+    sequence.readSingle(data => notifier.triggerAll(data));
     return {
       attach: (parent: IAttachable) => {
         sequence.attach(parent);
@@ -103,5 +103,21 @@ export class Notifier<T> {
     for (let i = 0; i < listeners.length; i++) {
       CallbackHelper.triggerCallback(data, listeners[i]);
     }
+  }
+
+  /** @internal */
+  readSingle(callback: (data: T) => void): IAttachment {
+    let subscriptionId = this.nextAvailableSubscriptionId++;
+
+    let subscription = new ActionSubscription(() => {
+      this.listenersMap.delete(subscriptionId);
+    });
+
+    this.listenersMap.set(subscriptionId, data => {
+      subscription.destroy();
+      callback(data);
+    });
+
+    return subscription;
   }
 }
