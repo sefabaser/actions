@@ -869,6 +869,29 @@ describe('SingleEvent', () => {
         expect(variable.listenerCount).toEqual(0);
         expect(triggered).toBeTruthy();
       });
+
+      test('using resolved event after timeout', async () => {
+        let event = SingleEvent.create<void>(resolve => resolve()).attachToRoot();
+
+        expect(async () => {
+          UnitTestHelper.callEachDelayed([1], () => {
+            let sequence = SingleEvent.create<void>(resolve => resolve());
+            try {
+              sequence
+                .asyncMap(() => event)
+                .read(() => {
+                  console.log('ok');
+                })
+                .attachToRoot();
+            } catch (e) {
+              sequence.attachToRoot();
+              throw e;
+            }
+          });
+
+          await UnitTestHelper.waitForAllOperations();
+        }).rejects.toThrow('Attachable: The object is already attached to something!');
+      });
     });
   });
 
