@@ -1,17 +1,8 @@
 import { Comparator, Queue } from 'helpers-lib';
 
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
+import { AsyncOperation, SyncOperation } from '../common';
 import { Notifier } from '../observables/_notifier/notifier';
-import { SingleEvent } from './single-event';
-
-export type SyncOperation<T> = T extends Sequence<any>
-  ? T extends Notifier<any>
-    ? T extends SingleEvent<any>
-      ? never
-      : never
-    : never
-  : T;
-export type AsyncOperation<T = void> = Notifier<T> | Sequence<T> | SingleEvent<T>;
 
 type SequencePipelineDestructor = (finalContext?: SequenceContext) => void;
 type SequencePipelineIterator<A = unknown, B = unknown> = (

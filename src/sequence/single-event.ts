@@ -1,5 +1,5 @@
 import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
-import { AsyncOperation, SyncOperation } from './sequence';
+import { AsyncOperation, SyncOperation } from '../common';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
   data: A,

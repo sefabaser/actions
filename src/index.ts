@@ -1,6 +1,7 @@
 export { Attachable, IAttachable, IAttachment } from './attachable/attachable';
 export { ClassID } from './attachable/helpers/class-id';
 export { IDAttachable } from './attachable/id-attachable';
+export { AsyncOperation, SyncOperation } from './common';
 export { ActionLibDefaults } from './config';
 export { ActionLibHardReset } from './helpers/hard-reset';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';
@@ -22,6 +23,6 @@ export {
   VariableListenerCallbackFunction,
   VariableOptions
 } from './observables/variable/variable';
-export { AsyncOperation, ISequenceCreatorContext, ISequenceLinkContext, Sequence, SyncOperation } from './sequence/sequence';
+export { ISequenceCreatorContext, ISequenceLinkContext, Sequence } from './sequence/sequence';
 export { ISingleEventContext, SingleEvent } from './sequence/single-event';
 export { ActionLibUtilities } from './utilities/action-lib-utilities';
