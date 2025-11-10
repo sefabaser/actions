@@ -23,12 +23,11 @@ export interface ISequenceLinkContext {
   final(): void;
   drop(): void;
   destroy(): void;
-  /** @internal */
-  destroyAttachment(): void;
 }
 
 class SequenceContext implements ISequenceLinkContext {
-  private _attachable?: IAttachable;
+  /** @internal */
+  _attachable?: IAttachable;
   get attachable(): IAttachable {
     if (!this._attachable) {
       this._attachable = new Attachable().attach(this.executor);
@@ -45,11 +44,6 @@ class SequenceContext implements ISequenceLinkContext {
   destroy(): void {
     this.executor.destroy();
   }
-
-  /** @internal */
-  destroyAttachment() {
-    this._attachable?.destroy();
-  }
 }
 
 class SequencePackage {
@@ -58,8 +52,8 @@ class SequencePackage {
 
   constructor(public data: unknown) {}
 
-  destroy() {
-    this.ongoingContext?.destroyAttachment();
+  destroyAttachment() {
+    this.ongoingContext?._attachable?.destroy();
   }
 }
 
@@ -163,7 +157,7 @@ class SequenceExecuter extends Attachable {
   private onAttach(): void {
     while (this._waitingForNewLink?.notEmpty) {
       let waitingPackage = this._waitingForNewLink.pop()!;
-      waitingPackage.destroy();
+      waitingPackage.destroyAttachment();
       this.ongoingPackageCount--;
     }
 
@@ -192,14 +186,14 @@ class SequenceExecuter extends Attachable {
             this.final();
           },
           () => {
-            sequencePackage.destroy();
+            sequencePackage.destroyAttachment();
             this.ongoingPackageCount--;
           }
         );
         sequencePackage.ongoingContext = context;
 
         this._pipeline[sequencePackage.pipelineIndex].iterator(sequencePackage.data, context, returnData => {
-          sequencePackage.destroy();
+          sequencePackage.destroyAttachment();
           sequencePackage.ongoingContext = undefined;
 
           sequencePackage.data = returnData;
@@ -213,7 +207,7 @@ class SequenceExecuter extends Attachable {
           }
           this._waitingForNewLink.add(sequencePackage);
         } else {
-          sequencePackage.destroy();
+          sequencePackage.destroyAttachment();
           this.ongoingPackageCount--;
 
           if (this._finalized && this.ongoingPackageCount === 0) {
@@ -451,8 +445,7 @@ export class Sequence<T = void> implements IAttachment {
       (finalContext?: SequenceContext) => {
         if (!finalContext) {
           for (let context of ongoingContexts) {
-            context.destroyAttachment();
-            this.executor.ongoingPackageCount--;
+            context.drop();
           }
         }
       }
@@ -559,8 +552,7 @@ export class Sequence<T = void> implements IAttachment {
               let firstInTheLine = queue.pop();
 
               if (firstInTheLine && firstInTheLine.context !== context) {
-                firstInTheLine.context.destroyAttachment();
-                this.executor.ongoingPackageCount--;
+                firstInTheLine.context.drop();
               } else {
                 break;
               }
@@ -661,11 +653,7 @@ export class Sequence<T = void> implements IAttachment {
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: AsyncOperation<K>;
 
-      if (ongoingContext) {
-        ongoingContext.destroyAttachment();
-        this.executor.ongoingPackageCount--;
-      }
-
+      ongoingContext?.drop();
       ongoingContext = context;
       try {
         executionReturn = callback(data, context);
@@ -708,8 +696,7 @@ export class Sequence<T = void> implements IAttachment {
       let executionReturn: AsyncOperation<K>;
 
       if (ongoingContext) {
-        context.destroyAttachment();
-        this.executor.ongoingPackageCount--;
+        context.drop();
       } else {
         ongoingContext = context;
         try {
@@ -861,16 +848,14 @@ export class Sequence<T = void> implements IAttachment {
     if (finalContext) {
       while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
         let lastInTheLine = queue.dequeue()!;
-        lastInTheLine.context.destroyAttachment();
-        this.executor.ongoingPackageCount--;
+        lastInTheLine.context.drop();
       }
       if (queue.empty) {
         throw new Error(`Sequence: Internal Error, entire queue is checked but the "final item" couldn't be found!`);
       }
     } else {
       while (queue.notEmpty) {
-        queue.pop()!.context.destroyAttachment();
-        this.executor.ongoingPackageCount--;
+        queue.pop()!.context.drop();
       }
     }
   }
