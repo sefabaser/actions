@@ -427,18 +427,36 @@ export class Sequence<T = void> implements IAttachment {
   asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
 
-    this.executor.enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: AsyncOperation<K>;
+    let ongoingContexts = new Set<ISequenceLinkContext>();
 
-      try {
-        executionReturn = callback(data, context);
-      } catch (e) {
-        console.error('Sequence callback function error: ', e);
-        return;
+    this.executor.enterPipeline<T, K>(
+      (data, context, resolve) => {
+        let executionReturn: AsyncOperation<K>;
+
+        ongoingContexts.add(context);
+        try {
+          executionReturn = callback(data, context);
+        } catch (e) {
+          console.error('Sequence callback function error: ', e);
+          return;
+        }
+
+        executionReturn
+          .readSingle(resolvedData => {
+            ongoingContexts.delete(context);
+            resolve(resolvedData);
+          })
+          .attach(context.attachable);
+      },
+      (finalContext?: SequenceContext) => {
+        if (!finalContext) {
+          for (let context of ongoingContexts) {
+            context.destroyAttachment();
+            this.executor.ongoingPackageCount--;
+          }
+        }
       }
-
-      executionReturn.readSingle(resolve).attach(context.attachable);
-    });
+    );
 
     return new Sequence<K>(this.executor);
   }
