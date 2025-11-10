@@ -3148,7 +3148,75 @@ describe('Sequence', () => {
           expect(heap).toEqual([1, 2]);
         });
 
-        // TODO: using previous result
+        test('continue if previous result was success', async () => {
+          let heap: unknown[] = [];
+
+          let endpointOperation = (): SingleEvent<boolean> => {
+            return SingleEvent.create<boolean>(resolve => {
+              UnitTestHelper.callDelayed(() => {
+                resolve(true);
+              });
+            });
+          };
+
+          let canceledAt: number | undefined;
+
+          let sequence = Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .asyncMapQueue((value, previousResult, context) => {
+              if (previousResult === false) {
+                canceledAt = value;
+                context.destroy();
+              }
+              return endpointOperation();
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          await UnitTestHelper.waitForAllOperations();
+
+          expect(sequence.destroyed).toBeFalsy();
+          expect(canceledAt).toEqual(undefined);
+          expect(heap).toEqual([true, true, true]);
+        });
+
+        test('break if previous result was fail', async () => {
+          let heap: unknown[] = [];
+
+          let endpointOperation = (): SingleEvent<boolean> => {
+            return SingleEvent.create<boolean>(resolve => {
+              UnitTestHelper.callDelayed(() => {
+                resolve(false);
+              });
+            });
+          };
+
+          let canceledAt: number | undefined;
+
+          let sequence = Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .asyncMapQueue((value, previousResult, context) => {
+              if (previousResult === false) {
+                canceledAt = value;
+                context.destroy();
+              }
+              return endpointOperation();
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          await UnitTestHelper.waitForAllOperations();
+
+          expect(sequence.destroyed).toBeTruthy();
+          expect(canceledAt).toEqual(2);
+          expect(heap).toEqual([false]);
+        });
       });
     });
 

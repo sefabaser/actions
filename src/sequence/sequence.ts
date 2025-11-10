@@ -410,8 +410,6 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<K>(this.executor);
   }
 
-  // TODO: other async map functions
-
   /**
    * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.
    *
@@ -600,6 +598,7 @@ export class Sequence<T = void> implements IAttachment {
           executionReturn
             .readSingle(resolvedData => {
               queue.pop();
+              previousResult = resolvedData;
               resolve(resolvedData);
               queue.peek()?.callback!();
             })
