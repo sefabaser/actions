@@ -101,7 +101,7 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .orderedMap((data, mainExecutor) =>
+          .asyncMapOrdered((data, mainExecutor) =>
             Sequence.create<string>((resolve, context) => {
               if (data === 1) {
                 resolve(data + 'map1');
@@ -111,7 +111,7 @@ describe('Sequence', () => {
               }
             })
           )
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<string>((resolve, context) => {
               action2.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -152,12 +152,12 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<number>((resolve, context) => {
               action1.subscribe(() => resolve(data)).attach(context.attachable);
             })
           )
-          .orderedMap((data, mainExecutor) =>
+          .asyncMapOrdered((data, mainExecutor) =>
             Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 mainExecutor.final();
@@ -196,7 +196,7 @@ describe('Sequence', () => {
           resolve(1);
           resolve(2);
         })
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 action1.subscribe(() => resolve(data)).attach(context.attachable);
@@ -205,7 +205,7 @@ describe('Sequence', () => {
               }
             })
           )
-          .orderedMap((data, mainExecutor) =>
+          .asyncMapOrdered((data, mainExecutor) =>
             Sequence.create<number>((resolve, context) => {
               if (data === 1) {
                 mainExecutor.final();
@@ -1449,7 +1449,7 @@ describe('Sequence', () => {
           resolve = r;
           resolve('a');
         })
-          .orderedMap(data => dummyAsync(data))
+          .asyncMapOrdered(data => dummyAsync(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -1464,7 +1464,7 @@ describe('Sequence', () => {
           resolve('b');
           resolve('c');
         })
-          .orderedMap(data => dummyAsync(data))
+          .asyncMapOrdered(data => dummyAsync(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -1480,7 +1480,7 @@ describe('Sequence', () => {
           resolve('a');
           resolve('b');
         })
-          .orderedMap(data => dummyAsync(data))
+          .asyncMapOrdered(data => dummyAsync(data))
           .read(data => heap.push(data))
           .attachToRoot();
 
@@ -1501,7 +1501,7 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
+              .asyncMapOrdered(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
               .read(data => heap.push(data))
               .attachToRoot();
 
@@ -1512,7 +1512,7 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data =>
+              .asyncMapOrdered(data =>
                 Sequence.create<string>(resolveInner => {
                   UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
                 })
@@ -1528,15 +1528,15 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 heap.push(data);
                 return dummyAsync(1);
               })
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 heap.push(data);
                 return dummyAsync(undefined);
               })
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 heap.push(data);
                 return dummyAsync(undefined);
               })
@@ -1556,7 +1556,7 @@ describe('Sequence', () => {
               resolve('a');
               resolve('b');
             })
-              .orderedMap(data =>
+              .asyncMapOrdered(data =>
                 Sequence.create<string>(resolveInner => {
                   let response = data + 'I';
 
@@ -1587,7 +1587,7 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data => SingleEvent.create<string>(resolveInner => resolveInner(data + 'I')))
+              .asyncMapOrdered(data => SingleEvent.create<string>(resolveInner => resolveInner(data + 'I')))
               .read(data => heap.push(data))
               .attachToRoot();
 
@@ -1598,7 +1598,7 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data =>
+              .asyncMapOrdered(data =>
                 SingleEvent.create<string>(resolveInner => {
                   UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
                 })
@@ -1614,15 +1614,15 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 heap.push(data);
                 return dummySingleEvent(1);
               })
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 heap.push(data);
                 return dummySingleEvent(undefined);
               })
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 heap.push(data);
                 return dummySingleEvent(undefined);
               })
@@ -1642,7 +1642,7 @@ describe('Sequence', () => {
               resolve('a');
               resolve('b');
             })
-              .orderedMap(data =>
+              .asyncMapOrdered(data =>
                 SingleEvent.create<string>(resolveInner => {
                   let response = data + 'I';
 
@@ -1673,7 +1673,7 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data => new Variable<string>(data + 'I'))
+              .asyncMapOrdered(data => new Variable<string>(data + 'I'))
               .read(data => heap.push(data))
               .attachToRoot();
 
@@ -1684,7 +1684,7 @@ describe('Sequence', () => {
             let heap: unknown[] = [];
 
             Sequence.create<string>(resolve => resolve('a'))
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 let action = new Action<string>();
                 UnitTestHelper.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
                 return action;
@@ -1707,7 +1707,7 @@ describe('Sequence', () => {
               resolve('a');
               resolve('b');
             })
-              .orderedMap(data => {
+              .asyncMapOrdered(data => {
                 let response: Notifier<string>;
 
                 // 1 sync response, 1 async response on each call
@@ -1748,7 +1748,7 @@ describe('Sequence', () => {
             resolve(2);
             resolve(3);
           })
-            .orderedMap(value => {
+            .asyncMapOrdered(value => {
               if (value === 1) {
                 return action1.map(() => value);
               } else if (value === 2) {
@@ -1778,7 +1778,7 @@ describe('Sequence', () => {
             resolve(2); // will be "in the room" finalize
             resolve(3); // will be "not entered the room yet"
           })
-            .orderedMap((value, context) => {
+            .asyncMapOrdered((value, context) => {
               if (value === 1) {
                 return action1.map(() => value);
               } else if (value === 2) {
@@ -1809,7 +1809,7 @@ describe('Sequence', () => {
             resolve(2); // will be "in the room" finalize on resolve
             resolve(3); // will be "in the room"
           })
-            .orderedMap((value, context) => {
+            .asyncMapOrdered((value, context) => {
               if (value === 1) {
                 return action1.map(() => value);
               } else if (value === 2) {
@@ -1840,14 +1840,14 @@ describe('Sequence', () => {
           let innerSequence: Sequence<string> | undefined;
 
           let sequence = Sequence.create<void>(resolve => resolve())
-            .orderedMap(() => {
+            .asyncMapOrdered(() => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callEachDelayed([''], () => r(''));
               });
               expect(innerSequence!['executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
-            .orderedMap(() => {
+            .asyncMapOrdered(() => {
               triggered = true;
               return dummyAsync(undefined);
             })
@@ -1872,7 +1872,7 @@ describe('Sequence', () => {
             resolve();
             resolve();
           })
-            .orderedMap(() => {
+            .asyncMapOrdered(() => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
@@ -1880,7 +1880,7 @@ describe('Sequence', () => {
               innerSequences.push(innerSequence);
               return innerSequence;
             })
-            .orderedMap(() => {
+            .asyncMapOrdered(() => {
               triggered = true;
               return dummyAsync(undefined);
             })
@@ -1909,8 +1909,8 @@ describe('Sequence', () => {
 
           let triggered = false;
           let sequence = Sequence.create<void>(resolve => resolve())
-            .orderedMap(() => action)
-            .orderedMap(() => {
+            .asyncMapOrdered(() => action)
+            .asyncMapOrdered(() => {
               triggered = true;
               return dummyAsync(undefined);
             })
@@ -1934,8 +1934,8 @@ describe('Sequence', () => {
             resolve();
             resolve();
           })
-            .orderedMap(() => action)
-            .orderedMap(() => {
+            .asyncMapOrdered(() => action)
+            .asyncMapOrdered(() => {
               triggered = true;
               return dummyAsync(undefined);
             })
@@ -1960,7 +1960,7 @@ describe('Sequence', () => {
             resolve(1);
             context.final();
           })
-            .orderedMap(value =>
+            .asyncMapOrdered(value =>
               Sequence.create<string>(resolve =>
                 UnitTestHelper.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
@@ -1980,7 +1980,7 @@ describe('Sequence', () => {
             resolve(2);
             context.final();
           })
-            .orderedMap(value =>
+            .asyncMapOrdered(value =>
               Sequence.create<string>(resolve =>
                 UnitTestHelper.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
               )
@@ -2003,7 +2003,7 @@ describe('Sequence', () => {
           resolve();
           context.final();
         })
-          .orderedMap((_, context) =>
+          .asyncMapOrdered((_, context) =>
             Sequence.create(resolve => {
               variable
                 .subscribe(() => {
@@ -2029,7 +2029,7 @@ describe('Sequence', () => {
         let sequence = Sequence.create<void>(r => {
           resolve = r;
         })
-          .orderedMap((_, context) =>
+          .asyncMapOrdered((_, context) =>
             Sequence.create(r => {
               variable
                 .subscribe(() => {
@@ -2039,7 +2039,7 @@ describe('Sequence', () => {
                 .attach(context.attachable);
             })
           )
-          .orderedMap(() => action)
+          .asyncMapOrdered(() => action)
           .attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
@@ -2070,7 +2070,7 @@ describe('Sequence', () => {
           resolve(2);
           resolve(3);
         })
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<string>((resolve, context) => {
               action.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -2431,7 +2431,7 @@ describe('Sequence', () => {
           resolve(2);
           resolve(3);
         })
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<string>((resolve, context) => {
               if (data === 1) {
                 action1.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
@@ -2443,7 +2443,7 @@ describe('Sequence', () => {
             })
           )
           .take(1)
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<string>((resolve, context) => {
               actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -2658,7 +2658,7 @@ describe('Sequence', () => {
           resolve(2);
           resolve(3);
         })
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<string>((resolve, context) => {
               if (data === 1) {
                 action1.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
@@ -2668,7 +2668,7 @@ describe('Sequence', () => {
             })
           )
           .skip(1)
-          .orderedMap(data =>
+          .asyncMapOrdered(data =>
             Sequence.create<string>((resolve, context) => {
               actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
             })
@@ -2843,7 +2843,7 @@ describe('Sequence', () => {
           resolve();
           context.final();
         })
-          .orderedMap(() =>
+          .asyncMapOrdered(() =>
             Sequence.create<void>(resolve => {
               UnitTestHelper.callEachDelayed([1], () => resolve());
             })
@@ -3082,7 +3082,7 @@ describe('Sequence', () => {
           resolve();
           context.final();
         })
-          .orderedMap(() =>
+          .asyncMapOrdered(() =>
             Sequence.create<void>(resolve => {
               UnitTestHelper.callEachDelayed([1], () => resolve());
             })
@@ -3184,22 +3184,22 @@ describe('Sequence', () => {
     test('complex merge and combine destroy after all complete', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
         UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      }).asyncMapOrdered(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       ); // 20s2m 10s1m 21s2m 11s1m
 
       let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
@@ -3255,7 +3255,7 @@ describe('Sequence', () => {
           delayedValue => resolve(delayedValue),
           () => context.final()
         );
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) =>
           UnitTestHelper.callEachDelayed(
             [value + 's1'],
@@ -3271,14 +3271,14 @@ describe('Sequence', () => {
           delayedValue => resolve(delayedValue),
           () => context.final()
         );
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + 's2');
           context.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -3291,7 +3291,7 @@ describe('Sequence', () => {
       let sequence4 = Sequence.create<string>((resolve, context) => {
         resolve('b');
         context.final();
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
           UnitTestHelper.callEachDelayed(
             [value + 's4'],
@@ -3344,14 +3344,14 @@ describe('Sequence', () => {
       let sequence2 = Sequence.create<string>((resolve, context) => {
         resolve('2');
         context.final();
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + '2');
           context.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + 'm');
           context.final();

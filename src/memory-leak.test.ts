@@ -2,8 +2,8 @@ import { takeNodeMinimalHeap } from '@memlab/core';
 import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Action } from '../observables/action/action';
-import { Sequence, SequenceClassNames, SequencePackageClassName } from './sequence';
+import { Action } from './observables/action/action';
+import { Sequence, SequenceClassNames, SequencePackageClassName } from './sequence/sequence';
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence = Sequence.create<string>(resolve => {
         UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(value));
       })
-        .orderedMap(data =>
+        .asyncMapOrdered(data =>
           Sequence.create<string>(resolve => {
             UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })
@@ -100,7 +100,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let triggeredWith = '';
       let sequence = action1
         .toSequence()
-        .orderedMap(() => action2)
+        .asyncMapOrdered(() => action2)
         .map(data => data)
         .map(data => data)
         .read(data => {
@@ -128,7 +128,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let action = new Action<void>();
 
       let sequence = Sequence.create<void>(resolve => resolve())
-        .orderedMap(() => action) // Action will never resolve
+        .asyncMapOrdered(() => action) // Action will never resolve
         .attachToRoot();
 
       sequence.destroy();
@@ -143,7 +143,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let resolve!: () => void;
 
       let sequence = Sequence.create<void>(r1 => r1())
-        .orderedMap(() =>
+        .asyncMapOrdered(() =>
           // This sequence will never be resolved
           Sequence.create<void>(r2 => {
             resolve = r2;
@@ -169,10 +169,10 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let heap: string[] = [];
       let sequence = action1
         .orderedMap(a1 => action2.map(a2 => a1 + a2))
-        .orderedMap(a2 =>
+        .asyncMapOrdered(a2 =>
           Sequence.create<string>(resolve => {
             UnitTestHelper.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
-          }).orderedMap(s2 => action3.map(d3 => s2 + d3))
+          }).asyncMapOrdered(s2 => action3.map(d3 => s2 + d3))
         )
         .map(data => {
           heap.push(data);
@@ -207,22 +207,22 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('complex merge and combine destroyed by listener', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
         UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      }).asyncMapOrdered(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       ); // 20s2m 10s1m 21s2m 11s1m
 
       let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
@@ -252,22 +252,22 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('complex merge and combine destroyed in the middle of process', async () => {
       let sequence1 = Sequence.create<number>(resolve => {
         UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue));
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue)))
       );
 
       let sequence2 = Sequence.create<number>(resolve => {
         UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
-      }).orderedMap(value => Sequence.create<string>(resolve => resolve(value + 's2')));
+      }).asyncMapOrdered(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
       );
 
       let sequence3 = Sequence.create<string>(resolve => resolve('a')).map(value => value + 's3');
-      let sequence4 = Sequence.create<string>(resolve => resolve('b')).orderedMap(value =>
+      let sequence4 = Sequence.create<string>(resolve => resolve('b')).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue));
         })
@@ -300,7 +300,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
           delayedValue => resolve(delayedValue),
           () => executor.final()
         );
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) =>
           UnitTestHelper.callEachDelayed(
             [value + 's1'],
@@ -316,14 +316,14 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
           delayedValue => resolve(delayedValue),
           () => executor.final()
         );
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + 's2');
           executor.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -336,7 +336,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence4 = Sequence.create<string>((resolve, executor) => {
         resolve('b');
         executor.final();
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
           UnitTestHelper.callEachDelayed(
             [value + 's4'],
@@ -377,14 +377,14 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       let sequence2 = Sequence.create<string>((resolve, executor) => {
         resolve('2');
         executor.final();
-      }).orderedMap(value =>
+      }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + '2');
           executor.final();
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).orderedMap(value =>
+      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + 'm');
           executor.final();

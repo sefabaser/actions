@@ -82,7 +82,7 @@ export class Notifier<T> {
   }
 
   orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    return this.toSequence().orderedMap(callback);
+    return this.toSequence().asyncMapOrdered(callback);
   }
 
   filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {

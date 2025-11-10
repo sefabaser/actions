@@ -422,8 +422,6 @@ export class Sequence<T = void> implements IAttachment {
   // TODO: other async map functions
 
   /**
-   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
-   *
    * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting. Which can break package order.
    *
    * **Sample Use Case**: Showing an animation for each package, regardless of what other packages are doing.
@@ -432,10 +430,10 @@ export class Sequence<T = void> implements IAttachment {
    * - `❌ Respects Package Order`
    * - `✅ Parallel Execution`
    *
-   * @A -----I—————————>✓-------------------
-   * @B -----------I———>✓----------------------------
-   * @C ----------------I——>✓-------------------------
-   * @R ---------------------B-C-----A-------------------
+   * @A ---I—————————>✓-------------------
+   * @B ---------I———>✓----------------------------
+   * @C --------------I——>✓-------------------------
+   * @R -------------------B-C-----A-------------------
    */
   asyncMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
@@ -457,8 +455,6 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
-   *
    * **Execution**: Each incoming package **executes instantly** but **waits before resolve** the package before them to resolve to keep the order.
    *
    * **Sample Use Case**: Using async translation service, before storing ordered event history.
@@ -469,12 +465,12 @@ export class Sequence<T = void> implements IAttachment {
    * - `✅ Respects Package Order`
    * - `✅ Parallel Execution`
    *
-   * @A -----I—————————>✓-------------------
-   * @B -----------I———I- - - - - - >✓-----------------
-   * @C ----------------I——I- - - - - >✓----------------
-   * @R ------------------------------ABC----------------
+   * @A ---I—————————>✓-------------------
+   * @B ---------I———I- - - - - - >✓-----------------
+   * @C --------------I——I- - - - - >✓----------------
+   * @R ----------------------------ABC----------------
    */
-  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     this.prepareToBeLinked();
 
     let queue = new Queue<ExecutionOrderQueuer>();
@@ -532,8 +528,6 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
-   *
    * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting.
    * The latest value is important, the packages that lacks behind are dropped.
    *
@@ -543,18 +537,16 @@ export class Sequence<T = void> implements IAttachment {
    * - `✅ Respects Package Order`
    * - `✅ Parallel Execution`
    *
-   * @A -----I——————Ix----------------------------
-   * @B -----------I———>✓----------------------------
-   * @C ----------------I——>✓-------------------------
-   * @R ---------------------B-C-------------------------
+   * @A ---I——————Ix----------------------------
+   * @B ---------I———>✓----------------------------
+   * @C --------------I——>✓-------------------------
+   * @R -------------------B-C-------------------------
    */
-  latestMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     throw new Error('not implemented yet');
   }
 
   /**
-   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
-   *
    * **Execution**: Each incoming package **executes sequentially** and **resolves instantly** without waiting.
    *
    * **Sample Use Case**: Payment operation, one can be processed if the previous one ends in success.
@@ -565,20 +557,18 @@ export class Sequence<T = void> implements IAttachment {
    * - `✅ Respects Package Order`
    * - `❌ Parallel Execution`
    *
-   * @A -----I—————————>✓-------------------
-   * @B -----------I- - - - - - - - - - - I———>✓---------
-   * @C ----------------I- - - - - - - - - - - - - - I——>✓-
-   * @R ------------------------------A--------B------C--
+   * @A ---I—————————>✓-------------------
+   * @B ---------I- - - - - - - - - - - I———>✓---------
+   * @C --------------I- - - - - - - - - - - - - - I——>✓-
+   * @R ----------------------------A--------B------C--
    */
-  queueMap<K>(
+  asyncMapQueue<K>(
     callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
   ): Sequence<K> {
     throw new Error('not implemented yet');
   }
 
   /**
-   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
-   *
    * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting.
    * If a new package comes while another is in progress, the one in progress will be dropped.
    *
@@ -588,18 +578,16 @@ export class Sequence<T = void> implements IAttachment {
    * - `✅ Respects Package Order`
    * - `❌ Parallel Execution`
    *
-   * @A -----I——Ix--------------------------------------
-   * @B -----------I——Ix--------------------------------
-   * @C -----------------I——>✓------------------------
-   * @R ------------------------C-------------------------
+   * @A ---I——Ix--------------------------------------
+   * @B ---------I——Ix--------------------------------
+   * @C ---------------I——>✓------------------------
+   * @R ----------------------C-------------------------
    */
-  dropOngoingMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     throw new Error('not implemented yet');
   }
 
   /**
-   * Async mapping functions: `asyncMap`, `orderedMap`, `latestMap`, `queueMap`, `dropOngoingMap`, `dropIncomingMap`
-   *
    * **Execution**: Each incoming package **executes instantly** and **resolves instantly** without waiting.
    * If a package is in progress, the newcomers will be dropped.
    *
@@ -609,12 +597,12 @@ export class Sequence<T = void> implements IAttachment {
    * - `✅ Respects Package Order`
    * - `❌ Parallel Execution`
    *
-   * @A -----I—————————>✓-------------------
-   * @B -----------x--------------------------------------
-   * @C -----------------x--------------------------------
-   * @R -----------------------------A--------------------
+   * @A ---I—————————>✓-------------------
+   * @B ---------x--------------------------------------
+   * @C ---------------x--------------------------------
+   * @R ---------------------------A--------------------
    */
-  dropIncomingMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
     throw new Error('not implemented yet');
   }
 
