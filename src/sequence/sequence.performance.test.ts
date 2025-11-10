@@ -20,6 +20,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 0.19089984893798828
     // queueMicrotask: 0.1549999713897705
     // read single changes: 0.15610003471374512
+    // context functions: 0.14040040969848633
   }, 60000);
 
   test('sequence single map', async () => {
@@ -38,6 +39,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 0.19029998779296875
     // queueMicrotask: 0.15720009803771973
     // read single changes: 0.15710020065307617
+    // context functions: 0.14049959182739258
   }, 60000);
 
   test('sequence single async map', async () => {
@@ -51,8 +53,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       sequence.destroy();
     });
-    // 0.7476999759674072
-    // read single changes: 0.6476001739501953
+    // context functions: 0.7813000679016113
   }, 60000);
 
   test('sequence single ordered map', async () => {
@@ -71,6 +72,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.9242000579833984
     // 0.8559999465942383
     // read single changes: 0.7562999725341797
+    // context functions: 0.7410998344421387
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
@@ -104,11 +106,11 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       sequence.destroy();
     });
-    // Min: 2.370800018310547
-    // After introducing packages: 4.625699996948242 -> 5.069400072097778 -> 5.850499868392944
+    // After introducing packages: 5.850499868392944
     // removing links: 5.253300189971924 -> 5.078900098800659 -> 4.990499973297119 -> 4.957599878311157 -> 4.654599905014038 -> 4.55460000038147
     // default attachable: 4.045099973678589
     // queueMicrotask: 3.5271999835968018
+    // context functions: 2.7063002586364746
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -143,8 +145,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       sequence.destroy();
     });
-    // Min: 2.625300168991089
-    // After introducing packages: 4.673799991607666 -> 5.293299913406372 -> 5.682100057601929 -> 7.014800071716309
+    // After introducing packages: 7.014800071716309
     // After map asyncMapOrdered seperation: 6.359500169754028
     // removing links: 5.994100093841553
     // lazy pending packages: 5.787899971008301
@@ -154,6 +155,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // fix lazy pending packages: 5.240200042724609
     // default attachable: 4.639800071716309
     // queueMicrotask: 4.099200010299683
+    // context functions: 2.909599781036377
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
@@ -181,6 +183,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // Min: 11.43939995765686
     // 10.742999792098999
     // read single changes: 9.607899904251099
+    // context functions: 9.31029987335205
   }, 60000);
 
   test('combine new object', async () => {
@@ -198,6 +201,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       // default attachable: 11.232700109481812
       // queueMicrotask: 10.21969985961914
       // read single changes: 10.207499980926514
+      // context functions: 9.99370002746582
     });
   }, 60000);
 
@@ -214,6 +218,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       // queueMicrotask: 9.956599950790405
       // 9.698499917984009
       // read single changes: 9.804400205612183
+      // context functions: 9.666399955749512
     });
   }, 60000);
 });

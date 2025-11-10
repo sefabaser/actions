@@ -37,12 +37,31 @@ class SequenceContext implements ISequenceLinkContext {
 
   constructor(
     private executor: SequenceExecuter,
-    public final: () => void,
-    public drop: () => void
+    private sequencePackage: SequencePackage
   ) {}
 
   destroy(): void {
     this.executor.destroy();
+  }
+
+  final() {
+    if (this.executor.asyncPipelineIndices) {
+      for (let index of this.executor.asyncPipelineIndices) {
+        if (index > this.sequencePackage.pipelineIndex) {
+          break;
+        } else {
+          this.executor.pipeline[index].destructor!(
+            index === this.sequencePackage.pipelineIndex ? this.sequencePackage.ongoingContext : undefined
+          );
+        }
+      }
+    }
+    this.executor.final();
+  }
+
+  drop(): void {
+    this.sequencePackage.destroyAttachment();
+    this.executor.ongoingPackageCount--;
   }
 }
 
@@ -71,17 +90,17 @@ class SequenceExecuter extends Attachable {
     return this._onDestroyListeners;
   }
 
-  private _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
-  private _asyncPipelineIndices?: Set<number>;
+  pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
+  asyncPipelineIndices?: Set<number>;
+  ongoingPackageCount = 0;
   private _waitingForNewLink?: Queue<SequencePackage>;
   private _finalized?: boolean;
-  ongoingPackageCount = 0;
 
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
 
-      this._pipeline = undefined as any;
+      this.pipeline = undefined as any;
       this._waitingForNewLink = undefined as any;
 
       if (this._onDestroyListeners) {
@@ -108,13 +127,13 @@ class SequenceExecuter extends Attachable {
       }
 
       if (destructor) {
-        if (!this._asyncPipelineIndices) {
-          this._asyncPipelineIndices = new Set();
+        if (!this.asyncPipelineIndices) {
+          this.asyncPipelineIndices = new Set();
         }
-        this._asyncPipelineIndices.add(this._pipeline.length);
+        this.asyncPipelineIndices.add(this.pipeline.length);
       }
 
-      this._pipeline.push({ iterator, destructor });
+      this.pipeline.push({ iterator, destructor });
 
       if (this._waitingForNewLink) {
         let waitingPackages = this._waitingForNewLink;
@@ -168,31 +187,11 @@ class SequenceExecuter extends Attachable {
 
   private iteratePackage(sequencePackage: SequencePackage): void {
     if (!this.destroyed) {
-      if (sequencePackage.pipelineIndex < this._pipeline.length) {
-        let context = new SequenceContext(
-          this,
-          () => {
-            if (this._asyncPipelineIndices) {
-              for (let index of this._asyncPipelineIndices) {
-                if (index > sequencePackage.pipelineIndex) {
-                  break;
-                } else {
-                  this._pipeline[index].destructor!(
-                    index === sequencePackage.pipelineIndex ? sequencePackage.ongoingContext : undefined
-                  );
-                }
-              }
-            }
-            this.final();
-          },
-          () => {
-            sequencePackage.destroyAttachment();
-            this.ongoingPackageCount--;
-          }
-        );
+      if (sequencePackage.pipelineIndex < this.pipeline.length) {
+        let context = new SequenceContext(this, sequencePackage);
         sequencePackage.ongoingContext = context;
 
-        this._pipeline[sequencePackage.pipelineIndex].iterator(sequencePackage.data, context, returnData => {
+        this.pipeline[sequencePackage.pipelineIndex].iterator(sequencePackage.data, context, returnData => {
           sequencePackage.destroyAttachment();
           sequencePackage.ongoingContext = undefined;
 
