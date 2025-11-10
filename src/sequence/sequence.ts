@@ -650,25 +650,32 @@ export class Sequence<T = void> implements IAttachment {
     this.prepareToBeLinked();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this.executor.enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: AsyncOperation<K>;
+    this.executor.enterPipeline<T, K>(
+      (data, context, resolve) => {
+        let executionReturn: AsyncOperation<K>;
 
-      ongoingContext?.drop();
-      ongoingContext = context;
-      try {
-        executionReturn = callback(data, context);
-      } catch (e) {
-        console.error('Sequence callback function error: ', e);
-        return;
+        ongoingContext?.drop();
+        ongoingContext = context;
+        try {
+          executionReturn = callback(data, context);
+        } catch (e) {
+          console.error('Sequence callback function error: ', e);
+          return;
+        }
+
+        executionReturn
+          .readSingle(resolvedData => {
+            ongoingContext = undefined;
+            resolve(resolvedData);
+          })
+          .attach(context.attachable);
+      },
+      (finalContext?: SequenceContext) => {
+        if (!finalContext) {
+          ongoingContext?.drop();
+        }
       }
-
-      executionReturn
-        .readSingle(resolvedData => {
-          ongoingContext = undefined;
-          resolve(resolvedData);
-        })
-        .attach(context.attachable);
-    });
+    );
 
     return new Sequence<K>(this.executor);
   }
@@ -692,28 +699,35 @@ export class Sequence<T = void> implements IAttachment {
     this.prepareToBeLinked();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this.executor.enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: AsyncOperation<K>;
+    this.executor.enterPipeline<T, K>(
+      (data, context, resolve) => {
+        let executionReturn: AsyncOperation<K>;
 
-      if (ongoingContext) {
-        context.drop();
-      } else {
-        ongoingContext = context;
-        try {
-          executionReturn = callback(data, context);
-        } catch (e) {
-          console.error('Sequence callback function error: ', e);
-          return;
+        if (ongoingContext) {
+          context.drop();
+        } else {
+          ongoingContext = context;
+          try {
+            executionReturn = callback(data, context);
+          } catch (e) {
+            console.error('Sequence callback function error: ', e);
+            return;
+          }
+
+          executionReturn
+            .readSingle(resolvedData => {
+              ongoingContext = undefined;
+              resolve(resolvedData);
+            })
+            .attach(context.attachable);
         }
-
-        executionReturn
-          .readSingle(resolvedData => {
-            ongoingContext = undefined;
-            resolve(resolvedData);
-          })
-          .attach(context.attachable);
+      },
+      (finalContext?: SequenceContext) => {
+        if (!finalContext) {
+          ongoingContext?.drop();
+        }
       }
-    });
+    );
 
     return new Sequence<K>(this.executor);
   }

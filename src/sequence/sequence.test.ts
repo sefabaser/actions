@@ -294,6 +294,7 @@ describe('Sequence', () => {
         expect(triggered).toBeTruthy();
       });
 
+      // TODO
       test('resolve after destruction should not throw error', () => {});
     });
 
@@ -1349,7 +1350,7 @@ describe('Sequence', () => {
           let action3 = new Action<void>();
           let actionlast = new Action<void>();
 
-          let sequence = Sequence.create<number>((resolve, context) => {
+          let sequence = Sequence.create<number>(resolve => {
             resolve(1);
             resolve(2);
             resolve(3);
@@ -1373,38 +1374,47 @@ describe('Sequence', () => {
             .read(value => heap.push(value))
             .attachToRoot();
 
+          // 3, 2, 1 --> _ --> _
+
           expect(action1.listenerCount).toEqual(1);
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(0);
           expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
           action3.trigger();
+          // 2, 1 --> 3 --> _
 
           expect(action1.listenerCount).toEqual(1);
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(1);
           expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
           action2.trigger();
+          // _ --> F!, 2, 3 --> _
 
           expect(action1.listenerCount).toEqual(0);
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(2);
           expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
           actionlast.trigger();
+          // _ --> _ --> F!, 2, 3
 
           expect(action1.listenerCount).toEqual(0);
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
           expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([3, 2]);
         });
       });
@@ -2058,6 +2068,81 @@ describe('Sequence', () => {
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1a', '2a']);
         });
+
+        test('finalize a link that comes after should destroy ongoing items of previous link', () => {
+          let heap: unknown[] = [];
+
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+          let actionlast = new Action<void>();
+
+          let sequence = Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .asyncMapDirect(value => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .asyncMapDirect((value, context) => {
+              if (value === 2) {
+                context.final();
+              }
+
+              return actionlast.map(() => value);
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          // 3, 2, 1 --> _ --> _
+
+          expect(action1.listenerCount).toEqual(1);
+          expect(action2.listenerCount).toEqual(1);
+          expect(action3.listenerCount).toEqual(1);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action1.trigger();
+          // 3, 2 --> 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(1);
+          expect(action3.listenerCount).toEqual(1);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action2.trigger();
+          // _ --> F!, 2, 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(2);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          actionlast.trigger();
+          // _ --> _ --> F!, 2, 1
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
+          expect(heap).toEqual([1, 2]);
+        });
       });
     });
 
@@ -2708,6 +2793,71 @@ describe('Sequence', () => {
 
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1a', '2a']);
+        });
+
+        test('finalize a link that comes after should destroy ongoing items of previous link', () => {
+          let heap: unknown[] = [];
+
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+          let actionlast = new Action<void>();
+
+          let sequence = Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .asyncMapLatest(value => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .asyncMapLatest((value, context) => {
+              if (value === 2) {
+                context.final();
+              }
+
+              return actionlast.map(() => value);
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          // 3, 2, 1 --> _ --> _
+
+          expect(action1.listenerCount).toEqual(1);
+          expect(action2.listenerCount).toEqual(1);
+          expect(action3.listenerCount).toEqual(1);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action2.trigger();
+          // _ --> F!, 2 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          actionlast.trigger();
+          // _ --> _ --> F!, 2
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
+          expect(heap).toEqual([2]);
         });
       });
     });
@@ -3443,6 +3593,82 @@ describe('Sequence', () => {
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1a', '2a']);
         });
+
+        test('finalize a link that comes after should destroy ongoing items of previous link', () => {
+          let heap: unknown[] = [];
+
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+          let actionlast = new Action<void>();
+
+          let sequence = Sequence.create<number>(resolve => {
+            resolve(1);
+            resolve(2);
+            resolve(3);
+          })
+            .asyncMapQueue(value => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .asyncMapDirect((value, context) => {
+              if (value === 2) {
+                context.final();
+              }
+
+              return actionlast.map(() => value);
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          // 3w, 2w, 1 --> _ --> _
+
+          expect(action1.listenerCount).toEqual(1);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action1.trigger();
+          // 3w, 2 --> 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(1);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action2.trigger();
+          // _ --> F!, 2, 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(2);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          actionlast.trigger();
+          // _ --> _ --> F!, 2, 1
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
+          expect(heap).toEqual([1, 2]);
+        });
       });
     });
 
@@ -4102,6 +4328,85 @@ describe('Sequence', () => {
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['2a']);
         });
+
+        test('finalize a link that comes after should destroy ongoing items of previous link', () => {
+          let heap: unknown[] = [];
+
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+          let actionlast = new Action<void>();
+
+          let resolve!: (value: number) => void;
+          let sequence = Sequence.create<number>(r => {
+            resolve = r;
+          })
+            .asyncMapDropOngoing(value => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .asyncMapDropOngoing((value, context) => {
+              return actionlast.map(() => {
+                if (value === 2) {
+                  context.final();
+                }
+                return value;
+              });
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          resolve(1);
+          // 1 --> _ --> _
+
+          expect(action1.listenerCount).toEqual(1);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action1.trigger();
+          resolve(2);
+          // 2 --> 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(1);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action2.trigger();
+          resolve(3);
+          // 3 --> 2 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(1);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          actionlast.trigger();
+          // _ --> _ --> F!, 2
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
+          expect(heap).toEqual([2]);
+        });
       });
     });
 
@@ -4751,6 +5056,85 @@ describe('Sequence', () => {
 
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1a']);
+        });
+
+        test('finalize a link that comes after should destroy ongoing items of previous link', () => {
+          let heap: unknown[] = [];
+
+          let action1 = new Action<void>();
+          let action2 = new Action<void>();
+          let action3 = new Action<void>();
+          let actionlast = new Action<void>();
+
+          let resolve!: (value: number) => void;
+          let sequence = Sequence.create<number>(r => {
+            resolve = r;
+          })
+            .asyncMapDropIncoming(value => {
+              if (value === 1) {
+                return action1.map(() => value);
+              } else if (value === 2) {
+                return action2.map(() => value);
+              } else {
+                return action3.map(() => value);
+              }
+            })
+            .asyncMapDropIncoming((value, context) => {
+              return actionlast.map(() => {
+                if (value === 1) {
+                  context.final();
+                }
+                return value;
+              });
+            })
+            .read(value => heap.push(value))
+            .attachToRoot();
+
+          resolve(1);
+          // 1 --> _ --> _
+
+          expect(action1.listenerCount).toEqual(1);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action1.trigger();
+          resolve(2);
+          // 2 --> 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(1);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          action2.trigger();
+          resolve(3);
+          // 3 --> 1 --> _
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(1);
+          expect(actionlast.listenerCount).toEqual(1);
+          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence.destroyed).toBeFalsy();
+          expect(heap).toEqual([]);
+
+          actionlast.trigger();
+          // _ --> _ --> F!, 1
+
+          expect(action1.listenerCount).toEqual(0);
+          expect(action2.listenerCount).toEqual(0);
+          expect(action3.listenerCount).toEqual(0);
+          expect(actionlast.listenerCount).toEqual(0);
+          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence.destroyed).toBeTruthy();
+          expect(heap).toEqual([1]);
         });
       });
     });
