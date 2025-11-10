@@ -647,7 +647,34 @@ export class Sequence<T = void> implements IAttachment {
    * @R ----------------------C-------------------------
    */
   asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    throw new Error('not implemented yet');
+    this.prepareToBeLinked();
+
+    let ongoingContext: ISequenceLinkContext | undefined;
+    this.executor.enterPipeline<T, K>((data, context, resolve) => {
+      let executionReturn: AsyncOperation<K>;
+
+      if (ongoingContext) {
+        ongoingContext.destroyAttachment();
+        this.executor.ongoingPackageCount--;
+      }
+
+      ongoingContext = context;
+      try {
+        executionReturn = callback(data, context);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      executionReturn
+        .readSingle(resolvedData => {
+          ongoingContext = undefined;
+          resolve(resolvedData);
+        })
+        .attach(context.attachable);
+    });
+
+    return new Sequence<K>(this.executor);
   }
 
   /**
@@ -666,7 +693,34 @@ export class Sequence<T = void> implements IAttachment {
    * @R ---------------------------A--------------------
    */
   asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    throw new Error('not implemented yet');
+    this.prepareToBeLinked();
+
+    let ongoingContext: ISequenceLinkContext | undefined;
+    this.executor.enterPipeline<T, K>((data, context, resolve) => {
+      let executionReturn: AsyncOperation<K>;
+
+      if (ongoingContext) {
+        context.destroyAttachment();
+        this.executor.ongoingPackageCount--;
+      } else {
+        ongoingContext = context;
+        try {
+          executionReturn = callback(data, context);
+        } catch (e) {
+          console.error('Sequence callback function error: ', e);
+          return;
+        }
+
+        executionReturn
+          .readSingle(resolvedData => {
+            ongoingContext = undefined;
+            resolve(resolvedData);
+          })
+          .attach(context.attachable);
+      }
+    });
+
+    return new Sequence<K>(this.executor);
   }
 
   filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {

@@ -873,7 +873,7 @@ describe('SingleEvent', () => {
       test('using resolved event after timeout', async () => {
         let event = SingleEvent.create<void>(resolve => resolve()).attachToRoot();
 
-        expect(async () => {
+        await expect(async () => {
           UnitTestHelper.callEachDelayed([1], () => {
             let sequence = SingleEvent.create<void>(resolve => resolve());
             try {
