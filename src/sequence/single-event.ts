@@ -28,7 +28,7 @@ class SingleEventContext implements ISingleEventContext {
   }
 
   /** @internal */
-  destroyAttachment() {
+  drop() {
     this._attachable?.destroy();
   }
 }
@@ -54,7 +54,7 @@ class SingleEventExecuter extends Attachable {
       super.destroy();
 
       this._pipeline = undefined as any;
-      this.ongoingContext?.destroyAttachment();
+      this.ongoingContext?.drop();
 
       if (this._onDestroyListeners) {
         let listeners = this._onDestroyListeners;
@@ -119,7 +119,7 @@ class SingleEventExecuter extends Attachable {
         this.ongoingContext = new SingleEventContext(this);
 
         this._pipeline[this.pipelineIndex](this.currentData, this.ongoingContext, returnData => {
-          this.ongoingContext?.destroyAttachment();
+          this.ongoingContext?.drop();
           this.ongoingContext = undefined;
 
           this.currentData = returnData;
