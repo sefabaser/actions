@@ -92,7 +92,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.5051000118255615
-    // arrow function resolve: 0.44080018997192383
+    // arrow function resolve: 0.43959999084472656
   }, 60000);
 
   test('sequence 10x async map', async () => {

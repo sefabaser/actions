@@ -15,8 +15,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       sequence.destroy();
     });
-    // Min:  0.7418999671936035
-    // default attachable: 0.39929986000061035
     // no attachable: 0.19089984893798828
     // queueMicrotask: 0.1549999713897705
     // read single changes: 0.15610003471374512
@@ -34,8 +32,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       sequence.destroy();
     });
-    // Min:  0.8095998764038086
-    // default attachable: 0.42039990425109863
     // no attachable: 0.19029998779296875
     // queueMicrotask: 0.15720009803771973
     // read single changes: 0.15710020065307617
@@ -67,8 +63,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       sequence.destroy();
     });
-    // After introducing packages: 2.077700138092041
-    // default attachable: 1.319700002670288
     // queueMicrotask: 0.9242000579833984
     // 0.8559999465942383
     // read single changes: 0.7562999725341797
