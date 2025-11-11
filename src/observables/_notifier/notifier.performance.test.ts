@@ -18,7 +18,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.2100999355316162
     // trigger all change: 0.19009995460510254
     // 0.18709993362426758
-    // read single changes: 0.17210006713867188
+    // read single changes: 0.1697998046875
   }, 60000);
 
   test('action subscribe 10x', async () => {
@@ -60,7 +60,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // no attachable: 5.665599822998047
     // queueMicrotask: 5.21779990196228
     // trigger all change: 4.310899972915649
-    // read single changes: 4.26609992980957
+    // read single changes: 4.205600261688232
   }, 60000);
 
   test('variable subscribe and set 10x', async () => {
@@ -150,5 +150,15 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.4397001266479492
     // trigger all change: 0.43720006942749023
     // read single changes: 0.4247000217437744
+    // removing bind: 0.40780019760131836
+  }, 60000);
+
+  test('action to notifier', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let action = new Action<void>();
+      action.notifier.subscribe(() => {}).attachToRoot();
+      action.trigger();
+    });
+    // Min:  0.20210027694702148
   }, 60000);
 });
