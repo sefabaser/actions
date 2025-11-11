@@ -17,7 +17,7 @@ export class ClassID {
     return id;
   }
 
-  get classId(): number {
+  get classID(): number {
     return (this.constructor as typeof ClassID).id;
   }
 

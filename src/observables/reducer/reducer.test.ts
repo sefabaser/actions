@@ -225,15 +225,15 @@ describe(`Reducer`, () => {
       }));
 
     test('should give unique id to different effecters', () => {
-      let firstId: number | undefined;
-      let secondId: number | undefined;
+      let firstID: number | undefined;
+      let secondID: number | undefined;
 
       let reducer = new Reducer<boolean, void>(change => {
         if (change.type === 'effect') {
-          if (!firstId) {
-            firstId = change.id;
+          if (!firstID) {
+            firstID = change.id;
           } else {
-            secondId = change.id;
+            secondID = change.id;
           }
         }
       });
@@ -241,9 +241,9 @@ describe(`Reducer`, () => {
       reducer.effect(true).attachToRoot();
       reducer.effect(true).attachToRoot();
 
-      expect(firstId).toBeDefined();
-      expect(secondId).toBeDefined();
-      expect(firstId !== secondId).toEqual(true);
+      expect(firstID).toBeDefined();
+      expect(secondID).toBeDefined();
+      expect(firstID !== secondID).toEqual(true);
     });
 
     test('should give same unique id to all operations of the same effecter', () => {

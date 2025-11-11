@@ -99,11 +99,11 @@ class SingleEventExecuter extends Attachable {
     return super.attach(parent);
   }
 
-  attachById(id: number): this {
+  attachByID(id: number): this {
     if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
       this.destroy();
     }
-    return super.attachById(id);
+    return super.attachByID(id);
   }
 
   attachToRoot(): this {
@@ -253,8 +253,8 @@ export class SingleEvent<T = void> implements IAttachment {
     return this;
   }
 
-  attachById(id: number): this {
-    this.executor.attachById(id);
+  attachByID(id: number): this {
+    this.executor.attachByID(id);
     return this;
   }
 

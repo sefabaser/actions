@@ -22,7 +22,7 @@ export type NotifierCallbackFunction<T> = (data: T) => void;
 export class Notifier<T> {
   static fromSequence<S>(sequence: Sequence<S>): {
     attach: (parent: IAttachable) => Notifier<S>;
-    attachById: (parent: number) => Notifier<S>;
+    attachByID: (parent: number) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
     if (sequence.attachIsCalled) {
@@ -36,8 +36,8 @@ export class Notifier<T> {
         sequence.attach(parent);
         return notifier;
       },
-      attachById: (id: number) => {
-        sequence.attachById(id);
+      attachByID: (id: number) => {
+        sequence.attachByID(id);
         return notifier;
       },
       attachToRoot: () => {
@@ -48,7 +48,7 @@ export class Notifier<T> {
   }
 
   private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
-  private nextAvailableSubscriptionId = 1;
+  private nextAvailableSubscriptionID = 1;
 
   get listenerCount(): number {
     return this.listenersMap.size;
@@ -57,17 +57,17 @@ export class Notifier<T> {
   get notifier(): Notifier<T> {
     let wrapper = new Notifier<T>();
     wrapper.listenersMap = this.listenersMap;
-    wrapper.nextAvailableSubscriptionId = this.nextAvailableSubscriptionId;
+    wrapper.nextAvailableSubscriptionID = this.nextAvailableSubscriptionID;
     wrapper.subscribe = this.subscribe.bind(this);
     return wrapper;
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    let subscriptionId = this.nextAvailableSubscriptionId++;
-    this.listenersMap.set(subscriptionId, callback);
+    let subscriptionID = this.nextAvailableSubscriptionID++;
+    this.listenersMap.set(subscriptionID, callback);
 
     return new ActionSubscription(() => {
-      this.listenersMap.delete(subscriptionId);
+      this.listenersMap.delete(subscriptionID);
     });
   }
 
@@ -108,13 +108,13 @@ export class Notifier<T> {
 
   /** @internal */
   readSingle(callback: (data: T) => void): IAttachment {
-    let subscriptionId = this.nextAvailableSubscriptionId++;
+    let subscriptionID = this.nextAvailableSubscriptionID++;
 
     let subscription = new ActionSubscription(() => {
-      this.listenersMap.delete(subscriptionId);
+      this.listenersMap.delete(subscriptionID);
     });
 
-    this.listenersMap.set(subscriptionId, data => {
+    this.listenersMap.set(subscriptionID, data => {
       subscription.destroy();
       callback(data);
     });

@@ -163,9 +163,9 @@ class SequenceExecuter extends Attachable {
     return super.attach(parent);
   }
 
-  attachById(id: number): this {
+  attachByID(id: number): this {
     this.onAttach();
-    return super.attachById(id);
+    return super.attachByID(id);
   }
 
   attachToRoot(): this {
@@ -811,8 +811,8 @@ export class Sequence<T = void> implements IAttachment {
     return this;
   }
 
-  attachById(parent: number): this {
-    this.executor.attachById(parent);
+  attachByID(parent: number): this {
+    this.executor.attachByID(parent);
     return this;
   }
 

@@ -2,7 +2,7 @@ import { IDAttachable } from '../id-attachable';
 
 /** @internal */
 export class AttachmentTargetStore {
-  private static nextAvailableId = 1;
+  private static nextAvailableID = 1;
   private static storage = new Map<number, { instance: IDAttachable; class: typeof IDAttachable }>();
 
   static findAttachmentTarget(attachableCandidate: number): IDAttachable {
@@ -16,7 +16,7 @@ export class AttachmentTargetStore {
   static registerIDAttachable(attachmentTarget: IDAttachable): number {
     let Class = attachmentTarget.constructor as typeof IDAttachable;
 
-    let id = this.nextAvailableId++;
+    let id = this.nextAvailableID++;
 
     this.storage.set(id, { instance: attachmentTarget, class: Class });
     return id;
@@ -26,7 +26,7 @@ export class AttachmentTargetStore {
     this.storage.delete(attachmentTarget.id);
   }
 
-  static validateIdForClass(id: number, expectedConstructor: typeof IDAttachable): boolean {
+  static validateIDForClass(id: number, expectedConstructor: typeof IDAttachable): boolean {
     let item = this.storage.get(id);
     return item?.class === expectedConstructor;
   }
@@ -35,7 +35,7 @@ export class AttachmentTargetStore {
    * Required to be called before or after each unit test to reset the store
    */
   static hardReset(): void {
-    this.nextAvailableId = 1;
+    this.nextAvailableID = 1;
     this.storage.clear();
   }
 }

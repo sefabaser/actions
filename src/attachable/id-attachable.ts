@@ -10,15 +10,15 @@ export class IDAttachable extends Attachable {
     return ClassID.getClassID(this);
   }
 
-  get classId(): number {
+  get classID(): number {
     return (this.constructor as typeof IDAttachable).id;
   }
   // ----------------------------- END CLASSID -----------------------------
 
   readonly id: number = AttachmentTargetStore.registerIDAttachable(this);
 
-  static validateId(this: typeof IDAttachable, id: number): boolean {
-    return AttachmentTargetStore.validateIdForClass(id, this);
+  static validateID(this: typeof IDAttachable, id: number): boolean {
+    return AttachmentTargetStore.validateIDForClass(id, this);
   }
 
   private _onDestroyListeners: Set<() => void> | undefined;
@@ -29,13 +29,13 @@ export class IDAttachable extends Attachable {
 
       let listeners = this._onDestroyListeners;
       this._onDestroyListeners = undefined;
+      super.destroy();
+
       if (listeners) {
         for (let listener of listeners) {
           listener();
         }
       }
-
-      super.destroy();
     }
   }
 

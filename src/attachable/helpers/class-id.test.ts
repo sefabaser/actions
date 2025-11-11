@@ -2,41 +2,41 @@ import { describe, expect, test } from 'vitest';
 
 import { ClassID } from './class-id';
 
-describe('ClassId', () => {
+describe('ClassID', () => {
   describe('Direct Inheritance', () => {
     test('each class gets unique ID', () => {
       class Child1 extends ClassID {}
       class Child2 extends ClassID {}
 
-      let classIdId = ClassID.id;
-      let child1Id = Child1.id;
-      let child2Id = Child2.id;
+      let classIDID = ClassID.id;
+      let child1ID = Child1.id;
+      let child2ID = Child2.id;
 
-      expect(new Set([classIdId, child1Id, child2Id]).size).toBe(3);
+      expect(new Set([classIDID, child1ID, child2ID]).size).toBe(3);
     });
 
-    test('instance classId matches static class id', () => {
+    test('instance classID matches static class id', () => {
       class Child1 extends ClassID {}
       class Child2 extends ClassID {}
 
       let child1 = new Child1();
       let child2 = new Child2();
 
-      expect(child1.classId).toBe(Child1.id);
-      expect(child2.classId).toBe(Child2.id);
+      expect(child1.classID).toBe(Child1.id);
+      expect(child2.classID).toBe(Child2.id);
     });
 
-    test('different instances of the same class have consistent classIds', () => {
+    test('different instances of the same class have consistent classIDs', () => {
       class Child1 extends ClassID {}
       let child1 = new Child1();
       let child2 = new Child1();
-      expect(child1.classId).toBe(child2.classId);
+      expect(child1.classID).toBe(child2.classID);
     });
 
-    test('middle class should be able to access instance classId of its children', () => {
+    test('middle class should be able to access instance classID of its children', () => {
       class Mid extends ClassID {
         foo(instance: Mid): number {
-          return instance.classId;
+          return instance.classID;
         }
       }
 
@@ -46,8 +46,8 @@ describe('ClassId', () => {
       let child1 = new Child1();
       let child2 = new Child2();
 
-      expect(child1.foo(child2)).toBe(child2.classId);
-      expect(child2.foo(child1)).toBe(child1.classId);
+      expect(child1.foo(child2)).toBe(child2.classID);
+      expect(child2.foo(child1)).toBe(child1.classID);
     });
 
     test('same name but different classes should have different ids', () => {
@@ -77,7 +77,7 @@ describe('ClassId', () => {
         return ClassID.getClassID(this);
       }
 
-      get classId(): number {
+      get classID(): number {
         return (this.constructor as typeof Foo).id;
       }
     }
@@ -86,35 +86,35 @@ describe('ClassId', () => {
       class Child1 extends Foo {}
       class Child2 extends Foo {}
 
-      let classIdId = Foo.id;
-      let child1Id = Child1.id;
-      let child2Id = Child2.id;
+      let classIDID = Foo.id;
+      let child1ID = Child1.id;
+      let child2ID = Child2.id;
 
-      expect(new Set([classIdId, child1Id, child2Id]).size).toBe(3);
+      expect(new Set([classIDID, child1ID, child2ID]).size).toBe(3);
     });
 
-    test('instance classId matches static class id', () => {
+    test('instance classID matches static class id', () => {
       class Child1 extends Foo {}
       class Child2 extends Foo {}
 
       let child1 = new Child1();
       let child2 = new Child2();
 
-      expect(child1.classId).toBe(Child1.id);
-      expect(child2.classId).toBe(Child2.id);
+      expect(child1.classID).toBe(Child1.id);
+      expect(child2.classID).toBe(Child2.id);
     });
 
-    test('different instances of the same class have consistent classIds', () => {
+    test('different instances of the same class have consistent classIDs', () => {
       class Child1 extends Foo {}
       let child1 = new Child1();
       let child2 = new Child1();
-      expect(child1.classId).toBe(child2.classId);
+      expect(child1.classID).toBe(child2.classID);
     });
 
-    test('middle class should be able to access instance classId of its children', () => {
+    test('middle class should be able to access instance classID of its children', () => {
       class Mid extends Foo {
         foo(instance: Mid): number {
-          return instance.classId;
+          return instance.classID;
         }
       }
 
@@ -124,8 +124,8 @@ describe('ClassId', () => {
       let child1 = new Child1();
       let child2 = new Child2();
 
-      expect(child1.foo(child2)).toBe(child2.classId);
-      expect(child2.foo(child1)).toBe(child1.classId);
+      expect(child1.foo(child2)).toBe(child2.classID);
+      expect(child2.foo(child1)).toBe(child1.classID);
     });
 
     test('same name but different classes should have different ids', () => {

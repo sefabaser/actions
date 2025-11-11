@@ -88,24 +88,24 @@ describe('AttachmentTargetStore', () => {
       class TestClass extends IDAttachable {}
 
       let instance1 = new TestClass().attachToRoot();
-      let firstId = instance1.id;
+      let firstID = instance1.id;
       AttachmentTargetStore.unregisterIDAttachable(instance1);
 
       AttachmentTargetStore.hardReset();
 
       let instance2 = new TestClass().attachToRoot();
-      let secondId = instance2.id;
+      let secondID = instance2.id;
 
-      expect(secondId).toBe(firstId);
+      expect(secondID).toBe(firstID);
     });
   });
 
-  describe('validateIdForClass', () => {
+  describe('validateIDForClass', () => {
     test('returns true for matching class', () => {
       class TestClass extends IDAttachable {}
 
       let instance = new TestClass().attachToRoot();
-      let isValid = AttachmentTargetStore.validateIdForClass(instance.id, TestClass);
+      let isValid = AttachmentTargetStore.validateIDForClass(instance.id, TestClass);
 
       expect(isValid).toBe(true);
     });
@@ -115,7 +115,7 @@ describe('AttachmentTargetStore', () => {
       class TestClass2 extends IDAttachable {}
 
       let instance = new TestClass1().attachToRoot();
-      let isValid = AttachmentTargetStore.validateIdForClass(instance.id, TestClass2);
+      let isValid = AttachmentTargetStore.validateIDForClass(instance.id, TestClass2);
 
       expect(isValid).toBe(false);
     });
@@ -123,7 +123,7 @@ describe('AttachmentTargetStore', () => {
     test('returns false for non-existent id', () => {
       class TestClass extends IDAttachable {}
 
-      let isValid = AttachmentTargetStore.validateIdForClass(9999, TestClass);
+      let isValid = AttachmentTargetStore.validateIDForClass(9999, TestClass);
 
       expect(isValid).toBe(false);
     });
@@ -133,8 +133,8 @@ describe('AttachmentTargetStore', () => {
       class DerivedClass extends BaseClass {}
 
       let instance = new DerivedClass().attachToRoot();
-      let isValidForDerived = AttachmentTargetStore.validateIdForClass(instance.id, DerivedClass);
-      let isValidForBase = AttachmentTargetStore.validateIdForClass(instance.id, BaseClass);
+      let isValidForDerived = AttachmentTargetStore.validateIDForClass(instance.id, DerivedClass);
+      let isValidForBase = AttachmentTargetStore.validateIDForClass(instance.id, BaseClass);
 
       expect(isValidForDerived).toBe(true);
       expect(isValidForBase).toBe(false);
@@ -191,7 +191,7 @@ describe('AttachmentTargetStore', () => {
 
       AttachmentTargetStore.hardReset();
 
-      let isValid = AttachmentTargetStore.validateIdForClass(id, TestClass);
+      let isValid = AttachmentTargetStore.validateIDForClass(id, TestClass);
 
       expect(isValid).toBe(false);
     });
@@ -256,8 +256,8 @@ describe('AttachmentTargetStore', () => {
 
       AttachmentTargetStore.unregisterIDAttachable(instance1);
 
-      let isValid1 = AttachmentTargetStore.validateIdForClass(instance1.id, TestClass);
-      let isValid2 = AttachmentTargetStore.validateIdForClass(instance2.id, TestClass);
+      let isValid1 = AttachmentTargetStore.validateIDForClass(instance1.id, TestClass);
+      let isValid2 = AttachmentTargetStore.validateIDForClass(instance2.id, TestClass);
 
       expect(isValid1).toBe(false);
       expect(isValid2).toBe(true);

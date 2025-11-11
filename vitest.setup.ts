@@ -1,5 +1,4 @@
 import { config } from '@memlab/core';
-import { Wait } from 'helpers-lib';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 config.muteConsole = true;
@@ -38,7 +37,7 @@ beforeEach(() => {
 afterEach(async () => {
   console.error = originalConsoleError;
   vi.useRealTimers();
-  await Wait();
+  await new Promise<void>(resolve => setTimeout(resolve));
   checkAndThrowErrors();
 });
 

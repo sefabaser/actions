@@ -50,7 +50,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('IDAttachable create, attach by id and destroy', async () => {
     await UnitTestHelper.testPerformance(() => {
       let parent = new IDAttachable().attachToRoot();
-      new Attachable().attachById(parent.id);
+      new Attachable().attachByID(parent.id);
       parent.destroy();
     });
     // Min:  0.601099967956543

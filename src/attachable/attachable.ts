@@ -5,7 +5,7 @@ export interface IAttachment {
   attachIsCalled: boolean;
   destroy(): void;
   attach(parent: IAttachable): this;
-  attachById(parent: number): this;
+  attachByID(parent: number): this;
   attachToRoot(): this;
 }
 
@@ -94,7 +94,7 @@ export class Attachable implements IAttachable {
     return this;
   }
 
-  attachById(id: number): this {
+  attachByID(id: number): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }

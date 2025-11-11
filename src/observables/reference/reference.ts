@@ -65,8 +65,8 @@ export class Reference<T extends number | object = number> extends Attachable {
       this.destroySubscription = undefined;
 
       if (data) {
-        let referenceId = this.getReferenceId(data, this.options.path);
-        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceId).onDestroy(() => {
+        let referenceID = this.getReferenceID(data, this.options.path);
+        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceID).onDestroy(() => {
           !this.destroyed && this.set(undefined);
         });
 
@@ -98,8 +98,8 @@ export class Reference<T extends number | object = number> extends Attachable {
     return this;
   }
 
-  attachById(id: number): this {
-    super.attachById(id);
+  attachByID(id: number): this {
+    super.attachByID(id);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;
   }
@@ -117,7 +117,7 @@ export class Reference<T extends number | object = number> extends Attachable {
     super.destroy();
   }
 
-  private getReferenceId(value: T, path: string | undefined): number {
+  private getReferenceID(value: T, path: string | undefined): number {
     if (Comparator.isNumber(value) && path === undefined) {
       return value;
     } else if (Comparator.isObject(value) && path !== undefined) {

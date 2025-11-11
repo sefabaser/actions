@@ -72,7 +72,7 @@ describe('IDAttachable', () => {
       let parent = new IDAttachable().attachToRoot();
       let child = new IDAttachable();
 
-      child.attachById(parent.id);
+      child.attachByID(parent.id);
 
       expect(child.destroyed).toBe(false);
     });
@@ -290,11 +290,11 @@ describe('IDAttachable', () => {
     });
   });
 
-  describe('validateId', () => {
+  describe('validateID', () => {
     test('valid target valid id', () => {
       class Child extends IDAttachable {}
       let child = new Child().attachToRoot();
-      expect(Child.validateId(child.id)).toBe(true);
+      expect(Child.validateID(child.id)).toBe(true);
     });
 
     test('invalid target valid id', () => {
@@ -303,12 +303,12 @@ describe('IDAttachable', () => {
 
       let child1 = new Child1().attachToRoot();
 
-      expect(Child2.validateId(child1.id)).toBe(false);
+      expect(Child2.validateID(child1.id)).toBe(false);
     });
 
     test('invalid id', () => {
       class Child extends IDAttachable {}
-      expect(Child.validateId(9999)).toBe(false);
+      expect(Child.validateID(9999)).toBe(false);
     });
   });
 });

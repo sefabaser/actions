@@ -21,7 +21,7 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
 }) => ResponseType;
 
 export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
-  private static nextAvailableId = 1;
+  private static nextAvailableID = 1;
 
   private id: number;
   private reducer: Reducer<EffectType, ResponseType>;
@@ -37,7 +37,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
     super();
 
-    this.id = ReducerEffectChannel.nextAvailableId++;
+    this.id = ReducerEffectChannel.nextAvailableID++;
     this.reducer = reducer;
 
     let reducerResponse = this.reducer.reduceFunction({
