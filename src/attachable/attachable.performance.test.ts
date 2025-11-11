@@ -71,6 +71,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // single event: 0.6326999664306641
     // storage change: 0.5597000122070312
     // id gen change: 0.47520017623901367
-    // number ids: 0.43650007247924805
+    // number ids: 0.43039989471435547
   }, 60000);
 });
