@@ -4,22 +4,14 @@ export interface IAttachment {
   destroyed: boolean;
   attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: IAttachable): this;
+  attach(parent: Attachable): this;
   attachByID(parent: number): this;
   attachToRoot(): this;
 }
 
-export interface IAttachable extends IAttachment {
-  attachedParent: IAttachable | undefined;
-  /** @internal */
-  setAttachment(child: IAttachment): void;
-  /** @internal */
-  removeAttachment(child: IAttachment): void;
-}
-
-export class Attachable implements IAttachable {
+export class Attachable implements IAttachment {
   /**
-   * @returns IAttachable that is already destroyed
+   * @returns Attachable that is already destroyed
    */
   static getDestroyed(): IAttachment {
     let destroyedSubscription = new Attachable();
@@ -29,9 +21,9 @@ export class Attachable implements IAttachable {
 
   private _attachments: Set<IAttachment> | undefined;
 
-  private _attachedParent: IAttachable | undefined;
+  private _attachedParent: Attachable | undefined;
   /** @internal */
-  get attachedParent(): IAttachable | undefined {
+  get attachedParent(): Attachable | undefined {
     return this._attachedParent;
   }
 
@@ -41,7 +33,6 @@ export class Attachable implements IAttachable {
   }
 
   private _attachIsCalled = false;
-  /** @internal */
   get attachIsCalled(): boolean {
     return this._attachIsCalled;
   }
@@ -52,7 +43,7 @@ export class Attachable implements IAttachable {
         throw new Error(`Attachable: The object is not attached to anything!`);
       }
 
-      let currentParent: IAttachable | undefined = this.attachedParent;
+      let currentParent: Attachable | undefined = this.attachedParent;
       while (currentParent) {
         if (currentParent === this) {
           throw new Error(`Circular attachment detected!`);
@@ -81,7 +72,7 @@ export class Attachable implements IAttachable {
     }
   }
 
-  attach(parent: IAttachable): this {
+  attach(parent: Attachable): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }

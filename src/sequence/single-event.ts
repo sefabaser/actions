@@ -1,4 +1,4 @@
-import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
+import { Attachable, IAttachment } from '../attachable/attachable';
 import { AsyncOperation, SyncOperation } from '../common';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
@@ -8,13 +8,13 @@ type SingleEventPipelineIterator<A = unknown, B = unknown> = (
 ) => void;
 
 export interface ISingleEventContext {
-  readonly attachable: IAttachable;
+  readonly attachable: Attachable;
   destroy(): void;
 }
 
 class SingleEventContext implements ISingleEventContext {
-  private _attachable?: IAttachable;
-  get attachable(): IAttachable {
+  private _attachable?: Attachable;
+  get attachable(): Attachable {
     if (!this._attachable) {
       this._attachable = new Attachable().attach(this.executor);
     }
@@ -92,7 +92,7 @@ class SingleEventExecuter extends Attachable {
     }
   }
 
-  attach(parent: IAttachable): this {
+  attach(parent: Attachable): this {
     if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
       this.destroy();
     }
@@ -248,7 +248,7 @@ export class SingleEvent<T = void> implements IAttachment {
     this.executor.destroy();
   }
 
-  attach(parent: IAttachable): this {
+  attach(parent: Attachable): this {
     this.executor.attach(parent);
     return this;
   }

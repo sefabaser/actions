@@ -1,4 +1,3 @@
-import { IAttachable } from '../..';
 import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AsyncOperation, SyncOperation } from '../../common';
 import { CallbackHelper } from '../../helpers/callback.helper';
@@ -21,7 +20,7 @@ export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class Notifier<T> {
   static fromSequence<S>(sequence: Sequence<S>): {
-    attach: (parent: IAttachable) => Notifier<S>;
+    attach: (parent: Attachable) => Notifier<S>;
     attachByID: (parent: number) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
@@ -32,7 +31,7 @@ export class Notifier<T> {
     let notifier = new Notifier<S>();
     sequence.readSingle(data => notifier.triggerAll(data));
     return {
-      attach: (parent: IAttachable) => {
+      attach: (parent: Attachable) => {
         sequence.attach(parent);
         return notifier;
       },

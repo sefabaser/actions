@@ -1,6 +1,6 @@
 import { Comparator, Queue } from 'helpers-lib';
 
-import { Attachable, IAttachable, IAttachment } from '../attachable/attachable';
+import { Attachable, IAttachment } from '../attachable/attachable';
 import { AsyncOperation, SyncOperation } from '../common';
 import { Notifier } from '../observables/_notifier/notifier';
 
@@ -13,13 +13,13 @@ type SequencePipelineIterator<A = unknown, B = unknown> = (
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
 
 export interface ISequenceCreatorContext {
-  attachable: IAttachable;
+  attachable: Attachable;
   final(): void;
   destroy(): void;
 }
 
 export interface ISequenceLinkContext {
-  attachable: IAttachable;
+  attachable: Attachable;
   final(): void;
   drop(): void;
   destroy(): void;
@@ -27,8 +27,8 @@ export interface ISequenceLinkContext {
 
 class SequenceContext implements ISequenceLinkContext {
   /** @internal */
-  _attachable?: IAttachable;
-  get attachable(): IAttachable {
+  _attachable?: Attachable;
+  get attachable(): Attachable {
     if (!this._attachable) {
       this._attachable = new Attachable().attach(this.executor);
     }
@@ -158,7 +158,7 @@ class SequenceExecuter extends Attachable {
     }
   }
 
-  attach(parent: IAttachable): this {
+  attach(parent: Attachable): this {
     this.onAttach();
     return super.attach(parent);
   }
@@ -806,7 +806,7 @@ export class Sequence<T = void> implements IAttachment {
     this.executor.destroy();
   }
 
-  attach(parent: IAttachable): this {
+  attach(parent: Attachable): this {
     this.executor.attach(parent);
     return this;
   }

@@ -1,7 +1,7 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachable } from '../..';
-import { Attachable, IAttachment } from '../../attachable/attachable';
+import { Attachable } from '../..';
+import { IAttachment } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
 import { Variable, VariableListenerCallbackFunction } from '../variable/variable';
 
@@ -92,7 +92,7 @@ export class Reference<T extends number | object = number> extends Attachable {
     return this.variable.subscribe(callback);
   }
 
-  attach(parent: IAttachable): this {
+  attach(parent: Attachable): this {
     super.attach(parent);
     this.destroySubscription?.attach(this.attachedParent!);
     return this;

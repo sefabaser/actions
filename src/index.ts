@@ -1,4 +1,4 @@
-export { Attachable, IAttachable, IAttachment } from './attachable/attachable';
+export { Attachable, IAttachment } from './attachable/attachable';
 export { ClassID } from './attachable/helpers/class-id';
 export { IDAttachable } from './attachable/id-attachable';
 export { AsyncOperation, SyncOperation } from './common';
