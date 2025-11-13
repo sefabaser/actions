@@ -63,7 +63,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // 4.466700077056885
     // pending until attached: 2.0001001358032227
-    // taking as args: 1.9929003715515137
+    // taking as args: 1.9693999290466309
   }, 60000);
 
   test('sequence single read', async () => {

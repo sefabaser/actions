@@ -2,6 +2,7 @@ import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AsyncOperation, SyncOperation } from '../../common';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { ISequenceLinkContext, Sequence } from '../../sequence/sequence';
+import { SingleEvent } from '../../sequence/single-event';
 
 export class ActionSubscription extends Attachable {
   constructor(private destroyCallback: () => void) {
@@ -72,8 +73,20 @@ export class Notifier<T> {
 
   toSequence(): Sequence<T> {
     return Sequence.create<T>(resolve => {
-      let subscription = this.subscribe(resolve).attachToRoot();
-      return () => subscription.destroy();
+      let subscriptionID = this.nextAvailableSubscriptionID++;
+      this.listenersMap.set(subscriptionID, resolve);
+      return () => this.listenersMap.delete(subscriptionID);
+    });
+  }
+
+  toSingleEvent(): SingleEvent<T> {
+    return SingleEvent.create<T>(resolve => {
+      let subscriptionID = this.nextAvailableSubscriptionID++;
+      this.listenersMap.set(subscriptionID, event => {
+        resolve(event);
+        this.listenersMap.delete(subscriptionID);
+      });
+      return () => this.listenersMap.delete(subscriptionID);
     });
   }
 

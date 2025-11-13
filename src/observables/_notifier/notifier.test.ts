@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../sequence/sequence';
+import { SingleEvent } from '../../sequence/single-event';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -310,6 +311,44 @@ describe('Notifier', () => {
       let sequence = notifier.toSequence().attachToRoot();
       expect(notifier.listenerCount).toEqual(1);
       sequence.destroy();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+  });
+
+  describe('To Single Event', () => {
+    test('convert to single event', () => {
+      let notifier = new Notifier<string>();
+      let singleEvent = notifier.toSingleEvent().attachToRoot();
+      expect(singleEvent).toBeInstanceOf(SingleEvent);
+    });
+
+    test('triggering notifier should trigger single event', () => {
+      let notifier = new Notifier<void>();
+
+      let triggered = false;
+      notifier
+        .toSingleEvent()
+        .read(() => {})
+        .read(() => (triggered = true))
+        .attachToRoot();
+
+      notifier.triggerAll();
+      expect(triggered).toEqual(true);
+    });
+
+    test('destroying single event should remove the listener', () => {
+      let notifier = new Notifier<void>();
+      let singleEvent = notifier.toSingleEvent().attachToRoot();
+      expect(notifier.listenerCount).toEqual(1);
+      singleEvent.destroy();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+
+    test('the completion of the single event should remove the listener', () => {
+      let notifier = new Notifier<void>();
+      notifier.toSingleEvent().attachToRoot();
+      expect(notifier.listenerCount).toEqual(1);
+      notifier.triggerAll();
       expect(notifier.listenerCount).toEqual(0);
     });
   });

@@ -133,6 +133,18 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // read single changes: 0.5067000389099121
   }, 60000);
 
+  test('take one by single event', async () => {
+    let action = new Action<void>();
+    await UnitTestHelper.testPerformance(() => {
+      action
+        .toSingleEvent()
+        .read(() => {})
+        .attachToRoot();
+      action.trigger();
+    });
+    // 0.32050037384033203
+  }, 60000);
+
   test('action to sequence read', async () => {
     let action = new Action<void>();
     await UnitTestHelper.testPerformance(() => {
@@ -151,6 +163,20 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // trigger all change: 0.43720006942749023
     // read single changes: 0.4247000217437744
     // removing bind: 0.40780019760131836
+    // manual subscription: 0.32919979095458984
+  }, 60000);
+
+  test('action to single event read', async () => {
+    let action = new Action<void>();
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = action
+        .toSingleEvent()
+        .read(() => {})
+        .attachToRoot();
+      action.trigger();
+      sequence.destroy();
+    });
+    // 0.32399988174438477
   }, 60000);
 
   test('action to notifier', async () => {
