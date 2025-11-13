@@ -96,6 +96,10 @@ class SequenceExecuter extends Attachable {
   private _pendingValues?: unknown[];
   private _finalized?: boolean;
 
+  constructor() {
+    super(true);
+  }
+
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
@@ -133,6 +137,8 @@ class SequenceExecuter extends Attachable {
       if (this.attachIsCalled) {
         throw new Error('After attaching a sequence you cannot add another operation.');
       }
+
+      this.destroyIfNotAttached = false;
 
       if (destructor) {
         if (!this.asyncPipelineIndices) {

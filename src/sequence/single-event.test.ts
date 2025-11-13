@@ -182,9 +182,19 @@ describe('SingleEvent', () => {
       vi.useFakeTimers();
     });
 
-    test('not attaching to anything should throw error', () => {
+    test('not attaching to anything should destroy the sequence', () => {
+      let sequence = SingleEvent.create(resolve => resolve());
+      vi.runAllTimers();
+
+      expect(sequence.destroyed).toBeTruthy();
+    });
+
+    test('not attaching the chain to a target should throw error', () => {
       expect(() => {
-        SingleEvent.create<void>(resolve => resolve());
+        SingleEvent.create<void>(resolve => resolve())
+          .read(() => {})
+          .read(() => {});
+
         vi.runAllTimers();
       }).toThrow('Attachable: The object is not attached to anything!');
     });
@@ -207,16 +217,6 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
       }).not.toThrow('Attachable: The object is not attached to anything!');
-    });
-
-    test('not attaching the chain to a target should throw error', () => {
-      expect(() => {
-        SingleEvent.create<void>(resolve => resolve())
-          .read(() => {})
-          .read(() => {});
-
-        vi.runAllTimers();
-      }).toThrow('Attachable: The object is not attached to anything!');
     });
 
     test('attaching the chain to a target should not throw error', () => {

@@ -49,6 +49,10 @@ class SingleEventExecuter extends Attachable {
   private pipelineIndex = 0;
   private ongoingContext?: SingleEventContext;
 
+  constructor() {
+    super(true);
+  }
+
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
@@ -87,6 +91,8 @@ class SingleEventExecuter extends Attachable {
       if (this.attachIsCalled) {
         throw new Error('Single Event: After attaching, you cannot add another operation.');
       }
+
+      this.destroyIfNotAttached = false;
 
       this._pipeline.push(iterator);
     }

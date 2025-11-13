@@ -23,6 +23,10 @@ export class IDAttachable extends Attachable {
 
   private _onDestroyListeners: Set<() => void> | undefined;
 
+  constructor(destroyIfNotAttached = false) {
+    super(destroyIfNotAttached);
+  }
+
   destroy(): void {
     if (!this.destroyed) {
       AttachmentTargetStore.unregisterIDAttachable(this);

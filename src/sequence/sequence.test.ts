@@ -321,9 +321,19 @@ describe('Sequence', () => {
         vi.useFakeTimers();
       });
 
-      test('not attaching to anything should throw error', () => {
+      test('not attaching to anything should destroy the sequence', () => {
+        let sequence = Sequence.create(resolve => resolve());
+        vi.runAllTimers();
+
+        expect(sequence.destroyed).toBeTruthy();
+      });
+
+      test('not attaching the chain to a target should throw error', () => {
         expect(() => {
-          Sequence.create(resolve => resolve());
+          Sequence.create(resolve => resolve())
+            .read(() => {})
+            .read(() => {});
+
           vi.runAllTimers();
         }).toThrow('Attachable: The object is not attached to anything!');
       });
@@ -346,16 +356,6 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
         }).not.toThrow('Attachable: The object is not attached to anything!');
-      });
-
-      test('not attaching the chain to a target should throw error', () => {
-        expect(() => {
-          Sequence.create(resolve => resolve())
-            .read(() => {})
-            .read(() => {});
-
-          vi.runAllTimers();
-        }).toThrow('Attachable: The object is not attached to anything!');
       });
 
       test('attaching the chain to a target should not throw error', () => {
