@@ -12,7 +12,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.27430009841918945
-    // pending change: 0.1090998649597168
+    // pending change: 0.14550018310546875
   }, 60000);
 
   test('instant triggered multiple reads', async () => {
@@ -63,7 +63,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // 4.466700077056885
     // pending until attached: 2.0001001358032227
-    // taking as args: 0.9623003005981445
+    // taking as args: 1.9929003715515137
   }, 60000);
 
   test('sequence single read', async () => {

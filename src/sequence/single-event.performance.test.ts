@@ -5,6 +5,66 @@ import { Variable } from '../observables/variable/variable';
 import { SingleEvent } from './single-event';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  test('instant single event', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = SingleEvent.instant()
+        .read(() => {})
+        .attachToRoot();
+
+      sequence.destroy();
+    });
+    // sequence: 0.1418004035949707
+  }, 60000);
+
+  test('instant triggered multiple reads', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = SingleEvent.instant()
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .attachToRoot();
+      sequence.destroy();
+    });
+    // 1.5506997108459473
+  }, 60000);
+
   test('single read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;

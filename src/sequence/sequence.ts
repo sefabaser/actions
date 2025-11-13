@@ -352,6 +352,11 @@ export class Sequence<T = void> implements IAttachment {
   static instant<S>(...data: S[]): Sequence<S>;
   static instant<S = void>(...data: S[]): Sequence<S> {
     let sequenceExecutor = new SequenceExecuter();
+
+    if (data.length === 0) {
+      data = [undefined as S];
+    }
+
     sequenceExecutor['_pendingValues'] = data;
     sequenceExecutor['ongoingPackageCount'] = data.length;
     return new Sequence<S>(sequenceExecutor);

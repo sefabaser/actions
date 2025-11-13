@@ -17,7 +17,7 @@ describe('SingleEvent', () => {
     UnitTestHelper.reset();
   });
 
-  describe('Triggers', () => {
+  describe('Setup', () => {
     test('plain single event no trigger', () => {
       expect(SingleEvent.create<string>(() => {}).attachToRoot()).toBeDefined();
     });
@@ -46,6 +46,33 @@ describe('SingleEvent', () => {
       let singleEvent = SingleEvent.create<string>(() => {});
       singleEvent.read(() => {}).attachToRoot();
       expect(() => singleEvent.read(() => {})).toThrow('Single Event: A single event can only be linked once.');
+    });
+  });
+
+  describe('Instant', () => {
+    test('setup', () => {
+      expect(SingleEvent.instant().attachToRoot()).toBeDefined();
+      expect(SingleEvent.instant<string>('a').attachToRoot()).toBeDefined();
+    });
+
+    test('without data', () => {
+      let heap: unknown[] = [];
+
+      SingleEvent.instant()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([undefined]);
+    });
+
+    test('with data', () => {
+      let heap: string[] = [];
+
+      SingleEvent.instant<string>('a')
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual(['a']);
     });
   });
 
@@ -870,21 +897,16 @@ describe('SingleEvent', () => {
         expect(triggered).toBeTruthy();
       });
 
-      test('using resolved event after timeout', async () => {
+      test('using attached event after timeout', async () => {
         let event = SingleEvent.create<void>(resolve => resolve()).attachToRoot();
 
         await expect(async () => {
-          UnitTestHelper.callEachDelayed([1], () => {
+          UnitTestHelper.callDelayed(() => {
             let sequence = SingleEvent.create<void>(resolve => resolve());
             try {
-              sequence
-                .asyncMap(() => event)
-                .read(() => {
-                  console.log('ok');
-                })
-                .attachToRoot();
+              sequence.asyncMap(() => event).attachToRoot();
             } catch (e) {
-              sequence.attachToRoot();
+              sequence['executor']['_attachIsCalled'] = true; // silence the error
               throw e;
             }
           });

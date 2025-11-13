@@ -400,13 +400,13 @@ describe('Sequence', () => {
     });
 
     test('without data', () => {
-      let heap: string[] = [];
+      let heap: unknown[] = [];
 
-      let sequence = Sequence.instant<string>()
+      let sequence = Sequence.instant<void>()
         .read(data => heap.push(data))
         .attachToRoot();
 
-      expect(heap).toEqual([]);
+      expect(heap).toEqual([undefined]);
       expect(sequence['executor'].ongoingPackageCount).toEqual(0);
     });
 

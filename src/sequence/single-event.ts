@@ -42,11 +42,11 @@ class SingleEventExecuter extends Attachable {
     return this._onDestroyListeners;
   }
 
+  resolved = false;
+  currentData: unknown;
+
   private _pipeline: SingleEventPipelineIterator[] = [];
-  private resolved = false;
-  private currentData: unknown;
   private pipelineIndex = 0;
-  private waitingForNewLink = false;
   private ongoingContext?: SingleEventContext;
 
   destroy(): void {
@@ -54,6 +54,7 @@ class SingleEventExecuter extends Attachable {
       super.destroy();
 
       this._pipeline = undefined as any;
+      this.currentData = undefined;
       this.ongoingContext?.drop();
 
       if (this._onDestroyListeners) {
@@ -74,7 +75,10 @@ class SingleEventExecuter extends Attachable {
     if (!this.destroyed) {
       this.resolved = true;
       this.currentData = data;
-      this.iteratePackage();
+
+      if (this.attachIsCalled) {
+        this.iteratePackage(this.currentData);
+      }
     }
   }
 
@@ -85,46 +89,38 @@ class SingleEventExecuter extends Attachable {
       }
 
       this._pipeline.push(iterator);
-
-      if (this.waitingForNewLink) {
-        this.iteratePackage();
-      }
     }
   }
 
   attach(parent: Attachable): this {
-    if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
-      this.destroy();
+    if (this.resolved) {
+      this.iteratePackage(this.currentData);
     }
     return super.attach(parent);
   }
 
   attachByID(id: number): this {
-    if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
-      this.destroy();
+    if (this.resolved) {
+      this.iteratePackage(this.currentData);
     }
     return super.attachByID(id);
   }
 
   attachToRoot(): this {
-    if (this.pipelineIndex >= this._pipeline?.length && this.resolved) {
-      this.destroy();
+    if (this.resolved) {
+      this.iteratePackage(this.currentData);
     }
     return super.attachToRoot();
   }
 
-  private iteratePackage(): void {
+  private iteratePackage(data: unknown): void {
     if (!this.destroyed) {
       if (this.pipelineIndex < this._pipeline.length) {
         this.ongoingContext = new SingleEventContext(this);
 
-        this._pipeline[this.pipelineIndex](this.currentData, this.ongoingContext, this.resolve);
+        this._pipeline[this.pipelineIndex](data, this.ongoingContext, this.resolve);
       } else {
-        if (!this.attachIsCalled) {
-          this.waitingForNewLink = true;
-        } else {
-          this.destroy();
-        }
+        this.destroy();
       }
     }
   }
@@ -133,9 +129,8 @@ class SingleEventExecuter extends Attachable {
     this.ongoingContext?.drop();
     this.ongoingContext = undefined;
 
-    this.currentData = returnData;
     this.pipelineIndex++;
-    this.iteratePackage();
+    this.iteratePackage(returnData);
   };
 }
 
@@ -157,6 +152,15 @@ export class SingleEvent<T = void> implements IAttachment {
       console.error(e);
     }
 
+    return new SingleEvent<S>(singleEventExecutor);
+  }
+
+  static instant(): SingleEvent<void>;
+  static instant<S>(data: S): SingleEvent<S>;
+  static instant<S = void>(data?: S): SingleEvent<S> {
+    let singleEventExecutor = new SingleEventExecuter();
+    singleEventExecutor.resolved = true;
+    singleEventExecutor.currentData = data;
     return new SingleEvent<S>(singleEventExecutor);
   }
 
@@ -236,6 +240,9 @@ export class SingleEvent<T = void> implements IAttachment {
 
     return new SingleEvent<K>(this.executor);
   }
+
+  // TODO: wait
+  // TODO: debounce
 
   private prepareToBeLinked(): void {
     if (this.linked) {
