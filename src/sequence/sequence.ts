@@ -134,10 +134,6 @@ class SequenceExecuter extends Attachable {
 
   enterPipeline<A, B>(iterator: SequencePipelineIterator<A, B>, destructor?: SequencePipelineDestructor) {
     if (!this.destroyed) {
-      if (this.attachIsCalled) {
-        throw new Error('After attaching a sequence you cannot add another operation.');
-      }
-
       this.destroyIfNotAttached = false;
 
       if (destructor) {
@@ -380,7 +376,7 @@ export class Sequence<T = void> implements IAttachment {
   private constructor(private executor: SequenceExecuter) {}
 
   read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     this.executor.enterPipeline<T, T>((data, context, resolve) => {
       try {
@@ -396,7 +392,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   map<K>(callback: (data: T, context: ISequenceLinkContext) => SyncOperation<K>): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: K;
@@ -429,7 +425,7 @@ export class Sequence<T = void> implements IAttachment {
    * @R -------------------B-C-----A-------------------
    */
   asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let ongoingContexts = new Set<ISequenceLinkContext>();
 
@@ -481,7 +477,7 @@ export class Sequence<T = void> implements IAttachment {
    * @R ----------------------------ABC----------------
    */
   asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>(
@@ -539,7 +535,7 @@ export class Sequence<T = void> implements IAttachment {
    * @R -------------------B-C-------------------------
    */
   asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     this.executor.enterPipeline<T, K>(
@@ -599,7 +595,7 @@ export class Sequence<T = void> implements IAttachment {
   asyncMapQueue<K>(
     callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
   ): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     let previousResult: K | undefined;
@@ -657,7 +653,7 @@ export class Sequence<T = void> implements IAttachment {
    * @R ----------------------C-------------------------
    */
   asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
     this.executor.enterPipeline<T, K>(
@@ -706,7 +702,7 @@ export class Sequence<T = void> implements IAttachment {
    * @R ---------------------------A--------------------
    */
   asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
     this.executor.enterPipeline<T, K>(
@@ -743,7 +739,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let previousValue: T | undefined;
     this.executor.enterPipeline<T, T>((data, context, resolve) => {
@@ -766,7 +762,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   take(count: number): Sequence<T> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let taken = 0;
 
@@ -786,7 +782,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   skip(count: number): Sequence<T> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     let skipped = 0;
     let blocked = count > 0;
@@ -804,13 +800,6 @@ export class Sequence<T = void> implements IAttachment {
     });
 
     return new Sequence<T>(this.executor);
-  }
-
-  private prepareToBeLinked(): void {
-    if (this.linked) {
-      throw new Error('A sequence can only be linked once.');
-    }
-    this.linked = true;
   }
 
   destroy(): void {
@@ -834,7 +823,7 @@ export class Sequence<T = void> implements IAttachment {
 
   /** @internal */
   readSingle(callback: (data: T) => void): Sequence<T> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       try {
@@ -853,7 +842,7 @@ export class Sequence<T = void> implements IAttachment {
 
   /** @internal */
   subscribe(callback: (data: T) => void): Sequence<T> {
-    this.prepareToBeLinked();
+    this.validateBeforeLinking();
 
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       try {
@@ -882,6 +871,16 @@ export class Sequence<T = void> implements IAttachment {
         queue.pop()!.context.drop();
       }
     }
+  }
+
+  private validateBeforeLinking(): void {
+    if (this.linked) {
+      throw new Error('A sequence can only be linked once.');
+    }
+    if (this.executor.attachIsCalled) {
+      throw new Error('Sequence: After attaching, you cannot add another operation.');
+    }
+    this.linked = true;
   }
 }
 

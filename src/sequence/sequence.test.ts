@@ -58,7 +58,7 @@ describe('Sequence', () => {
             .read(() => {})
             .attachToRoot()
             .read(() => {})
-        ).toThrow('After attaching a sequence you cannot add another operation.');
+        ).toThrow('Sequence: After attaching, you cannot add another operation.');
         await UnitTestHelper.waitForAllOperations();
       });
     });

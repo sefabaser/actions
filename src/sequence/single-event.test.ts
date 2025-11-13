@@ -902,9 +902,9 @@ describe('SingleEvent', () => {
 
         await expect(async () => {
           UnitTestHelper.callDelayed(() => {
-            let sequence = SingleEvent.create<void>(resolve => resolve());
+            let sequence = Sequence.create<void>(resolve => resolve());
             try {
-              sequence.asyncMap(() => event).attachToRoot();
+              sequence.asyncMapDirect(() => event).attachToRoot();
             } catch (e) {
               sequence['executor']['_attachIsCalled'] = true; // silence the error
               throw e;
@@ -912,7 +912,7 @@ describe('SingleEvent', () => {
           });
 
           await UnitTestHelper.waitForAllOperations();
-        }).rejects.toThrow('Attachable: The object is already attached to something!');
+        }).rejects.toThrow('Single Event: After attaching, you cannot add another operation.');
       });
     });
   });
