@@ -67,7 +67,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         resolve(2);
       });
 
-      expect(sequence['executor']['_waitingForNewLink']?.notEmpty).toBeTruthy();
+      expect(sequence['executor']['_pendingValues']?.length).toBeTruthy();
 
       sequence.destroy();
       sequence.attachToRoot();

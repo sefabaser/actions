@@ -392,6 +392,36 @@ describe('Sequence', () => {
     });
   });
 
+  describe('Instant', () => {
+    test('setup', () => {
+      expect(Sequence.instant<string>().attachToRoot()).toBeDefined();
+      expect(Sequence.instant<string>('a').attachToRoot()).toBeDefined();
+      expect(Sequence.instant<string>('a', 'b').attachToRoot()).toBeDefined();
+    });
+
+    test('without data', () => {
+      let heap: string[] = [];
+
+      let sequence = Sequence.instant<string>()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([]);
+      expect(sequence['executor'].ongoingPackageCount).toEqual(0);
+    });
+
+    test('with data', () => {
+      let heap: string[] = [];
+
+      let sequence = Sequence.instant<string>('a', 'b', 'c')
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual(['a', 'b', 'c']);
+      expect(sequence['executor'].ongoingPackageCount).toEqual(0);
+    });
+  });
+
   describe('Read', () => {
     describe('Triggers', () => {
       test('simple sequence sync triggers', () => {
@@ -512,10 +542,10 @@ describe('Sequence', () => {
 
         expect(heap).toEqual([
           '1a',
-          '1b',
           '2a',
-          '2b',
           '3a',
+          '1b',
+          '2b',
           '3b',
           '1x',
           '2x',
@@ -5879,6 +5909,24 @@ describe('Sequence', () => {
         expect(heap).toEqual(['a', 'b', 'c']);
       });
 
+      test('merging instantly resolved sequences', async () => {
+        let heap: string[] = [];
+
+        let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
+        let s2 = Sequence.create<string>(resolve => resolve('b')).take(1);
+
+        let merged = Sequence.merge(s1, s2);
+        let read = merged.read(data => heap.push(data)).attachToRoot();
+
+        await UnitTestHelper.waitForAllOperations();
+
+        expect(heap).toEqual(['a', 'b']);
+        expect(s1.destroyed).toBeTruthy();
+        expect(s2.destroyed).toBeTruthy();
+        expect(merged.destroyed).toBeTruthy();
+        expect(read.destroyed).toBeTruthy();
+      });
+
       test('instantly resolved and finalized sequences', async () => {
         let heap: string[] = [];
 
@@ -5916,24 +5964,6 @@ describe('Sequence', () => {
         action1.trigger('a');
         action2.trigger('b');
         expect(heap).toEqual(['a', 'b']);
-      });
-
-      test('merging instantly resolved sequences', async () => {
-        let heap: string[] = [];
-
-        let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
-        let s2 = Sequence.create<string>(resolve => resolve('b')).take(1);
-
-        let merged = Sequence.merge(s1, s2);
-        let read = merged.read(data => heap.push(data)).attachToRoot();
-
-        await UnitTestHelper.waitForAllOperations();
-
-        expect(heap).toEqual(['a', 'b']);
-        expect(s1.destroyed).toBeTruthy();
-        expect(s2.destroyed).toBeTruthy();
-        expect(merged.destroyed).toBeTruthy();
-        expect(read.destroyed).toBeTruthy();
       });
 
       test('merge with delayed sequences', async () => {

@@ -93,7 +93,7 @@ class SequenceExecuter extends Attachable {
   pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   asyncPipelineIndices?: Set<number>;
   ongoingPackageCount = 0;
-  private _waitingForNewLink?: Queue<SequencePackage>;
+  private _pendingValues?: unknown[];
   private _finalized?: boolean;
 
   destroy(): void {
@@ -101,7 +101,7 @@ class SequenceExecuter extends Attachable {
       super.destroy();
 
       this.pipeline = undefined as any;
-      this._waitingForNewLink = undefined as any;
+      this._pendingValues = undefined as any;
 
       if (this._onDestroyListeners) {
         let listeners = this._onDestroyListeners;
@@ -115,8 +115,16 @@ class SequenceExecuter extends Attachable {
 
   trigger(data: unknown): void {
     if (!this._finalized && !this.destroyed) {
-      this.ongoingPackageCount++;
-      this.iteratePackage(new SequencePackage(data));
+      if (this.attachIsCalled) {
+        this.ongoingPackageCount++;
+        this.iteratePackage(new SequencePackage(data));
+      } else {
+        if (!this._pendingValues) {
+          this._pendingValues = [];
+        }
+        this._pendingValues.push(data);
+        this.ongoingPackageCount++;
+      }
     }
   }
 
@@ -134,19 +142,6 @@ class SequenceExecuter extends Attachable {
       }
 
       this.pipeline.push({ iterator, destructor });
-
-      if (this._waitingForNewLink) {
-        let waitingPackages = this._waitingForNewLink;
-        this._waitingForNewLink = new Queue();
-        let startedAsFinalized = this._finalized;
-        while (waitingPackages.notEmpty) {
-          let waitingPackage = waitingPackages.pop()!;
-          this.iteratePackage(waitingPackage);
-          if (startedAsFinalized !== this._finalized) {
-            break;
-          }
-        }
-      }
     }
   }
 
@@ -174,14 +169,16 @@ class SequenceExecuter extends Attachable {
   }
 
   private onAttach(): void {
-    while (this._waitingForNewLink?.notEmpty) {
-      let waitingPackage = this._waitingForNewLink.pop()!;
-      waitingPackage.destroyAttachment();
-      this.ongoingPackageCount--;
-    }
+    if (this._pendingValues) {
+      let pendingValues = this._pendingValues;
+      this._pendingValues = undefined;
+      let startedAsFinalized = this._finalized;
 
-    if (this._finalized && this.ongoingPackageCount === 0) {
-      this.destroy();
+      for (let i = 0; i < pendingValues.length; i++) {
+        if (startedAsFinalized === this._finalized) {
+          this.iteratePackage(new SequencePackage(pendingValues[i]));
+        }
+      }
     }
   }
 
@@ -200,18 +197,11 @@ class SequenceExecuter extends Attachable {
           this.iteratePackage(sequencePackage);
         });
       } else {
-        if (!this.attachIsCalled) {
-          if (!this._waitingForNewLink) {
-            this._waitingForNewLink = new Queue();
-          }
-          this._waitingForNewLink.add(sequencePackage);
-        } else {
-          sequencePackage.destroyAttachment();
-          this.ongoingPackageCount--;
+        sequencePackage.destroyAttachment();
+        this.ongoingPackageCount--;
 
-          if (this._finalized && this.ongoingPackageCount === 0) {
-            this.destroy();
-          }
+        if (this._finalized && this.ongoingPackageCount === 0) {
+          this.destroy();
         }
       }
     }
@@ -303,6 +293,7 @@ export class Sequence<T = void> implements IAttachment {
           stream.executor['_attachIsCalled'] = true;
         }
       }
+
       throw new Error('Each given sequence to merge or combine has to be diferent.');
     }
     return streamsSet;
@@ -354,6 +345,15 @@ export class Sequence<T = void> implements IAttachment {
       console.error(e);
     }
 
+    return new Sequence<S>(sequenceExecutor);
+  }
+
+  static instant(): Sequence<void>;
+  static instant<S>(...data: S[]): Sequence<S>;
+  static instant<S = void>(...data: S[]): Sequence<S> {
+    let sequenceExecutor = new SequenceExecuter();
+    sequenceExecutor['_pendingValues'] = data;
+    sequenceExecutor['ongoingPackageCount'] = data.length;
     return new Sequence<S>(sequenceExecutor);
   }
 

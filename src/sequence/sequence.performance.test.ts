@@ -4,6 +4,68 @@ import { describe, test } from 'vitest';
 import { Sequence } from './sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  test('sequence instant', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant()
+        .read(() => {})
+        .attachToRoot();
+      sequence.destroy();
+    });
+    // 0.27430009841918945
+    // pending change: 0.1090998649597168
+  }, 60000);
+
+  test('instant triggered multiple reads', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant()
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .attachToRoot();
+      sequence.destroy();
+    });
+    // 4.466700077056885
+    // pending until attached: 2.0001001358032227
+    // taking as args: 0.9623003005981445
+  }, 60000);
+
   test('sequence single read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
@@ -19,6 +81,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.1549999713897705
     // read single changes: 0.15610003471374512
     // context functions: 0.14040040969848633
+    // pending change: 0.14840030670166016
   }, 60000);
 
   test('sequence single map', async () => {
@@ -36,6 +99,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.15720009803771973
     // read single changes: 0.15710020065307617
     // context functions: 0.14049959182739258
+    // pending change: 0.14980030059814453
   }, 60000);
 
   test('sequence single async map', async () => {
@@ -50,6 +114,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // context functions: 0.7813000679016113
+    // pending change: 0.7420997619628906
   }, 60000);
 
   test('sequence single ordered map', async () => {
@@ -67,6 +132,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 0.8559999465942383
     // read single changes: 0.7562999725341797
     // context functions: 0.7410998344421387
+    // pending change: 0.7325997352600098
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
@@ -105,6 +171,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 4.045099973678589
     // queueMicrotask: 3.5271999835968018
     // context functions: 2.7063002586364746
+    // pending change: 2.5808000564575195
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {
@@ -150,6 +217,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // default attachable: 4.639800071716309
     // queueMicrotask: 4.099200010299683
     // context functions: 2.909599781036377
+    // pending change: 2.8305001258850098
   }, 60000);
 
   test('sequence 10x async map and resolve', async () => {
@@ -178,6 +246,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 10.742999792098999
     // read single changes: 9.607899904251099
     // context functions: 9.31029987335205
+    // pending change: 8.045899868011475
   }, 60000);
 
   test('combine new object', async () => {
@@ -196,6 +265,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       // queueMicrotask: 10.21969985961914
       // read single changes: 10.207499980926514
       // context functions: 9.99370002746582
+      // pending change: 8.077600002288818
     });
   }, 60000);
 
@@ -213,6 +283,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       // 9.698499917984009
       // read single changes: 9.804400205612183
       // context functions: 9.666399955749512
+      // pending change: 8.014800071716309
     });
   }, 60000);
 });
