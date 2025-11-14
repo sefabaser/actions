@@ -1,7 +1,7 @@
 import { ArrayHelper, UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { Sequence } from './sequence';
+import { Sequence } from '../sequence';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence instant', async () => {

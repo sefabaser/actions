@@ -1,6 +1,6 @@
 import { Attachable } from '../attachable/attachable';
 import { Reducer } from '../observables/reducer/reducer';
-import { SingleEvent } from '../sequence/single-event';
+import { SingleEvent } from '../stream/single-event/single-event';
 
 export class ActionLibUtilities {
   /**

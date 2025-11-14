@@ -1,13 +1,13 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
-import { IDAttachable } from '../attachable/id-attachable';
-import { ActionLibHardReset } from '../helpers/hard-reset';
-import { Action } from '../observables/action/action';
-import { Variable } from '../observables/variable/variable';
-import { Sequence } from './sequence';
-import { SingleEvent } from './single-event';
+import { Attachable } from '../../../attachable/attachable';
+import { IDAttachable } from '../../../attachable/id-attachable';
+import { ActionLibHardReset } from '../../../helpers/hard-reset';
+import { Action } from '../../../observables/action/action';
+import { Variable } from '../../../observables/variable/variable';
+import { Sequence } from '../../sequence/sequence';
+import { SingleEvent } from '../single-event';
 
 describe('SingleEvent', () => {
   let dummySequence = <T>(value: T) => Sequence.create<T>(resolve => resolve(value));

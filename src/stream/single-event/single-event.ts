@@ -1,150 +1,12 @@
-import { Attachable, IAttachment } from '../attachable/attachable';
-import { AsyncOperation } from '../common';
-
-type SingleEventPipelineIterator<A = unknown, B = unknown> = (
-  data: A,
-  context: SingleEventContext,
-  callback: (returnData: B) => void
-) => void;
-
-export interface ISingleEventContext {
-  readonly attachable: Attachable;
-  destroy(): void;
-}
-
-class SingleEventContext implements ISingleEventContext {
-  private _attachable?: Attachable;
-  get attachable(): Attachable {
-    if (!this._attachable) {
-      this._attachable = new Attachable().attach(this.executor);
-    }
-    return this._attachable;
-  }
-
-  constructor(private executor: SingleEventExecuter) {}
-
-  destroy(): void {
-    this.executor.destroy();
-  }
-
-  /** @internal */
-  drop() {
-    this._attachable?.destroy();
-  }
-}
-
-class SingleEventExecuter extends Attachable {
-  private _onDestroyListeners?: Set<() => void>;
-  get onDestroyListeners(): Set<() => void> {
-    if (!this._onDestroyListeners) {
-      this._onDestroyListeners = new Set();
-    }
-    return this._onDestroyListeners;
-  }
-
-  resolved = false;
-  currentData: unknown;
-  chainedTo?: SingleEventExecuter;
-  private _pipeline: SingleEventPipelineIterator[] = [];
-  private pipelineIndex = 0;
-  private ongoingContext?: SingleEventContext;
-
-  constructor() {
-    super(true);
-  }
-
-  destroy(): void {
-    if (!this.destroyed) {
-      super.destroy();
-
-      this._pipeline = undefined as any;
-      this.currentData = undefined;
-      this.ongoingContext?.drop();
-
-      if (this._onDestroyListeners) {
-        let listeners = this._onDestroyListeners;
-        this._onDestroyListeners = undefined as any;
-        for (let listener of listeners) {
-          listener();
-        }
-      }
-
-      if (this.chainedTo) {
-        this.chainedTo.destroy();
-        this.chainedTo = undefined;
-      }
-    }
-  }
-
-  trigger(data: unknown): void {
-    if (this.resolved) {
-      throw new Error('Single Event: It can only resolve once.');
-    }
-
-    if (!this.destroyed) {
-      this.resolved = true;
-      this.currentData = data;
-
-      if (this.attachIsCalled) {
-        this.iteratePackage(this.currentData);
-      }
-    }
-  }
-
-  enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
-    if (!this.destroyed) {
-      this.destroyIfNotAttached = false;
-      this._pipeline.push(iterator);
-    }
-  }
-
-  attach(parent: Attachable): this {
-    if (this.resolved) {
-      this.iteratePackage(this.currentData);
-    }
-    return super.attach(parent);
-  }
-
-  attachByID(id: number): this {
-    if (this.resolved) {
-      this.iteratePackage(this.currentData);
-    }
-    return super.attachByID(id);
-  }
-
-  attachToRoot(): this {
-    if (this.resolved) {
-      this.iteratePackage(this.currentData);
-    }
-    return super.attachToRoot();
-  }
-
-  private iteratePackage(data: unknown): void {
-    if (!this.destroyed) {
-      if (this.pipelineIndex < this._pipeline.length) {
-        this.ongoingContext = new SingleEventContext(this);
-
-        this._pipeline[this.pipelineIndex](data, this.ongoingContext, this.resolve);
-      } else {
-        this.destroy();
-      }
-    }
-  }
-
-  private resolve = (returnData: unknown) => {
-    this.ongoingContext?.drop();
-    this.ongoingContext = undefined;
-
-    this.pipelineIndex++;
-    this.iteratePackage(returnData);
-  };
-}
+import { Attachable, IAttachment } from '../../attachable/attachable';
+import { AsyncOperation } from '../../common';
+import { ISingleEventContext, SingleEventExecutor } from './single-event-executor';
 
 export class SingleEvent<T = void> implements IAttachment {
   static create<S = void>(
     executor: (resolve: (data: S) => void, context: ISingleEventContext) => (() => void) | void
   ): SingleEvent<S> {
-    let singleEventExecutor = new SingleEventExecuter();
+    let singleEventExecutor = new SingleEventExecutor();
 
     try {
       let destroyCallback = executor(singleEventExecutor.trigger.bind(singleEventExecutor), {
@@ -164,7 +26,7 @@ export class SingleEvent<T = void> implements IAttachment {
   static instant(): SingleEvent<void>;
   static instant<S>(data: S): SingleEvent<S>;
   static instant<S = void>(data?: S): SingleEvent<S> {
-    let singleEventExecutor = new SingleEventExecuter();
+    let singleEventExecutor = new SingleEventExecutor();
     singleEventExecutor.resolved = true;
     singleEventExecutor.currentData = data;
     return new SingleEvent<S>(singleEventExecutor);
@@ -180,7 +42,7 @@ export class SingleEvent<T = void> implements IAttachment {
 
   private linked = false;
 
-  private constructor(private executor: SingleEventExecuter) {}
+  private constructor(private executor: SingleEventExecutor) {}
 
   destroy(): void {
     this.executor.destroy();
@@ -313,7 +175,7 @@ export class SingleEvent<T = void> implements IAttachment {
   chain(parent: Attachable): SingleEvent<T> {
     this.validateBeforeLinking();
 
-    let chainExecutor = new SingleEventExecuter();
+    let chainExecutor = new SingleEventExecutor();
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
@@ -327,7 +189,7 @@ export class SingleEvent<T = void> implements IAttachment {
   chainByID(id: number): SingleEvent<T> {
     this.validateBeforeLinking();
 
-    let chainExecutor = new SingleEventExecuter();
+    let chainExecutor = new SingleEventExecutor();
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
@@ -341,7 +203,7 @@ export class SingleEvent<T = void> implements IAttachment {
   chainToRoot(): SingleEvent<T> {
     this.validateBeforeLinking();
 
-    let chainExecutor = new SingleEventExecuter();
+    let chainExecutor = new SingleEventExecutor();
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
@@ -364,4 +226,4 @@ export class SingleEvent<T = void> implements IAttachment {
 }
 
 /** @internal */
-export const SingleEventClassNames = [SingleEvent.name, SingleEventExecuter.name, SingleEventContext.name];
+export const SingleEventClassNames = [SingleEvent.name, SingleEventExecutor.name, 'SingleEventContext'];

@@ -1,4 +1,4 @@
-import { Sequence } from '../../sequence/sequence';
+import { Sequence } from '../../stream/sequence/sequence';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;

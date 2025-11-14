@@ -1,4 +1,4 @@
-import { Sequence } from '../../sequence/sequence';
+import { Sequence } from '../../stream/sequence/sequence';
 import { ObservableMap } from '../observable-map/observable-map';
 
 export class ObservableSet<KeyType extends number | string> {

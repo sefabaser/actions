@@ -1,8 +1,8 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { Variable } from '../observables/variable/variable';
-import { SingleEvent } from './single-event';
+import { Variable } from '../../../observables/variable/variable';
+import { SingleEvent } from '../single-event';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('promise', async () => {

@@ -1,8 +1,9 @@
 import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AsyncOperation } from '../../common';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { ISequenceLinkContext, Sequence } from '../../sequence/sequence';
-import { SingleEvent } from '../../sequence/single-event';
+import { Sequence } from '../../stream/sequence/sequence';
+import { ISequenceLinkContext } from '../../stream/sequence/sequence-executor';
+import { SingleEvent } from '../../stream/single-event/single-event';
 
 export class ActionSubscription extends Attachable {
   constructor(private destroyCallback: () => void) {

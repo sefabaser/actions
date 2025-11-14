@@ -1,5 +1,5 @@
 import { CallbackHelper } from '../helpers/callback.helper';
-import { SingleEvent } from '../sequence/single-event';
+import { SingleEvent } from '../stream/single-event/single-event';
 import { Attachable } from './attachable';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
 import { ClassID } from './helpers/class-id';

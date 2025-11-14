@@ -1,220 +1,16 @@
 import { Comparator, Queue } from 'helpers-lib';
 
-import { Attachable, IAttachment } from '../attachable/attachable';
-import { AsyncOperation } from '../common';
-import { Notifier } from '../observables/_notifier/notifier';
+import { Attachable, IAttachment } from '../../attachable/attachable';
+import { AsyncOperation } from '../../common';
+import { Notifier } from '../../observables/_notifier/notifier';
+import { ISequenceCreatorContext, ISequenceLinkContext, SequenceContext, SequenceExecutor } from './sequence-executor';
 
-type SequencePipelineDestructor = (finalContext?: SequenceContext) => void;
-type SequencePipelineIterator<A = unknown, B = unknown> = (
-  data: A,
-  context: ISequenceLinkContext,
-  callback: (returnData: B) => void
-) => void;
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
-
-export interface ISequenceCreatorContext {
-  attachable: Attachable;
-  final(): void;
-  destroy(): void;
-}
-
-export interface ISequenceLinkContext {
-  attachable: Attachable;
-  final(): void;
-  drop(): void;
-  destroy(): void;
-}
-
-class SequenceContext implements ISequenceLinkContext {
-  /** @internal */
-  _attachable?: Attachable;
-  get attachable(): Attachable {
-    if (!this._attachable) {
-      this._attachable = new Attachable().attach(this.executor);
-    }
-    return this._attachable;
-  }
-
-  constructor(
-    private executor: SequenceExecuter,
-    private sequencePackage: SequencePackage
-  ) {}
-
-  destroy(): void {
-    this.executor.destroy();
-  }
-
-  final() {
-    if (this.executor.asyncPipelineIndices) {
-      for (let index of this.executor.asyncPipelineIndices) {
-        if (index > this.sequencePackage.pipelineIndex) {
-          break;
-        } else {
-          this.executor.pipeline[index].destructor!(
-            index === this.sequencePackage.pipelineIndex ? this.sequencePackage.ongoingContext : undefined
-          );
-        }
-      }
-    }
-    this.executor.final();
-  }
-
-  drop(): void {
-    this.sequencePackage.destroyAttachment();
-    this.executor.ongoingPackageCount--;
-  }
-}
-
-class SequencePackage {
-  pipelineIndex = 0;
-  ongoingContext?: SequenceContext;
-
-  constructor(public data: unknown) {}
-
-  destroyAttachment() {
-    this.ongoingContext?._attachable?.destroy();
-  }
-}
 
 type ExecutionOrderQueuer = {
   callback?: () => void;
   context: ISequenceLinkContext;
 };
-
-class SequenceExecuter extends Attachable {
-  private _onDestroyListeners?: Set<() => void>;
-  get onDestroyListeners(): Set<() => void> {
-    if (!this._onDestroyListeners) {
-      this._onDestroyListeners = new Set();
-    }
-    return this._onDestroyListeners;
-  }
-
-  pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
-  asyncPipelineIndices?: Set<number>;
-  ongoingPackageCount = 0;
-  chainedTo?: IAttachment;
-  private _pendingValues?: unknown[];
-  private _finalized?: boolean;
-
-  constructor() {
-    super(true);
-  }
-
-  destroy(): void {
-    if (!this.destroyed) {
-      super.destroy();
-
-      this.pipeline = undefined as any;
-      this._pendingValues = undefined as any;
-
-      if (this._onDestroyListeners) {
-        let listeners = this._onDestroyListeners;
-        this._onDestroyListeners = undefined as any;
-        for (let listener of listeners) {
-          listener();
-        }
-      }
-
-      if (this.chainedTo) {
-        this.chainedTo.destroy();
-        this.chainedTo = undefined;
-      }
-    }
-  }
-
-  trigger(data: unknown): void {
-    if (!this._finalized && !this.destroyed) {
-      if (this.attachIsCalled) {
-        this.ongoingPackageCount++;
-        this.iteratePackage(new SequencePackage(data));
-      } else {
-        if (!this._pendingValues) {
-          this._pendingValues = [];
-        }
-        this._pendingValues.push(data);
-        this.ongoingPackageCount++;
-      }
-    }
-  }
-
-  enterPipeline<A, B>(iterator: SequencePipelineIterator<A, B>, destructor?: SequencePipelineDestructor) {
-    if (!this.destroyed) {
-      this.destroyIfNotAttached = false;
-
-      if (destructor) {
-        if (!this.asyncPipelineIndices) {
-          this.asyncPipelineIndices = new Set();
-        }
-        this.asyncPipelineIndices.add(this.pipeline.length);
-      }
-
-      this.pipeline.push({ iterator, destructor });
-    }
-  }
-
-  final() {
-    if (this.attachIsCalled && this.ongoingPackageCount === 0) {
-      this.destroy();
-    } else {
-      this._finalized = true;
-    }
-  }
-
-  attach(parent: Attachable): this {
-    this.onAttach();
-    return super.attach(parent);
-  }
-
-  attachByID(id: number): this {
-    this.onAttach();
-    return super.attachByID(id);
-  }
-
-  attachToRoot(): this {
-    this.onAttach();
-    return super.attachToRoot();
-  }
-
-  private onAttach(): void {
-    if (this._pendingValues) {
-      let pendingValues = this._pendingValues;
-      this._pendingValues = undefined;
-      let startedAsFinalized = this._finalized;
-
-      for (let i = 0; i < pendingValues.length; i++) {
-        if (startedAsFinalized === this._finalized) {
-          this.iteratePackage(new SequencePackage(pendingValues[i]));
-        }
-      }
-    }
-  }
-
-  private iteratePackage(sequencePackage: SequencePackage): void {
-    if (!this.destroyed) {
-      if (sequencePackage.pipelineIndex < this.pipeline.length) {
-        let context = new SequenceContext(this, sequencePackage);
-        sequencePackage.ongoingContext = context;
-
-        this.pipeline[sequencePackage.pipelineIndex].iterator(sequencePackage.data, context, returnData => {
-          sequencePackage.destroyAttachment();
-          sequencePackage.ongoingContext = undefined;
-
-          sequencePackage.data = returnData;
-          sequencePackage.pipelineIndex++;
-          this.iteratePackage(sequencePackage);
-        });
-      } else {
-        sequencePackage.destroyAttachment();
-        this.ongoingPackageCount--;
-
-        if (this._finalized && this.ongoingPackageCount === 0) {
-          this.destroy();
-        }
-      }
-    }
-  }
-}
 
 export class Sequence<T = void> implements IAttachment {
   static merge<S>(...streams: AsyncOperation<S>[]): Sequence<S> {
@@ -328,7 +124,6 @@ export class Sequence<T = void> implements IAttachment {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
-          // TODO: if sequence is destroyed the listener should also be destroyed
           sequence.executor.onDestroyListeners.add(() => oneDestroyed(sequence));
         }
       }
@@ -338,7 +133,7 @@ export class Sequence<T = void> implements IAttachment {
   static create<S = void>(
     executor: (resolve: (data: S) => void, context: ISequenceCreatorContext) => (() => void) | void
   ): Sequence<S> {
-    let sequenceExecutor = new SequenceExecuter();
+    let sequenceExecutor = new SequenceExecutor();
 
     try {
       let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor), {
@@ -359,7 +154,7 @@ export class Sequence<T = void> implements IAttachment {
   static instant(): Sequence<void>;
   static instant<S>(...data: S[]): Sequence<S>;
   static instant<S = void>(...data: S[]): Sequence<S> {
-    let sequenceExecutor = new SequenceExecuter();
+    let sequenceExecutor = new SequenceExecutor();
 
     if (data.length === 0) {
       data = [undefined as S];
@@ -379,7 +174,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   private linked = false;
-  private constructor(private executor: SequenceExecuter) {}
+  private constructor(private executor: SequenceExecutor) {}
 
   destroy(): void {
     this.executor.destroy();
@@ -883,7 +678,7 @@ export class Sequence<T = void> implements IAttachment {
   chain(parent: Attachable): Sequence<T> {
     this.validateBeforeLinking();
 
-    let chainExecutor = new SequenceExecuter();
+    let chainExecutor = new SequenceExecutor();
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
@@ -897,7 +692,7 @@ export class Sequence<T = void> implements IAttachment {
   chainByID(id: number): Sequence<T> {
     this.validateBeforeLinking();
 
-    let chainExecutor = new SequenceExecuter();
+    let chainExecutor = new SequenceExecutor();
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
@@ -911,7 +706,7 @@ export class Sequence<T = void> implements IAttachment {
   chainToRoot(): Sequence<T> {
     this.validateBeforeLinking();
 
-    let chainExecutor = new SequenceExecuter();
+    let chainExecutor = new SequenceExecutor();
     this.executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
@@ -950,12 +745,12 @@ export class Sequence<T = void> implements IAttachment {
 }
 
 /** @internal */
-export const SequencePackageClassName = SequencePackage.name;
+export const SequencePackageClassName = 'SequencePackage';
 /** @internal */
 export const SequenceClassNames = [
   Sequence.name,
-  SequenceExecuter.name,
-  SequencePackage.name,
+  SequenceExecutor.name,
+  SequencePackageClassName,
   SequenceContext.name,
   Queue.name,
   'DoublyLinkedListNode'
