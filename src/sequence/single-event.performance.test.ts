@@ -5,6 +5,15 @@ import { Variable } from '../observables/variable/variable';
 import { SingleEvent } from './single-event';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  test('promise', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      new Promise<void>(resolve => {
+        resolve();
+      }).then(() => {});
+    });
+    // sequence: 0.03639984130859375
+  }, 60000);
+
   test('instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = SingleEvent.instant()
@@ -13,7 +22,31 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
       sequence.destroy();
     });
-    // sequence: 0.1418004035949707
+    // sequence: 0.1370997428894043
+  }, 60000);
+
+  test('chaining instant single event', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = SingleEvent.instant()
+        .read(() => {})
+        .chainToRoot();
+
+      sequence.destroy();
+    });
+    // 0.4457998275756836
+  }, 60000);
+
+  test('custom chaining instant single event', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = SingleEvent.create(resolve => {
+        SingleEvent.instant()
+          .read(() => resolve())
+          .attachToRoot();
+      });
+
+      sequence.destroy();
+    });
+    // 0.4226999282836914
   }, 60000);
 
   test('instant triggered multiple reads', async () => {

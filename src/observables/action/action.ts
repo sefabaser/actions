@@ -7,7 +7,7 @@ export interface ActionOptions {
   readonly clone: boolean;
 }
 
-export class Action<T> extends Notifier<T> {
+export class Action<T = void> extends Notifier<T> {
   constructor(partialOptions?: Partial<ActionOptions>) {
     super();
     let options = {

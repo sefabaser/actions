@@ -1,7 +1,7 @@
 export { Attachable, IAttachment } from './attachable/attachable';
 export { ClassID } from './attachable/helpers/class-id';
 export { IDAttachable } from './attachable/id-attachable';
-export { AsyncOperation, SyncOperation } from './common';
+export { AsyncOperation } from './common';
 export { ActionLibDefaults } from './config';
 export { ActionLibHardReset } from './helpers/hard-reset';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';

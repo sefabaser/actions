@@ -1,5 +1,5 @@
 import { Attachable, IAttachment } from '../attachable/attachable';
-import { AsyncOperation, SyncOperation } from '../common';
+import { AsyncOperation } from '../common';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
   data: A,
@@ -44,7 +44,7 @@ class SingleEventExecuter extends Attachable {
 
   resolved = false;
   currentData: unknown;
-
+  chainedTo?: SingleEventExecuter;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private pipelineIndex = 0;
   private ongoingContext?: SingleEventContext;
@@ -67,6 +67,11 @@ class SingleEventExecuter extends Attachable {
         for (let listener of listeners) {
           listener();
         }
+      }
+
+      if (this.chainedTo) {
+        this.chainedTo.destroy();
+        this.chainedTo = undefined;
       }
     }
   }
@@ -174,27 +179,11 @@ export class SingleEvent<T = void> implements IAttachment {
   }
 
   private linked = false;
-  private chained = false;
 
   private constructor(private executor: SingleEventExecuter) {}
 
   destroy(): void {
     this.executor.destroy();
-  }
-
-  attach(parent: Attachable): this {
-    this.executor.attach(parent);
-    return this;
-  }
-
-  attachByID(id: number): this {
-    this.executor.attachByID(id);
-    return this;
-  }
-
-  attachToRoot(): this {
-    this.executor.attachToRoot();
-    return this;
   }
 
   read(callback: (data: T, context: ISingleEventContext) => void): SingleEvent<T> {
@@ -214,7 +203,7 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, context: ISingleEventContext) => SyncOperation<K>): SingleEvent<K> {
+  map<K>(callback: (data: T, context: ISingleEventContext) => K): SingleEvent<K> {
     this.validateBeforeLinking();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
@@ -306,6 +295,63 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<T>(this.executor);
   }
 
+  attach(parent: Attachable): this {
+    this.executor.attach(parent);
+    return this;
+  }
+
+  attachByID(id: number): this {
+    this.executor.attachByID(id);
+    return this;
+  }
+
+  attachToRoot(): this {
+    this.executor.attachToRoot();
+    return this;
+  }
+
+  chain(parent: Attachable): SingleEvent<T> {
+    this.validateBeforeLinking();
+
+    let chainExecutor = new SingleEventExecuter();
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor.trigger(data);
+      resolve(data);
+    });
+    this.executor.chainedTo = chainExecutor;
+    this.executor.attach(parent);
+
+    return new SingleEvent(chainExecutor);
+  }
+
+  chainByID(id: number): SingleEvent<T> {
+    this.validateBeforeLinking();
+
+    let chainExecutor = new SingleEventExecuter();
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor.trigger(data);
+      resolve(data);
+    });
+    this.executor.chainedTo = chainExecutor;
+    this.executor.attachByID(id);
+
+    return new SingleEvent(chainExecutor);
+  }
+
+  chainToRoot(): SingleEvent<T> {
+    this.validateBeforeLinking();
+
+    let chainExecutor = new SingleEventExecuter();
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor.trigger(data);
+      resolve(data);
+    });
+    this.executor.chainedTo = chainExecutor;
+    this.executor.attachToRoot();
+
+    return new SingleEvent(chainExecutor);
+  }
+
   private validateBeforeLinking(): void {
     if (this.linked) {
       throw new Error('Single Event: A single event can only be linked once.');
@@ -318,4 +364,4 @@ export class SingleEvent<T = void> implements IAttachment {
 }
 
 /** @internal */
-export const SingleEventClassNames = [SingleEvent.name, SingleEventExecuter.name];
+export const SingleEventClassNames = [SingleEvent.name, SingleEventExecuter.name, SingleEventContext.name];

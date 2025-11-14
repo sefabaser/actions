@@ -1,7 +1,7 @@
 import { Comparator, Queue } from 'helpers-lib';
 
 import { Attachable, IAttachment } from '../attachable/attachable';
-import { AsyncOperation, SyncOperation } from '../common';
+import { AsyncOperation } from '../common';
 import { Notifier } from '../observables/_notifier/notifier';
 
 type SequencePipelineDestructor = (finalContext?: SequenceContext) => void;
@@ -93,6 +93,7 @@ class SequenceExecuter extends Attachable {
   pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   asyncPipelineIndices?: Set<number>;
   ongoingPackageCount = 0;
+  chainedTo?: IAttachment;
   private _pendingValues?: unknown[];
   private _finalized?: boolean;
 
@@ -113,6 +114,11 @@ class SequenceExecuter extends Attachable {
         for (let listener of listeners) {
           listener();
         }
+      }
+
+      if (this.chainedTo) {
+        this.chainedTo.destroy();
+        this.chainedTo = undefined;
       }
     }
   }
@@ -275,7 +281,6 @@ export class Sequence<T = void> implements IAttachment {
     });
 
     this.waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence.executor.final());
-
     return combinedSequence;
   }
 
@@ -323,6 +328,7 @@ export class Sequence<T = void> implements IAttachment {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
+          // TODO: if sequence is destroyed the listener should also be destroyed
           sequence.executor.onDestroyListeners.add(() => oneDestroyed(sequence));
         }
       }
@@ -375,6 +381,10 @@ export class Sequence<T = void> implements IAttachment {
   private linked = false;
   private constructor(private executor: SequenceExecuter) {}
 
+  destroy(): void {
+    this.executor.destroy();
+  }
+
   read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
     this.validateBeforeLinking();
 
@@ -391,7 +401,7 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
-  map<K>(callback: (data: T, context: ISequenceLinkContext) => SyncOperation<K>): Sequence<K> {
+  map<K>(callback: (data: T, context: ISequenceLinkContext) => K): Sequence<K> {
     this.validateBeforeLinking();
 
     this.executor.enterPipeline<T, K>((data, context, resolve) => {
@@ -781,6 +791,23 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this.executor);
   }
 
+  /*
+  takeOne(): SingleEvent<T> {
+    this.validateBeforeLinking();
+
+    let singleEvent = SingleEvent.create<T>(singleEventResolve => {
+      this.executor.enterPipeline<T, T>((data, context, resolve) => {
+        singleEventResolve(data);
+        context.destroy();
+      });
+    });
+
+    this.executor.chainedTo = singleEvent;
+    singleEvent.
+
+    return singleEvent;
+  }*/
+
   skip(count: number): Sequence<T> {
     this.validateBeforeLinking();
 
@@ -800,25 +827,6 @@ export class Sequence<T = void> implements IAttachment {
     });
 
     return new Sequence<T>(this.executor);
-  }
-
-  destroy(): void {
-    this.executor.destroy();
-  }
-
-  attach(parent: Attachable): this {
-    this.executor.attach(parent);
-    return this;
-  }
-
-  attachByID(parent: number): this {
-    this.executor.attachByID(parent);
-    return this;
-  }
-
-  attachToRoot(): this {
-    this.executor.attachToRoot();
-    return this;
   }
 
   /** @internal */
@@ -855,6 +863,63 @@ export class Sequence<T = void> implements IAttachment {
     });
 
     return new Sequence<T>(this.executor);
+  }
+
+  attach(parent: Attachable): this {
+    this.executor.attach(parent);
+    return this;
+  }
+
+  attachByID(parent: number): this {
+    this.executor.attachByID(parent);
+    return this;
+  }
+
+  attachToRoot(): this {
+    this.executor.attachToRoot();
+    return this;
+  }
+
+  chain(parent: Attachable): Sequence<T> {
+    this.validateBeforeLinking();
+
+    let chainExecutor = new SequenceExecuter();
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor.trigger(data);
+      resolve(data);
+    });
+    this.executor.chainedTo = chainExecutor;
+    this.executor.attach(parent);
+
+    return new Sequence(chainExecutor);
+  }
+
+  chainByID(id: number): Sequence<T> {
+    this.validateBeforeLinking();
+
+    let chainExecutor = new SequenceExecuter();
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor.trigger(data);
+      resolve(data);
+    });
+    this.executor.chainedTo = chainExecutor;
+    this.executor.attachByID(id);
+
+    return new Sequence(chainExecutor);
+  }
+
+  chainToRoot(): Sequence<T> {
+    this.validateBeforeLinking();
+
+    let chainExecutor = new SequenceExecuter();
+    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor.trigger(data);
+      resolve(data);
+    });
+    this.executor.chainedTo = chainExecutor;
+    this.executor.attachToRoot();
+
+    return new Sequence(chainExecutor);
   }
 
   private destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: SequenceContext): void {

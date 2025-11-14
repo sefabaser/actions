@@ -1,5 +1,5 @@
 import { Attachable, IAttachment } from '../../attachable/attachable';
-import { AsyncOperation, SyncOperation } from '../../common';
+import { AsyncOperation } from '../../common';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { ISequenceLinkContext, Sequence } from '../../sequence/sequence';
 import { SingleEvent } from '../../sequence/single-event';
@@ -90,7 +90,7 @@ export class Notifier<T> {
     });
   }
 
-  map<K>(callback: (data: T, context: ISequenceLinkContext) => SyncOperation<K>): Sequence<K> {
+  map<K>(callback: (data: T, context: ISequenceLinkContext) => K): Sequence<K> {
     return this.toSequence().map(callback);
   }
 

@@ -8,12 +8,39 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
         .read(() => {})
+        .map(() => {})
         .attachToRoot();
       sequence.destroy();
     });
     // 0.27430009841918945
-    // pending change: 0.14550018310546875
+    // pending change: 0.14389991760253906
   }, 60000);
+
+  test('chainingsequence instant', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant()
+        .read(() => {})
+        .chainToRoot();
+      sequence.destroy();
+    });
+    // 0.47679996490478516
+    // manual destroy: 0.28600025177001953
+  }, 60000);
+
+  /*
+  test('take one', async () => {
+    // await UnitTestHelper.testPerformance(() => {
+    let sequence = Sequence.instant('a', 'b', 'c')
+      .takeOne()
+      .read(() => {
+        console.log('ok');
+      })
+      .attachToRoot();
+    sequence.destroy();
+    // });
+    // 0.47679996490478516
+    // manual destroy: 0.28600025177001953
+  }, 60000);*/
 
   test('instant triggered multiple reads', async () => {
     await UnitTestHelper.testPerformance(() => {

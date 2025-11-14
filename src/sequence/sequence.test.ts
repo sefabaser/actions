@@ -2,6 +2,7 @@ import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../attachable/attachable';
+import { IDAttachable } from '../attachable/id-attachable';
 import { ActionLibHardReset } from '../helpers/hard-reset';
 import { Notifier } from '../observables/_notifier/notifier';
 import { Action } from '../observables/action/action';
@@ -378,6 +379,410 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
         }).not.toThrow('Attachable: The object is not attached to anything!');
+      });
+    });
+
+    describe('Chain', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      describe('to root', () => {
+        test('without doing further operations without resolve', () => {
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainToRoot();
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+        });
+
+        test('without doing further operations with resolve', () => {
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainToRoot();
+
+          operation.trigger();
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+        });
+
+        test('using chain', () => {
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainToRoot();
+
+          let triggerCount = 0;
+          chain
+            .read(() => {
+              triggerCount++;
+            })
+            .attachToRoot();
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(0);
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(1);
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(2);
+        });
+
+        test('chain parent destroy before trigger', () => {
+          let chainParent = new Attachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainToRoot();
+
+          let triggered = false;
+          chain
+            .read(() => {
+              triggered = true;
+            })
+            .attach(chainParent);
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          chainParent.destroy();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+        });
+      });
+
+      describe('directly', () => {
+        test('without doing further operations without resolve', () => {
+          let parent = new Attachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chain(parent);
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+        });
+
+        test('without doing further operations with resolve', () => {
+          let parent = new Attachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chain(parent);
+
+          operation.trigger();
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+        });
+
+        test('using chain', () => {
+          let parent = new Attachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chain(parent);
+
+          let triggerCount = 0;
+          chain
+            .read(() => {
+              triggerCount++;
+            })
+            .attachToRoot();
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(0);
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(1);
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(2);
+        });
+
+        test('chain parent destroy before trigger', () => {
+          let parent = new Attachable().attachToRoot();
+          let chainParent = new Attachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chain(parent);
+
+          let triggered = false;
+          chain
+            .read(() => {
+              triggered = true;
+            })
+            .attach(chainParent);
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          chainParent.destroy();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+        });
+
+        test('operation attached parent destroy', () => {
+          let parent = new Attachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chain(parent);
+
+          let triggered = false;
+          chain
+            .read(() => {
+              triggered = true;
+            })
+            .attachToRoot();
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeTruthy();
+
+          parent.destroy();
+          expect(firstEvent.destroyed).toBeTruthy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeTruthy();
+        });
+      });
+
+      describe('by id', () => {
+        test('without doing further operations without resolve', () => {
+          let parent = new IDAttachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainByID(parent.id);
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+        });
+
+        test('without doing further operations with resolve', () => {
+          let parent = new IDAttachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainByID(parent.id);
+
+          operation.trigger();
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeFalsy();
+        });
+
+        test('using chain', () => {
+          let parent = new IDAttachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainByID(parent.id);
+
+          let triggerCount = 0;
+          chain
+            .read(() => {
+              triggerCount++;
+            })
+            .attachToRoot();
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(0);
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(1);
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggerCount).toEqual(2);
+        });
+
+        test('chain parent destroy before trigger', () => {
+          let parent = new IDAttachable().attachToRoot();
+          let chainParent = new IDAttachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainByID(parent.id);
+
+          let triggered = false;
+          chain
+            .read(() => {
+              triggered = true;
+            })
+            .attach(chainParent);
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          chainParent.destroy();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+        });
+
+        test('operation attached parent destroy', () => {
+          let parent = new IDAttachable().attachToRoot();
+          let operation = new Action();
+
+          let firstEvent = operation.toSequence();
+          let chain = firstEvent.chainByID(parent.id);
+
+          let triggered = false;
+          chain
+            .read(() => {
+              triggered = true;
+            })
+            .attachToRoot();
+
+          vi.runAllTimers();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeFalsy();
+
+          operation.trigger();
+          expect(firstEvent.destroyed).toBeFalsy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeFalsy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeTruthy();
+
+          parent.destroy();
+          expect(firstEvent.destroyed).toBeTruthy();
+          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(chain.destroyed).toBeTruthy();
+          expect(chain.attachIsCalled).toBeTruthy();
+          expect(triggered).toBeTruthy();
+        });
       });
     });
 
@@ -5984,14 +6389,18 @@ describe('Sequence', () => {
     describe('Desctruction', () => {
       test('merge destroy -> children destroy', async () => {
         let sequence1 = Sequence.create(() => {});
-        let sequence = Sequence.create(() => {});
-        let merged = Sequence.merge(sequence1, sequence).attachToRoot();
+        let sequence2 = Sequence.create(() => {});
+        let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
 
         expect(sequence1.destroyed).toBeFalsy();
-        expect(sequence.destroyed).toBeFalsy();
+        expect(sequence2.destroyed).toBeFalsy();
+        expect(sequence1['executor']['onDestroyListeners'].size).toEqual(1);
+        expect(sequence2['executor']['onDestroyListeners'].size).toEqual(1);
         merged.destroy();
         expect(sequence1.destroyed).toBeTruthy();
-        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence2.destroyed).toBeTruthy();
+        expect(sequence1['executor']['onDestroyListeners'].size).toEqual(0);
+        expect(sequence2['executor']['onDestroyListeners'].size).toEqual(0);
       });
 
       test('children destroy -> merge destroy', async () => {
@@ -6585,6 +6994,6 @@ describe('Sequence', () => {
           s3: 'as3'
         }
       ]);
-    }, 30000);
+    });
   });
 });
