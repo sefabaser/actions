@@ -78,7 +78,7 @@ describe('Sequence', () => {
 
         expect(heap).toEqual([1]);
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['pipeline']).toEqual(undefined);
       });
 
       test('after finalized no new resolution should take effect', () => {
@@ -247,7 +247,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeFalsy();
         sequence.destroy();
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['pipeline']).toEqual(undefined);
       });
 
       test('destroying sequence via constructor context', () => {
@@ -257,7 +257,7 @@ describe('Sequence', () => {
         }).attachToRoot();
 
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['pipeline']).toEqual(undefined);
       });
 
       test('destroying sequence via iterator context', () => {
@@ -270,7 +270,7 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['pipeline']).toEqual(undefined);
       });
 
       test('destroying parent should destroy sequence', () => {
@@ -808,12 +808,12 @@ describe('Sequence', () => {
     test('without data', () => {
       let heap: unknown[] = [];
 
-      let sequence = Sequence.instant<void>()
+      let sequence = Sequence.instant()
         .read(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([undefined]);
-      expect(sequence['executor'].ongoingPackageCount).toEqual(0);
+      expect(sequence['_executor'].ongoingPackageCount).toEqual(0);
     });
 
     test('with data', () => {
@@ -824,7 +824,7 @@ describe('Sequence', () => {
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b', 'c']);
-      expect(sequence['executor'].ongoingPackageCount).toEqual(0);
+      expect(sequence['_executor'].ongoingPackageCount).toEqual(0);
     });
   });
 
@@ -1648,7 +1648,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapDirect(() => {
@@ -1658,7 +1658,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -1680,7 +1680,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -1693,7 +1693,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -1834,7 +1834,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -1845,7 +1845,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -1856,7 +1856,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(2);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -1867,7 +1867,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([3, 2]);
         });
@@ -2375,7 +2375,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapOrdered(() => {
@@ -2385,7 +2385,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -2407,7 +2407,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -2420,7 +2420,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -2561,7 +2561,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(heap).toEqual([]);
 
           action1.trigger();
@@ -2571,7 +2571,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -2582,7 +2582,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(2);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -2593,7 +2593,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([1, 2]);
         });
@@ -3101,7 +3101,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapLatest(() => {
@@ -3111,7 +3111,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -3133,7 +3133,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -3146,7 +3146,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -3287,7 +3287,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -3298,7 +3298,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -3309,7 +3309,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([2]);
         });
@@ -3900,7 +3900,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapQueue(() => {
@@ -3910,7 +3910,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -3932,7 +3932,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -3945,7 +3945,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(1);
           expect(innerResolves.length).toEqual(1);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -4086,7 +4086,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -4097,7 +4097,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -4108,7 +4108,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(2);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -4119,7 +4119,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([1, 2]);
         });
@@ -4631,7 +4631,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapDropOngoing(() => {
@@ -4641,7 +4641,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -4663,7 +4663,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -4679,7 +4679,7 @@ describe('Sequence', () => {
             if (index < innerSequences.length - 1) {
               expect(innerSequence.destroyed).toBeTruthy();
             } else {
-              expect(innerSequence['executor']['pipeline'].length).toEqual(1);
+              expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
             }
           });
 
@@ -4822,7 +4822,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -4834,7 +4834,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -4846,7 +4846,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -4857,7 +4857,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([2]);
         });
@@ -5364,7 +5364,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapDropIncoming(() => {
@@ -5374,7 +5374,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -5396,7 +5396,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -5409,7 +5409,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(1);
           expect(innerResolves.length).toEqual(1);
           innerSequences.forEach((innerSequence, index) => {
-            expect(innerSequence['executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -5551,7 +5551,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -5563,7 +5563,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(1);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -5575,7 +5575,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(1);
           expect(actionlast.listenerCount).toEqual(1);
-          expect(sequence['executor']['_finalized']).toBeFalsy();
+          expect(sequence['_executor']['_finalized']).toBeFalsy();
           expect(sequence.destroyed).toBeFalsy();
           expect(heap).toEqual([]);
 
@@ -5586,7 +5586,7 @@ describe('Sequence', () => {
           expect(action2.listenerCount).toEqual(0);
           expect(action3.listenerCount).toEqual(0);
           expect(actionlast.listenerCount).toEqual(0);
-          expect(sequence['executor']['_finalized']).toBeTruthy();
+          expect(sequence['_executor']['_finalized']).toBeTruthy();
           expect(sequence.destroyed).toBeTruthy();
           expect(heap).toEqual([1]);
         });
@@ -6395,13 +6395,13 @@ describe('Sequence', () => {
 
         expect(sequence1.destroyed).toBeFalsy();
         expect(sequence2.destroyed).toBeFalsy();
-        expect(sequence1['executor']['onDestroyListeners'].size).toEqual(1);
-        expect(sequence2['executor']['onDestroyListeners'].size).toEqual(1);
+        expect(sequence1['_executor']['onDestroyListeners'].size).toEqual(1);
+        expect(sequence2['_executor']['onDestroyListeners'].size).toEqual(1);
         merged.destroy();
         expect(sequence1.destroyed).toBeTruthy();
         expect(sequence2.destroyed).toBeTruthy();
-        expect(sequence1['executor']['onDestroyListeners'].size).toEqual(0);
-        expect(sequence2['executor']['onDestroyListeners'].size).toEqual(0);
+        expect(sequence1['_executor']['onDestroyListeners'].size).toEqual(0);
+        expect(sequence2['_executor']['onDestroyListeners'].size).toEqual(0);
       });
 
       test('children destroy -> merge destroy', async () => {

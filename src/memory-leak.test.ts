@@ -3,7 +3,7 @@ import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from './observables/action/action';
-import { Sequence, SequenceClassNames, SequencePackageClassName } from './sequence/sequence';
+import { Sequence, SequenceClassNames, SequencePackageClassName } from './stream/sequence/sequence';
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   beforeEach(() => {

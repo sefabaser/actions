@@ -32,7 +32,8 @@ export class Attachable implements IAttachment {
     return this._destroyed;
   }
 
-  private _attachIsCalled = false;
+  /** @internal */
+  _attachIsCalled = false;
   get attachIsCalled(): boolean {
     return this._attachIsCalled;
   }

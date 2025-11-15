@@ -6,13 +6,13 @@ import { ISequenceLinkContext } from '../../stream/sequence/sequence-executor';
 import { SingleEvent } from '../../stream/single-event/single-event';
 
 export class ActionSubscription extends Attachable {
-  constructor(private destroyCallback: () => void) {
+  constructor(private _destroyCallback: () => void) {
     super();
   }
 
   destroy(): void {
     if (!this.destroyed) {
-      this.destroyCallback();
+      this._destroyCallback();
       super.destroy();
     }
   }
@@ -48,46 +48,46 @@ export class Notifier<T> {
     };
   }
 
-  private listenersMap = new Map<number, NotifierCallbackFunction<T>>();
-  private nextAvailableSubscriptionID = 1;
+  private _listenersMap = new Map<number, NotifierCallbackFunction<T>>();
+  private _nextAvailableSubscriptionID = 1;
 
   get listenerCount(): number {
-    return this.listenersMap.size;
+    return this._listenersMap.size;
   }
 
   get notifier(): Notifier<T> {
     let wrapper = new Notifier<T>();
-    wrapper.listenersMap = this.listenersMap;
-    wrapper.nextAvailableSubscriptionID = this.nextAvailableSubscriptionID;
+    wrapper._listenersMap = this._listenersMap;
+    wrapper._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
     wrapper.subscribe = this.subscribe.bind(this);
     return wrapper;
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    let subscriptionID = this.nextAvailableSubscriptionID++;
-    this.listenersMap.set(subscriptionID, callback);
+    let subscriptionID = this._nextAvailableSubscriptionID++;
+    this._listenersMap.set(subscriptionID, callback);
 
     return new ActionSubscription(() => {
-      this.listenersMap.delete(subscriptionID);
+      this._listenersMap.delete(subscriptionID);
     });
   }
 
   toSequence(): Sequence<T> {
     return Sequence.create<T>(resolve => {
-      let subscriptionID = this.nextAvailableSubscriptionID++;
-      this.listenersMap.set(subscriptionID, resolve);
-      return () => this.listenersMap.delete(subscriptionID);
+      let subscriptionID = this._nextAvailableSubscriptionID++;
+      this._listenersMap.set(subscriptionID, resolve);
+      return () => this._listenersMap.delete(subscriptionID);
     });
   }
 
   toSingleEvent(): SingleEvent<T> {
     return SingleEvent.create<T>(resolve => {
-      let subscriptionID = this.nextAvailableSubscriptionID++;
-      this.listenersMap.set(subscriptionID, event => {
+      let subscriptionID = this._nextAvailableSubscriptionID++;
+      this._listenersMap.set(subscriptionID, event => {
         resolve(event);
-        this.listenersMap.delete(subscriptionID);
+        this._listenersMap.delete(subscriptionID);
       });
-      return () => this.listenersMap.delete(subscriptionID);
+      return () => this._listenersMap.delete(subscriptionID);
     });
   }
 
@@ -113,7 +113,7 @@ export class Notifier<T> {
 
   /** @internal */
   triggerAll(data: T): void {
-    let listeners = [...this.listenersMap.values()];
+    let listeners = [...this._listenersMap.values()];
     for (let i = 0; i < listeners.length; i++) {
       CallbackHelper.triggerCallback(data, listeners[i]);
     }
@@ -121,13 +121,13 @@ export class Notifier<T> {
 
   /** @internal */
   readSingle(callback: (data: T) => void): IAttachment {
-    let subscriptionID = this.nextAvailableSubscriptionID++;
+    let subscriptionID = this._nextAvailableSubscriptionID++;
 
     let subscription = new ActionSubscription(() => {
-      this.listenersMap.delete(subscriptionID);
+      this._listenersMap.delete(subscriptionID);
     });
 
-    this.listenersMap.set(subscriptionID, data => {
+    this._listenersMap.set(subscriptionID, data => {
       subscription.destroy();
       callback(data);
     });

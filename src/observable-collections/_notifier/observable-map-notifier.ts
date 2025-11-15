@@ -4,7 +4,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
 
   protected _untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
-  private get untilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
+  private get _getUntilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
     if (!this._untilAddedListeners) {
       this._untilAddedListeners = new Map();
     }
@@ -12,7 +12,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   }
 
   protected _untilRemovedListeners?: Map<KeyType, Set<() => void>>;
-  private get untilRemovedListeners(): Map<KeyType, Set<() => void>> {
+  private get _getUntilRemovedListeners(): Map<KeyType, Set<() => void>> {
     if (!this._untilRemovedListeners) {
       this._untilRemovedListeners = new Map();
     }
@@ -59,10 +59,10 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
       if (this.map.has(value)) {
         resolveAndDestroy();
       } else {
-        let untilAddedListenerSet = this.untilAddedListeners.get(value);
+        let untilAddedListenerSet = this._getUntilAddedListeners.get(value);
         if (!untilAddedListenerSet) {
           untilAddedListenerSet = new Set();
-          this.untilAddedListeners.set(value, untilAddedListenerSet);
+          this._getUntilAddedListeners.set(value, untilAddedListenerSet);
         }
 
         untilAddedListenerSet.add(resolveAndDestroy);
@@ -83,10 +83,10 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
       if (!this.map.has(value)) {
         resolveAndDestroy();
       } else {
-        let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
+        let untilRemovedListenerSet = this._getUntilRemovedListeners.get(value);
         if (!untilRemovedListenerSet) {
           untilRemovedListenerSet = new Set();
-          this.untilRemovedListeners.set(value, untilRemovedListenerSet);
+          this._getUntilRemovedListeners.set(value, untilRemovedListenerSet);
         }
 
         untilRemovedListenerSet.add(resolveAndDestroy);

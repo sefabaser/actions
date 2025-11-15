@@ -20,20 +20,20 @@ const AreaEffect = Reducer.createSum();
  * Assume that this is a separate file
  */
 class Warrior {
-  private strength: number;
-  private areaEffect = 0;
+  private _strength: number;
+  private _areaEffect = 0;
 
   constructor(strength: number) {
-    this.strength = strength;
+    this._strength = strength;
 
     AreaEffect.subscribe(result => {
       // Lets say we need to update something or actively do some operations, after each area effect change. We can do those here.
-      this.areaEffect = result;
+      this._areaEffect = result;
     }).attachToRoot();
   }
 
   getAttack(): number {
-    return this.strength + this.areaEffect;
+    return this._strength + this._areaEffect;
   }
 }
 

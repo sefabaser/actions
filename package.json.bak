@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Typescript Helpers Library",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts"
@@ -30,6 +30,7 @@
     "test-full": "vitest run",
     "start": "npm run build && node dist",
     "build": "tsup",
+    "build:types-only": "tsc",
     "lint": "biome check . --write --max-diagnostics=1",
     "deploy": "vitest run && npm run build && npm publish",
     "prepack": "cp package.json package.json.bak && node scripts/prepare-package-json.cjs",

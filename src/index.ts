@@ -24,5 +24,6 @@ export {
 } from './observables/variable/variable';
 export { Sequence } from './stream/sequence/sequence';
 export { ISequenceCreatorContext, ISequenceLinkContext } from './stream/sequence/sequence-executor';
-export { ISingleEventContext, SingleEvent } from './stream/single-event/single-event';
+export { SingleEvent } from './stream/single-event/single-event';
+export { ISingleEventContext } from './stream/single-event/single-event-executor';
 export { ActionLibUtilities } from './utilities/action-lib-utilities';

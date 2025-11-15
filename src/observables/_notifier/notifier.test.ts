@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Sequence } from '../../sequence/sequence';
-import { SingleEvent } from '../../sequence/single-event';
+import { Sequence } from '../../stream/sequence/sequence';
+import { SingleEvent } from '../../stream/single-event/single-event';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -12,7 +12,7 @@ class SampleModel {
 
 describe('Notifier', () => {
   let triggerNotifierWith = <T>(data: T, notifier: Notifier<T>) => {
-    notifier['listenersMap'].forEach(listener => CallbackHelper.triggerCallback(data, listener));
+    notifier['_listenersMap'].forEach(listener => CallbackHelper.triggerCallback(data, listener));
   };
 
   describe('Basics', () => {
@@ -28,13 +28,13 @@ describe('Notifier', () => {
 
     test('subscribable', () => {
       notifier.subscribe(_ => {}).attachToRoot();
-      expect(notifier['listenersMap'].size).toEqual(1);
+      expect(notifier['_listenersMap'].size).toEqual(1);
     });
 
     test('subscription destroyable', () => {
       let subscription = notifier.subscribe(_ => {}).attachToRoot();
       subscription.destroy();
-      expect(notifier['listenersMap'].size).toEqual(0);
+      expect(notifier['_listenersMap'].size).toEqual(0);
     });
 
     test('trigger listeners', () => {
@@ -137,7 +137,7 @@ describe('Notifier', () => {
 
       expect(notifier2).toBeInstanceOf(Notifier);
       expect(notifier2).not.toBe(notifier);
-      expect(notifier2['listenersMap']).toBe(notifier['listenersMap']);
+      expect(notifier2['_listenersMap']).toBe(notifier['_listenersMap']);
     });
 
     test('subscriptions are shared between notifiers', () => {

@@ -1,9 +1,9 @@
-let fs = require('fs');
+const fs = require('fs');
 
-let cwd = process.cwd();
-let packageJson = require(`${cwd}/package.json`);
+const cwd = process.cwd();
+const packageJson = require(`${cwd}/package.json`);
 
-let newPackageJson = {
+const newPackageJson = {
   ...packageJson,
   main: packageJson.publishConfig?.main ?? packageJson.main,
   types: packageJson.publishConfig?.types ?? packageJson.types,
@@ -12,4 +12,6 @@ let newPackageJson = {
 
 try {
   fs.writeFileSync(`${cwd}/package.json`, JSON.stringify(newPackageJson, undefined, 2));
-} catch (e) {}
+} catch (e) {
+  console.error('Failed to write package.json:', e);
+}

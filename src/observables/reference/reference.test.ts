@@ -111,12 +111,12 @@ describe('Reference', () => {
 
       refVar.value = target.id;
 
-      expect(refVar['destroySubscription']).toBeDefined();
-      let previousDestroySubscription = refVar['destroySubscription'];
+      expect(refVar['_destroySubscription']).toBeDefined();
+      let previousDestroySubscription = refVar['_destroySubscription'];
 
       refVar.value = undefined;
       expect(previousDestroySubscription?.destroyed).toBeTruthy();
-      expect(refVar['destroySubscription']).toBeUndefined();
+      expect(refVar['_destroySubscription']).toBeUndefined();
     });
 
     test('setting same value does not create duplicate subscriptions', () => {
@@ -558,13 +558,13 @@ describe('Reference', () => {
       let target = new IDAttachable().attachToRoot();
 
       refVar.value = target.id;
-      expect(refVar['destroySubscription']).toBeDefined();
+      expect(refVar['_destroySubscription']).toBeDefined();
 
-      let destroySubscription = refVar['destroySubscription'];
+      let destroySubscription = refVar['_destroySubscription'];
       refVar.destroy();
 
       expect(destroySubscription?.destroyed).toBe(true);
-      expect(refVar['destroySubscription']).toBeUndefined();
+      expect(refVar['_destroySubscription']).toBeUndefined();
     });
 
     test('destroy can be called multiple times safely', () => {
@@ -619,7 +619,7 @@ describe('Reference', () => {
     test('destroyed reference with no value cleans up properly', () => {
       let refVar = new Reference().attach(parent);
 
-      expect(refVar['destroySubscription']).toBeUndefined();
+      expect(refVar['_destroySubscription']).toBeUndefined();
 
       refVar.destroy();
 

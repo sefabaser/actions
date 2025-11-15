@@ -14,7 +14,7 @@ type ExecutionOrderQueuer = {
 
 export class Sequence<T = void> implements IAttachment {
   static merge<S>(...streams: AsyncOperation<S>[]): Sequence<S> {
-    let activeSequences = this.validateAndConvertToSet(streams);
+    let activeSequences = this._validateAndConvertToSet(streams);
 
     let subscriptions: IAttachment[] = [];
     let mergedSequence = Sequence.create<S>(resolve => {
@@ -29,7 +29,7 @@ export class Sequence<T = void> implements IAttachment {
       };
     });
 
-    this.waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence.executor.final());
+    this._waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence._executor.final());
     return mergedSequence;
   }
 
@@ -42,7 +42,7 @@ export class Sequence<T = void> implements IAttachment {
   static combine<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(input: S): Sequence<any> {
     let isArray = Comparator.isArray(input);
     let streams = Object.values(input);
-    let activeStreams = this.validateAndConvertToSet(streams);
+    let activeStreams = this._validateAndConvertToSet(streams);
 
     let latestValues: any = isArray ? [] : {};
     let keys = Object.keys(input);
@@ -57,11 +57,11 @@ export class Sequence<T = void> implements IAttachment {
           .subscribe((data: unknown) => {
             latestValues[key] = data;
             if (unresolvedKeys.size === 0) {
-              resolve(isArray ? [...latestValues] : this.shallowCopy(latestValues));
+              resolve(isArray ? [...latestValues] : this._shallowCopy(latestValues));
             } else {
               unresolvedKeys.delete(key);
               if (unresolvedKeys.size === 0) {
-                resolve(isArray ? [...latestValues] : this.shallowCopy(latestValues));
+                resolve(isArray ? [...latestValues] : this._shallowCopy(latestValues));
               }
             }
           })
@@ -76,24 +76,24 @@ export class Sequence<T = void> implements IAttachment {
       };
     });
 
-    this.waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence.executor.final());
+    this._waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence._executor.final());
     return combinedSequence;
   }
 
-  private static shallowCopy<S extends object>(obj: S): S {
+  private static _shallowCopy<S extends object>(obj: S): S {
     return Object.keys(obj).reduce((acc, key) => {
       acc[key] = (obj as any)[key];
       return acc;
     }, {} as any);
   }
 
-  private static validateAndConvertToSet(streams: AsyncOperation<unknown>[]) {
+  private static _validateAndConvertToSet(streams: AsyncOperation<unknown>[]) {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
       for (let i = 0; i < streams.length; i++) {
         let stream = streams[i];
         if (stream instanceof Sequence) {
-          stream.executor['_attachIsCalled'] = true;
+          stream._executor._attachIsCalled = true;
         }
       }
 
@@ -102,7 +102,7 @@ export class Sequence<T = void> implements IAttachment {
     return streamsSet;
   }
 
-  private static waitUntilAllSequencesDestroyed(streams: Set<AsyncOperation<unknown>>, callback: () => void): void {
+  private static _waitUntilAllSequencesDestroyed(streams: Set<AsyncOperation<unknown>>, callback: () => void): void {
     let notifierFound = false;
     for (let stream of streams) {
       if (stream instanceof Notifier) {
@@ -124,7 +124,7 @@ export class Sequence<T = void> implements IAttachment {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
-          sequence.executor.onDestroyListeners.add(() => oneDestroyed(sequence));
+          sequence._executor.onDestroyListeners.add(() => oneDestroyed(sequence));
         }
       }
     }
@@ -160,30 +160,30 @@ export class Sequence<T = void> implements IAttachment {
       data = [undefined as S];
     }
 
-    sequenceExecutor['_pendingValues'] = data;
-    sequenceExecutor['ongoingPackageCount'] = data.length;
+    sequenceExecutor.pendingValues = data;
+    sequenceExecutor.ongoingPackageCount = data.length;
     return new Sequence<S>(sequenceExecutor);
   }
 
   get destroyed(): boolean {
-    return this.executor.destroyed;
+    return this._executor.destroyed;
   }
 
   get attachIsCalled(): boolean {
-    return this.executor.attachIsCalled;
+    return this._executor.attachIsCalled;
   }
 
-  private linked = false;
-  private constructor(private executor: SequenceExecutor) {}
+  private _linked = false;
+  private constructor(private _executor: SequenceExecutor) {}
 
   destroy(): void {
-    this.executor.destroy();
+    this._executor.destroy();
   }
 
   read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
-    this.executor.enterPipeline<T, T>((data, context, resolve) => {
+    this._executor.enterPipeline<T, T>((data, context, resolve) => {
       try {
         callback(data, context);
       } catch (e) {
@@ -193,13 +193,13 @@ export class Sequence<T = void> implements IAttachment {
 
       resolve(data);
     });
-    return new Sequence<T>(this.executor);
+    return new Sequence<T>(this._executor);
   }
 
   map<K>(callback: (data: T, context: ISequenceLinkContext) => K): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
-    this.executor.enterPipeline<T, K>((data, context, resolve) => {
+    this._executor.enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: K;
 
       try {
@@ -212,7 +212,7 @@ export class Sequence<T = void> implements IAttachment {
       resolve(executionReturn);
     });
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   /**
@@ -230,11 +230,11 @@ export class Sequence<T = void> implements IAttachment {
    * @R -------------------B-C-----A-------------------
    */
   asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let ongoingContexts = new Set<ISequenceLinkContext>();
 
-    this.executor.enterPipeline<T, K>(
+    this._executor.enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -262,7 +262,7 @@ export class Sequence<T = void> implements IAttachment {
       }
     );
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   /**
@@ -282,10 +282,10 @@ export class Sequence<T = void> implements IAttachment {
    * @R ----------------------------ABC----------------
    */
   asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
-    this.executor.enterPipeline<T, K>(
+    this._executor.enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -317,11 +317,11 @@ export class Sequence<T = void> implements IAttachment {
           .attach(context.attachable);
       },
       (finalContext?: SequenceContext) => {
-        this.destroyPackagesUntilCurrent(queue, finalContext);
+        this._destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   /**
@@ -340,10 +340,10 @@ export class Sequence<T = void> implements IAttachment {
    * @R -------------------B-C-------------------------
    */
   asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
-    this.executor.enterPipeline<T, K>(
+    this._executor.enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -374,11 +374,11 @@ export class Sequence<T = void> implements IAttachment {
           .attach(context.attachable);
       },
       (finalContext?: SequenceContext) => {
-        this.destroyPackagesUntilCurrent(queue, finalContext);
+        this._destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   /**
@@ -400,12 +400,12 @@ export class Sequence<T = void> implements IAttachment {
   asyncMapQueue<K>(
     callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
   ): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     let previousResult: K | undefined;
 
-    this.executor.enterPipeline<T, K>(
+    this._executor.enterPipeline<T, K>(
       (data, context, resolve) => {
         let execute = () => {
           let executionReturn: AsyncOperation<K>;
@@ -435,11 +435,11 @@ export class Sequence<T = void> implements IAttachment {
         }
       },
       (finalContext?: SequenceContext) => {
-        this.destroyPackagesUntilCurrent(queue, finalContext);
+        this._destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   /**
@@ -458,10 +458,10 @@ export class Sequence<T = void> implements IAttachment {
    * @R ----------------------C-------------------------
    */
   asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this.executor.enterPipeline<T, K>(
+    this._executor.enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -488,7 +488,7 @@ export class Sequence<T = void> implements IAttachment {
       }
     );
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   /**
@@ -507,10 +507,10 @@ export class Sequence<T = void> implements IAttachment {
    * @R ---------------------------A--------------------
    */
   asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this.executor.enterPipeline<T, K>(
+    this._executor.enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -540,14 +540,14 @@ export class Sequence<T = void> implements IAttachment {
       }
     );
 
-    return new Sequence<K>(this.executor);
+    return new Sequence<K>(this._executor);
   }
 
   filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let previousValue: T | undefined;
-    this.executor.enterPipeline<T, T>((data, context, resolve) => {
+    this._executor.enterPipeline<T, T>((data, context, resolve) => {
       let passedTheFilter: boolean;
       try {
         passedTheFilter = callback(data, previousValue, context);
@@ -563,15 +563,15 @@ export class Sequence<T = void> implements IAttachment {
         context.drop();
       }
     });
-    return new Sequence<T>(this.executor);
+    return new Sequence<T>(this._executor);
   }
 
   take(count: number): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let taken = 0;
 
-    this.executor.enterPipeline<T, T>((data, context, resolve) => {
+    this._executor.enterPipeline<T, T>((data, context, resolve) => {
       taken++;
 
       if (taken >= count) {
@@ -583,7 +583,7 @@ export class Sequence<T = void> implements IAttachment {
       }
     });
 
-    return new Sequence<T>(this.executor);
+    return new Sequence<T>(this._executor);
   }
 
   /*
@@ -604,12 +604,12 @@ export class Sequence<T = void> implements IAttachment {
   }*/
 
   skip(count: number): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let skipped = 0;
     let blocked = count > 0;
 
-    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor.enterPipeline<T, T>((data, _, resolve) => {
       if (blocked) {
         skipped++;
         if (skipped > count) {
@@ -621,14 +621,14 @@ export class Sequence<T = void> implements IAttachment {
       }
     });
 
-    return new Sequence<T>(this.executor);
+    return new Sequence<T>(this._executor);
   }
 
   /** @internal */
   readSingle(callback: (data: T) => void): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
-    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor.enterPipeline<T, T>((data, _, resolve) => {
       try {
         callback(data);
         this.destroy();
@@ -640,14 +640,14 @@ export class Sequence<T = void> implements IAttachment {
       resolve(data);
     });
 
-    return new Sequence<T>(this.executor);
+    return new Sequence<T>(this._executor);
   }
 
   /** @internal */
   subscribe(callback: (data: T) => void): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
-    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor.enterPipeline<T, T>((data, _, resolve) => {
       try {
         callback(data);
       } catch (e) {
@@ -657,67 +657,67 @@ export class Sequence<T = void> implements IAttachment {
       resolve(data);
     });
 
-    return new Sequence<T>(this.executor);
+    return new Sequence<T>(this._executor);
   }
 
   attach(parent: Attachable): this {
-    this.executor.attach(parent);
+    this._executor.attach(parent);
     return this;
   }
 
   attachByID(parent: number): this {
-    this.executor.attachByID(parent);
+    this._executor.attachByID(parent);
     return this;
   }
 
   attachToRoot(): this {
-    this.executor.attachToRoot();
+    this._executor.attachToRoot();
     return this;
   }
 
   chain(parent: Attachable): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
     });
-    this.executor.chainedTo = chainExecutor;
-    this.executor.attach(parent);
+    this._executor.chainedTo = chainExecutor;
+    this._executor.attach(parent);
 
     return new Sequence(chainExecutor);
   }
 
   chainByID(id: number): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
     });
-    this.executor.chainedTo = chainExecutor;
-    this.executor.attachByID(id);
+    this._executor.chainedTo = chainExecutor;
+    this._executor.attachByID(id);
 
     return new Sequence(chainExecutor);
   }
 
   chainToRoot(): Sequence<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this.executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor.enterPipeline<T, T>((data, _, resolve) => {
       chainExecutor.trigger(data);
       resolve(data);
     });
-    this.executor.chainedTo = chainExecutor;
-    this.executor.attachToRoot();
+    this._executor.chainedTo = chainExecutor;
+    this._executor.attachToRoot();
 
     return new Sequence(chainExecutor);
   }
 
-  private destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: SequenceContext): void {
+  private _destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: SequenceContext): void {
     if (finalContext) {
       while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
         let lastInTheLine = queue.dequeue()!;
@@ -733,14 +733,14 @@ export class Sequence<T = void> implements IAttachment {
     }
   }
 
-  private validateBeforeLinking(): void {
-    if (this.linked) {
+  private _validateBeforeLinking(): void {
+    if (this._linked) {
       throw new Error('A sequence can only be linked once.');
     }
-    if (this.executor.attachIsCalled) {
+    if (this._executor.attachIsCalled) {
       throw new Error('Sequence: After attaching, you cannot add another operation.');
     }
-    this.linked = true;
+    this._linked = true;
   }
 }
 

@@ -25,7 +25,7 @@ export class Reference<T extends number | object = number> extends Attachable {
       return undefined;
     }
 
-    return this.variable.value;
+    return this._variable.value;
   }
   set value(value: T | undefined) {
     this.set(value);
@@ -36,23 +36,23 @@ export class Reference<T extends number | object = number> extends Attachable {
       return 0;
     }
 
-    return this.variable.listenerCount;
+    return this._variable.listenerCount;
   }
 
-  private variable: Variable<T | undefined>;
-  private destroySubscription: IAttachment | undefined;
-  private options: Options<T>;
+  private _variable: Variable<T | undefined>;
+  private _destroySubscription: IAttachment | undefined;
+  private _options: Options<T>;
 
   constructor(...args: T extends number ? [options?: IDReferenceOptions<T>] : [options: ObjectReferenceOptions<T>]) {
     super();
-    this.options = {
+    this._options = {
       initialValue: undefined,
       path: undefined,
       ...(args[0] as Partial<Options<T>>)
     };
 
-    this.variable = new Variable<T | undefined>(undefined, { notifyOnChange: true });
-    this.set(this.options.initialValue);
+    this._variable = new Variable<T | undefined>(undefined, { notifyOnChange: true });
+    this.set(this._options.initialValue);
   }
 
   set(data: T | undefined): this {
@@ -60,26 +60,26 @@ export class Reference<T extends number | object = number> extends Attachable {
       throw new Error(`Reference: This reference is destroyed cannot be set!`);
     }
 
-    if (data !== this.variable.value) {
-      this.destroySubscription?.destroy();
-      this.destroySubscription = undefined;
+    if (data !== this._variable.value) {
+      this._destroySubscription?.destroy();
+      this._destroySubscription = undefined;
 
       if (data) {
-        let referenceID = this.getReferenceID(data, this.options.path);
-        this.destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceID).onDestroy(() => {
+        let referenceID = this._getReferenceID(data, this._options.path);
+        this._destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceID).onDestroy(() => {
           !this.destroyed && this.set(undefined);
         });
 
         if (this.attachIsCalled) {
           if (this.attachedParent) {
-            this.destroySubscription.attach(this.attachedParent);
+            this._destroySubscription.attach(this.attachedParent);
           } else {
-            this.destroySubscription.attachToRoot();
+            this._destroySubscription.attachToRoot();
           }
         }
       }
 
-      this.variable.set(data);
+      this._variable.set(data);
     }
     return this;
   }
@@ -89,35 +89,35 @@ export class Reference<T extends number | object = number> extends Attachable {
       throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
     }
 
-    return this.variable.subscribe(callback);
+    return this._variable.subscribe(callback);
   }
 
   attach(parent: Attachable): this {
     super.attach(parent);
-    this.destroySubscription?.attach(this.attachedParent!);
+    this._destroySubscription?.attach(this.attachedParent!);
     return this;
   }
 
   attachByID(id: number): this {
     super.attachByID(id);
-    this.destroySubscription?.attach(this.attachedParent!);
+    this._destroySubscription?.attach(this.attachedParent!);
     return this;
   }
 
   attachToRoot(): this {
     super.attachToRoot();
-    this.destroySubscription?.attachToRoot();
+    this._destroySubscription?.attachToRoot();
     return this;
   }
 
   destroy(): void {
-    this.destroySubscription?.destroy();
-    this.destroySubscription = undefined;
-    this.variable = undefined as any;
+    this._destroySubscription?.destroy();
+    this._destroySubscription = undefined;
+    this._variable = undefined as any;
     super.destroy();
   }
 
-  private getReferenceID(value: T, path: string | undefined): number {
+  private _getReferenceID(value: T, path: string | undefined): number {
     if (Comparator.isNumber(value) && path === undefined) {
       return value;
     } else if (Comparator.isObject(value) && path !== undefined) {

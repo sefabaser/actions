@@ -15,19 +15,19 @@ export class Action<T = void> extends Notifier<T> {
       ...partialOptions
     };
 
-    this.trigger = options.clone ? this.cloneTrigger.bind(this) : this.noCloneTrigger.bind(this);
+    this.trigger = options.clone ? this._cloneTrigger.bind(this) : this._noCloneTrigger.bind(this);
   }
 
   trigger(_: T): this {
     return this;
   }
 
-  private noCloneTrigger(data: T): this {
+  private _noCloneTrigger(data: T): this {
     this.triggerAll(data);
     return this;
   }
 
-  private cloneTrigger(data: T): this {
+  private _cloneTrigger(data: T): this {
     data = JsonHelper.deepCopy(data);
     this.triggerAll(data);
     return this;

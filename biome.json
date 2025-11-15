@@ -66,6 +66,22 @@
           "options": { "accessibility": "explicit" }
         },
         "useConst": "off",
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "classMember",
+                  "modifiers": ["private"]
+                },
+                "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"],
+                "match": "_.*"
+              }
+            ]
+          }
+        },
         "useShorthandFunctionType": "error",
         "useUnifiedTypeSignatures": "error"
       },

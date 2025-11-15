@@ -21,14 +21,14 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
 }) => ResponseType;
 
 export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
-  private static nextAvailableID = 1;
+  private static _nextAvailableID = 1;
 
-  private id: number;
-  private reducer: Reducer<EffectType, ResponseType>;
+  private _id: number;
+  private _reducer: Reducer<EffectType, ResponseType>;
 
-  private effectValue: EffectType;
+  private _: EffectType;
   get value(): EffectType {
-    return this.effectValue;
+    return this._;
   }
   set value(value: EffectType) {
     this.update(value);
@@ -37,30 +37,30 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
     super();
 
-    this.id = ReducerEffectChannel.nextAvailableID++;
-    this.reducer = reducer;
+    this._id = ReducerEffectChannel._nextAvailableID++;
+    this._reducer = reducer;
 
-    let reducerResponse = this.reducer.reduceFunction({
-      id: this.id,
+    let reducerResponse = this._reducer.reduceFunction({
+      id: this._id,
       current: value,
       type: 'effect'
     });
 
-    this.effectValue = value;
-    this.reducer.broadcast(reducerResponse);
+    this._ = value;
+    this._reducer.broadcast(reducerResponse);
   }
 
   update(value: EffectType): void {
     if (!this.destroyed) {
-      let reducerResponse = this.reducer.reduceFunction({
-        id: this.id,
-        previous: this.effectValue,
+      let reducerResponse = this._reducer.reduceFunction({
+        id: this._id,
+        previous: this._,
         current: value,
         type: 'update'
       });
 
-      this.effectValue = value;
-      this.reducer.broadcast(reducerResponse);
+      this._ = value;
+      this._reducer.broadcast(reducerResponse);
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
     }
@@ -68,15 +68,15 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
 
   destroy(): void {
     if (!this.destroyed) {
-      let reducerResponse = this.reducer.reduceFunction({
-        id: this.id,
-        previous: this.effectValue,
+      let reducerResponse = this._reducer.reduceFunction({
+        id: this._id,
+        previous: this._,
         type: 'destroy'
       });
 
-      this.reducer.broadcast(reducerResponse);
+      this._reducer.broadcast(reducerResponse);
 
-      this.reducer['effects'].delete(this);
+      this._reducer.effects.delete(this);
 
       super.destroy();
     }
@@ -211,23 +211,24 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   }
 
   get value(): ResponseType {
-    return this.previousBroadcast;
+    return this._previousBroadcast;
   }
 
   get effectCount(): number {
     return this.effects.size;
   }
 
-  private previousBroadcast: ResponseType;
-  private options: ReducerOptions;
+  private _previousBroadcast: ResponseType;
+  private _options: ReducerOptions;
 
-  private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
+  /** @internal */
+  effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
   /** @internal */
   reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
   constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, partialOptions: Partial<ReducerOptions> = {}) {
     super();
-    this.options = {
+    this._options = {
       clone: ActionLibDefaults.reducer.cloneBeforeNotification,
       ...partialOptions
     };
@@ -242,7 +243,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     if (Comparator.isObject(reducerResponse)) {
       reducerResponse = JsonHelper.deepCopy(reducerResponse);
     }
-    this.previousBroadcast = reducerResponse;
+    this._previousBroadcast = reducerResponse;
   }
 
   effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
@@ -253,26 +254,26 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
 
   subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
     if (!options?.listenOnlyNewChanges) {
-      CallbackHelper.triggerCallback(this.previousBroadcast, callback);
+      CallbackHelper.triggerCallback(this._previousBroadcast, callback);
     }
     return super.subscribe(callback);
   }
 
   /** @internal */
   broadcast(value: ResponseType): void {
-    if (!Comparator.isEqual(this.previousBroadcast, value)) {
-      if (this.options.clone && Comparator.isObject(value)) {
+    if (!Comparator.isEqual(this._previousBroadcast, value)) {
+      if (this._options.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);
       }
 
       this.triggerAll(value);
-      this.previousBroadcast = value;
+      this._previousBroadcast = value;
     }
   }
 
   /** @internal */
   readSingle(callback: (data: ResponseType) => void): IAttachment {
-    CallbackHelper.triggerCallback(this.previousBroadcast, callback);
+    CallbackHelper.triggerCallback(this._previousBroadcast, callback);
     return Attachable.getDestroyed();
   }
 }

@@ -58,10 +58,10 @@ describe('UntilAllDestroyed', () => {
 
       let sequence = ActionLibUtilities.untilAllDestroyed([obj]).attachToRoot();
       expect(obj['_attachments']?.size).toEqual(1);
-      expect(sequence['executor']['_attachments']?.size).toEqual(1);
+      expect(sequence['_executor']['_attachments']?.size).toEqual(1);
       sequence.destroy();
       expect(obj['_attachments']?.size).toEqual(0);
-      expect(sequence['executor']['_attachments']).toEqual(undefined);
+      expect(sequence['_executor']['_attachments']).toEqual(undefined);
     });
   });
 

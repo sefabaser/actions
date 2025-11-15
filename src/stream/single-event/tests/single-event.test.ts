@@ -92,7 +92,7 @@ describe('SingleEvent', () => {
       expect(singleEvent.destroyed).toBeFalsy();
       singleEvent.destroy();
       expect(singleEvent.destroyed).toBeTruthy();
-      expect(singleEvent['executor']['_pipeline']).toEqual(undefined);
+      expect(singleEvent['_executor']['_pipeline']).toEqual(undefined);
     });
 
     test('destroying single event via constructor context', () => {
@@ -102,7 +102,7 @@ describe('SingleEvent', () => {
       }).attachToRoot();
 
       expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['executor']['_pipeline']).toEqual(undefined);
+      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
     });
 
     test('destroying single event via iterator context', () => {
@@ -115,7 +115,7 @@ describe('SingleEvent', () => {
         .attachToRoot();
 
       expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['executor']['_pipeline']).toEqual(undefined);
+      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
     });
 
     test('destroying parent should destroy single event', () => {
@@ -1107,7 +1107,7 @@ describe('SingleEvent', () => {
               innerSingleEvent = SingleEvent.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSingleEvent['executor']['_pipeline'].length).toEqual(0);
+              expect(innerSingleEvent['_executor']['_pipeline'].length).toEqual(0);
               return innerSingleEvent;
             })
             .asyncMap(() => {
@@ -1117,7 +1117,7 @@ describe('SingleEvent', () => {
             .attachToRoot();
 
           expect(innerSingleEvent).toBeDefined();
-          expect(innerSingleEvent!['executor']['_pipeline'].length).toEqual(1);
+          expect(innerSingleEvent!['_executor']['_pipeline'].length).toEqual(1);
 
           singleEvent.destroy();
           expect(innerSingleEvent!.destroyed).toBeTruthy();
@@ -1276,7 +1276,7 @@ describe('SingleEvent', () => {
             try {
               sequence.asyncMapDirect(() => event).attachToRoot();
             } catch (e) {
-              sequence['executor']['_attachIsCalled'] = true; // silence the error
+              sequence['_executor']['_attachIsCalled'] = true; // silence the error
               throw e;
             }
           });

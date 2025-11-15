@@ -15,15 +15,15 @@ class SingleEventContext implements ISingleEventContext {
   private _attachable?: Attachable;
   get attachable(): Attachable {
     if (!this._attachable) {
-      this._attachable = new Attachable().attach(this.executor);
+      this._attachable = new Attachable().attach(this._executor);
     }
     return this._attachable;
   }
 
-  constructor(private executor: SingleEventExecutor) {}
+  constructor(private _executor: SingleEventExecutor) {}
 
   destroy(): void {
-    this.executor.destroy();
+    this._executor.destroy();
   }
 
   /** @internal */
@@ -46,8 +46,8 @@ export class SingleEventExecutor extends Attachable {
   currentData: unknown;
   chainedTo?: SingleEventExecutor;
   private _pipeline: SingleEventPipelineIterator[] = [];
-  private pipelineIndex = 0;
-  private ongoingContext?: SingleEventContext;
+  private _pipelineIndex = 0;
+  private _ongoingContext?: SingleEventContext;
 
   constructor() {
     super(true);
@@ -59,7 +59,7 @@ export class SingleEventExecutor extends Attachable {
 
       this._pipeline = undefined as any;
       this.currentData = undefined;
-      this.ongoingContext?.drop();
+      this._ongoingContext?.drop();
 
       if (this._onDestroyListeners) {
         let listeners = this._onDestroyListeners;
@@ -86,7 +86,7 @@ export class SingleEventExecutor extends Attachable {
       this.currentData = data;
 
       if (this.attachIsCalled) {
-        this.iteratePackage(this.currentData);
+        this._iteratePackage(this.currentData);
       }
     }
   }
@@ -100,42 +100,42 @@ export class SingleEventExecutor extends Attachable {
 
   attach(parent: Attachable): this {
     if (this.resolved) {
-      this.iteratePackage(this.currentData);
+      this._iteratePackage(this.currentData);
     }
     return super.attach(parent);
   }
 
   attachByID(id: number): this {
     if (this.resolved) {
-      this.iteratePackage(this.currentData);
+      this._iteratePackage(this.currentData);
     }
     return super.attachByID(id);
   }
 
   attachToRoot(): this {
     if (this.resolved) {
-      this.iteratePackage(this.currentData);
+      this._iteratePackage(this.currentData);
     }
     return super.attachToRoot();
   }
 
-  private iteratePackage(data: unknown): void {
+  private _iteratePackage(data: unknown): void {
     if (!this.destroyed) {
-      if (this.pipelineIndex < this._pipeline.length) {
-        this.ongoingContext = new SingleEventContext(this);
+      if (this._pipelineIndex < this._pipeline.length) {
+        this._ongoingContext = new SingleEventContext(this);
 
-        this._pipeline[this.pipelineIndex](data, this.ongoingContext, this.resolve);
+        this._pipeline[this._pipelineIndex](data, this._ongoingContext, this._resolve);
       } else {
         this.destroy();
       }
     }
   }
 
-  private resolve = (returnData: unknown) => {
-    this.ongoingContext?.drop();
-    this.ongoingContext = undefined;
+  private _resolve = (returnData: unknown) => {
+    this._ongoingContext?.drop();
+    this._ongoingContext = undefined;
 
-    this.pipelineIndex++;
-    this.iteratePackage(returnData);
+    this._pipelineIndex++;
+    this._iteratePackage(returnData);
   };
 }

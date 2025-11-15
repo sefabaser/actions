@@ -1,14 +1,13 @@
 import { ArrayHelper, UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { Sequence } from '../sequence';
+import { Sequence } from '../../../../dist/index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence instant', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
         .read(() => {})
-        .map(() => {})
         .attachToRoot();
       sequence.destroy();
     });

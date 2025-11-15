@@ -1,8 +1,7 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { Variable } from '../../../observables/variable/variable';
-import { SingleEvent } from '../single-event';
+import { SingleEvent, Variable } from '../../../../dist/index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('promise', async () => {
@@ -11,47 +10,47 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve();
       }).then(() => {});
     });
-    // sequence: 0.03639984130859375
+    // singleEvent: 0.03639984130859375
   }, 60000);
 
   test('instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.instant()
+      let singleEvent = SingleEvent.instant()
         .read(() => {})
         .attachToRoot();
 
-      sequence.destroy();
+      singleEvent.destroy();
     });
-    // sequence: 0.1370997428894043
+    // singleEvent: 0.1370997428894043
   }, 60000);
 
   test('chaining instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.instant()
+      let singleEvent = SingleEvent.instant()
         .read(() => {})
         .chainToRoot();
 
-      sequence.destroy();
+      singleEvent.destroy();
     });
-    // 0.4457998275756836
+    // 0.2734999656677246
   }, 60000);
 
   test('custom chaining instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.create(resolve => {
+      let singleEvent = SingleEvent.create(resolve => {
         SingleEvent.instant()
           .read(() => resolve())
           .attachToRoot();
       });
 
-      sequence.destroy();
+      singleEvent.destroy();
     });
-    // 0.4226999282836914
+    // 0.25729990005493164
   }, 60000);
 
   test('instant triggered multiple reads', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.instant()
+      let singleEvent = SingleEvent.instant()
         .read(() => {})
         .read(() => {})
         .read(() => {})
@@ -93,7 +92,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .read(() => {})
         .read(() => {})
         .attachToRoot();
-      sequence.destroy();
+      singleEvent.destroy();
     });
     // 1.5506997108459473
   }, 60000);
@@ -101,56 +100,56 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('single read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
-      let sequence = SingleEvent.create(r => {
+      let singleEvent = SingleEvent.create(r => {
         resolve = r as any;
       })
         .read(() => {})
         .attachToRoot();
 
       resolve();
-      sequence.destroy();
+      singleEvent.destroy();
     });
-    // sequence: 0.1549999713897705
+    // singleEvent: 0.1549999713897705
     // 0.1466999053955078
     // arrow function resolve: 0.14529991149902344
   }, 60000);
 
-  test('sequence single map', async () => {
+  test('single event single map', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
-      let sequence = SingleEvent.create(r => {
+      let singleEvent = SingleEvent.create(r => {
         resolve = r as any;
       });
 
-      sequence.map(() => {}).attachToRoot();
+      singleEvent.map(() => {}).attachToRoot();
       resolve();
-      sequence.destroy();
+      singleEvent.destroy();
     });
-    // sequence: 0.15720009803771973
+    // singleEvent: 0.15720009803771973
     // 0.14890003204345703
     // arrow function resolve: 0.1482996940612793
   }, 60000);
 
-  test('sequence single async map', async () => {
+  test('single event single async map', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
-      let sequence = SingleEvent.create(r => {
+      let singleEvent = SingleEvent.create(r => {
         resolve = r as any;
       });
 
-      sequence.asyncMap(() => SingleEvent.create(r2 => r2())).attachToRoot();
+      singleEvent.asyncMap(() => SingleEvent.create(r2 => r2())).attachToRoot();
       resolve();
-      sequence.destroy();
+      singleEvent.destroy();
     });
-    // sequence: 0.9242000579833984
+    // singleEvent: 0.9242000579833984
     // 0.4514000415802002
     // 0.42370009422302246
     // arrow function resolve: 0.411099910736084
   }, 60000);
 
-  test('sequence 10x read', async () => {
+  test('single event 10x read', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.create(resolve => resolve())
+      let singleEvent = SingleEvent.create(resolve => resolve())
         .read(() => {})
         .read(() => {})
         .read(() => {})
@@ -162,15 +161,15 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .read(() => {})
         .read(() => {})
         .attachToRoot();
-      sequence.destroy();
+      singleEvent.destroy();
     });
     // 0.511199951171875
     // arrow function resolve: 0.42190027236938477
   }, 60000);
 
-  test('sequence 10x map', async () => {
+  test('single event 10x map', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.create(resolve => resolve())
+      let singleEvent = SingleEvent.create(resolve => resolve())
         .map(() => {})
         .map(() => {})
         .map(() => {})
@@ -182,15 +181,15 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .map(() => {})
         .map(() => {})
         .attachToRoot();
-      sequence.destroy();
+      singleEvent.destroy();
     });
     // 0.5051000118255615
     // arrow function resolve: 0.43959999084472656
   }, 60000);
 
-  test('sequence 10x async map', async () => {
+  test('single event 10x async map', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = SingleEvent.create(resolve => resolve())
+      let singleEvent = SingleEvent.create(resolve => resolve())
         .asyncMap(() => SingleEvent.create(r2 => r2()))
         .asyncMap(() => SingleEvent.create(r2 => r2()))
         .asyncMap(() => SingleEvent.create(r2 => r2()))
@@ -202,7 +201,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .asyncMap(() => SingleEvent.create(r2 => r2()))
         .asyncMap(() => SingleEvent.create(r2 => r2()))
         .attachToRoot();
-      sequence.destroy();
+      singleEvent.destroy();
     });
     // 5.396200180053711
     // 5.273400068283081

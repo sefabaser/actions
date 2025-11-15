@@ -81,13 +81,13 @@ describe('IDAttachable', () => {
   describe('edge cases', () => {
     test('destroy calls should be executed attached first then parent', () => {
       class Sample extends IDAttachable {
-        constructor(private destroyCallback: () => void) {
+        constructor(private _destroyCallback: () => void) {
           super();
         }
 
         destroy(): void {
           super.destroy();
-          this.destroyCallback();
+          this._destroyCallback();
         }
       }
 
