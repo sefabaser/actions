@@ -36,8 +36,8 @@ export class SingleEvent<T = void> implements IAttachment {
     return this._executor.destroyed;
   }
 
-  get _attachIsCalled(): boolean {
-    return this._executor._attachIsCalled;
+  get attachIsCalled(): boolean {
+    return this._executor.attachIsCalled;
   }
 
   private _linked = false;
@@ -218,7 +218,7 @@ export class SingleEvent<T = void> implements IAttachment {
     if (this._linked) {
       throw new Error('Single Event: A single event can only be linked once.');
     }
-    if (this._executor._attachIsCalled) {
+    if (this._executor.attachIsCalled) {
       throw new Error('Single Event: After attaching, you cannot add another operation.');
     }
     this._linked = true;

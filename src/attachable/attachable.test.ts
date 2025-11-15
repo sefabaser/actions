@@ -276,7 +276,7 @@ describe('Attachable', () => {
       expect(() => {
         let attachable = new Attachable().attachToRoot();
         // Manually create a circular reference by setting the parent to itself
-        attachable['_attachedParentVar'] = attachable;
+        attachable['_attachedParent'] = attachable;
         vi.runAllTimers();
       }).toThrow('Circular attachment detected!');
     });
@@ -288,7 +288,7 @@ describe('Attachable', () => {
         let parent = new Attachable().attachToRoot();
         let child = new Attachable().attach(parent);
         // Create circular reference: parent -> child -> parent
-        parent['_attachedParentVar'] = child;
+        parent['_attachedParent'] = child;
         vi.runAllTimers();
       }).toThrow('Circular attachment detected!');
     });
@@ -301,7 +301,7 @@ describe('Attachable', () => {
         let middle = new Attachable().attach(root);
         let leaf = new Attachable().attach(middle);
         // Create circular reference: root -> middle -> leaf -> root
-        root['_attachedParentVar'] = leaf;
+        root['_attachedParent'] = leaf;
         vi.runAllTimers();
       }).toThrow('Circular attachment detected!');
     });

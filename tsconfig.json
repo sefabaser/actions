@@ -17,8 +17,6 @@
     "resolveJsonModule": true,
     "strictFunctionTypes": false,
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
     "declaration": true,
     "stripInternal": true

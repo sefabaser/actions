@@ -93,7 +93,7 @@ export class Sequence<T = void> implements IAttachment {
       for (let i = 0; i < streams.length; i++) {
         let stream = streams[i];
         if (stream instanceof Sequence) {
-          stream._executor._attachIsCalledVar = true;
+          stream._executor._attachIsCalled = true;
         }
       }
 
@@ -169,8 +169,8 @@ export class Sequence<T = void> implements IAttachment {
     return this._executor.destroyed;
   }
 
-  get _attachIsCalled(): boolean {
-    return this._executor._attachIsCalled;
+  get attachIsCalled(): boolean {
+    return this._executor.attachIsCalled;
   }
 
   private _linked = false;
@@ -737,7 +737,7 @@ export class Sequence<T = void> implements IAttachment {
     if (this._linked) {
       throw new Error('A sequence can only be linked once.');
     }
-    if (this._executor._attachIsCalled) {
+    if (this._executor.attachIsCalled) {
       throw new Error('Sequence: After attaching, you cannot add another operation.');
     }
     this._linked = true;

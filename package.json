@@ -29,7 +29,7 @@
     "test": "vitest run --mode=quick",
     "test-full": "vitest run",
     "start": "npm run build && node dist",
-    "build": "tsup",
+    "build": "tsup && node scripts/clean-dts.cjs",
     "lint": "biome check . --write --max-diagnostics=1",
     "deploy": "vitest run && npm run build && npm publish",
     "prepack": "cp package.json package.json.bak && node scripts/prepare-package-json.cjs",

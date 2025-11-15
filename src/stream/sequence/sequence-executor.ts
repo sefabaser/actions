@@ -116,7 +116,7 @@ export class SequenceExecutor extends Attachable {
 
   _trigger(data: unknown): void {
     if (!this._finalized && !this.destroyed) {
-      if (this._attachIsCalled) {
+      if (this.attachIsCalled) {
         this._ongoingPackageCount++;
         this._iteratePackage(new SequencePackage(data));
       } else {
@@ -145,7 +145,7 @@ export class SequenceExecutor extends Attachable {
   }
 
   _final() {
-    if (this._attachIsCalled && this._ongoingPackageCount === 0) {
+    if (this.attachIsCalled && this._ongoingPackageCount === 0) {
       this.destroy();
     } else {
       this._finalized = true;

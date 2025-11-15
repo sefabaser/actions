@@ -3,6 +3,7 @@ import { Sequence } from '../../stream/sequence/sequence';
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
 
+  /** @internal */
   protected _untilAddedListenersVar?: Map<KeyType, Set<(data: KeyType) => void>>;
   private get _UntilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
     if (!this._untilAddedListenersVar) {
@@ -11,6 +12,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     return this._untilAddedListenersVar;
   }
 
+  /** @internal */
   protected _untilRemovedListenersVar?: Map<KeyType, Set<() => void>>;
   private get _untilRemovedListeners(): Map<KeyType, Set<() => void>> {
     if (!this._untilRemovedListenersVar) {

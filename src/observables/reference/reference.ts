@@ -70,9 +70,9 @@ export class Reference<T extends number | object = number> extends Attachable {
           !this.destroyed && this.set(undefined);
         });
 
-        if (this._attachIsCalled) {
-          if (this._attachedParent) {
-            this._destroySubscription.attach(this._attachedParent);
+        if (this.attachIsCalled) {
+          if (this.attachedParent) {
+            this._destroySubscription.attach(this.attachedParent);
           } else {
             this._destroySubscription.attachToRoot();
           }
@@ -94,13 +94,13 @@ export class Reference<T extends number | object = number> extends Attachable {
 
   attach(parent: Attachable): this {
     super.attach(parent);
-    this._destroySubscription?.attach(this._attachedParent!);
+    this._destroySubscription?.attach(this.attachedParent!);
     return this;
   }
 
   attachByID(id: number): this {
     super.attachByID(id);
-    this._destroySubscription?.attach(this._attachedParent!);
+    this._destroySubscription?.attach(this.attachedParent!);
     return this;
   }
 

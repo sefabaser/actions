@@ -85,7 +85,7 @@ export class SingleEventExecutor extends Attachable {
       this._resolved = true;
       this._currentData = data;
 
-      if (this._attachIsCalled) {
+      if (this.attachIsCalled) {
         this._iteratePackage(this._currentData);
       }
     }

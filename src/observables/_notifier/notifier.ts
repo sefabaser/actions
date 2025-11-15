@@ -26,7 +26,7 @@ export class Notifier<T> {
     attachByID: (parent: number) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
-    if (sequence._attachIsCalled) {
+    if (sequence.attachIsCalled) {
       throw new Error('Attached sequences cannot be converted to notifier!');
     }
 

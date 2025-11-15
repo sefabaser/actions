@@ -2,7 +2,7 @@ import { AttachmentTargetStore } from './helpers/attachment-target.store';
 
 export interface IAttachment {
   destroyed: boolean;
-  _attachIsCalled: boolean;
+  attachIsCalled: boolean;
   destroy(): void;
   attach(parent: Attachable): this;
   attachByID(parent: number): this;
@@ -21,10 +21,10 @@ export class Attachable implements IAttachment {
 
   private _attachments: Set<IAttachment> | undefined;
 
-  private _attachedParentVar: Attachable | undefined;
+  private _attachedParent: Attachable | undefined;
   /** @internal */
-  get _attachedParent(): Attachable | undefined {
-    return this._attachedParentVar;
+  get attachedParent(): Attachable | undefined {
+    return this._attachedParent;
   }
 
   private _destroyedVar = false;
@@ -33,14 +33,14 @@ export class Attachable implements IAttachment {
   }
 
   /** @internal */
-  _attachIsCalledVar = false;
-  get _attachIsCalled(): boolean {
-    return this._attachIsCalledVar;
+  _attachIsCalled = false;
+  get attachIsCalled(): boolean {
+    return this._attachIsCalled;
   }
 
   constructor(protected destroyIfNotAttached = false) {
     queueMicrotask(() => {
-      if (!this._attachIsCalledVar && !this._destroyedVar) {
+      if (!this._attachIsCalled && !this._destroyedVar) {
         if (this.destroyIfNotAttached) {
           this.destroy();
         } else {
@@ -48,21 +48,21 @@ export class Attachable implements IAttachment {
         }
       }
 
-      let currentParent: Attachable | undefined = this._attachedParent;
+      let currentParent: Attachable | undefined = this.attachedParent;
       while (currentParent) {
         if (currentParent === this) {
           throw new Error(`Circular attachment detected!`);
         }
-        currentParent = currentParent._attachedParent;
+        currentParent = currentParent.attachedParent;
       }
     });
   }
 
   destroy(): void {
     if (!this._destroyedVar) {
-      if (this._attachedParentVar) {
-        this._attachedParentVar._removeAttachment(this);
-        this._attachedParentVar = undefined;
+      if (this._attachedParent) {
+        this._attachedParent._removeAttachment(this);
+        this._attachedParent = undefined;
       }
 
       let attachedEntities = this._attachments;
@@ -78,37 +78,37 @@ export class Attachable implements IAttachment {
   }
 
   attach(parent: Attachable): this {
-    if (this._attachIsCalledVar) {
+    if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
 
-    this._attachIsCalledVar = true;
+    this._attachIsCalled = true;
     if (!this._destroyedVar) {
-      this._attachedParentVar = parent;
-      this._attachedParentVar._setAttachment(this);
+      this._attachedParent = parent;
+      this._attachedParent._setAttachment(this);
     }
     return this;
   }
 
   attachByID(id: number): this {
-    if (this._attachIsCalledVar) {
+    if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
 
-    this._attachIsCalledVar = true;
+    this._attachIsCalled = true;
     if (!this._destroyedVar) {
-      this._attachedParentVar = AttachmentTargetStore._findAttachmentTarget(id);
-      this._attachedParentVar._setAttachment(this);
+      this._attachedParent = AttachmentTargetStore._findAttachmentTarget(id);
+      this._attachedParent._setAttachment(this);
     }
     return this;
   }
 
   attachToRoot(): this {
-    if (this._attachIsCalledVar) {
+    if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
 
-    this._attachIsCalledVar = true;
+    this._attachIsCalled = true;
     return this;
   }
 
