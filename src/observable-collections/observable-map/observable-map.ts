@@ -8,18 +8,18 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
 
   set(key: KeyType, item: ValueType): this {
     this.map.set(key, item);
-    if (this._untilAddedListeners) {
-      if (this._untilAddedListeners.has(key)) {
-        let listeners = this._untilAddedListeners.get(key);
+    if (this._untilAddedListenersVar) {
+      if (this._untilAddedListenersVar.has(key)) {
+        let listeners = this._untilAddedListenersVar.get(key);
         if (listeners) {
           for (let listener of listeners) {
-            CallbackHelper.triggerCallback(undefined, listener);
+            CallbackHelper._triggerCallback(undefined, listener);
           }
         }
-        this._untilAddedListeners.delete(key);
+        this._untilAddedListenersVar.delete(key);
 
-        if (this._untilAddedListeners.size === 0) {
-          this._untilAddedListeners = undefined;
+        if (this._untilAddedListenersVar.size === 0) {
+          this._untilAddedListenersVar = undefined;
         }
       }
     }
@@ -28,18 +28,18 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
 
   delete(key: KeyType): this {
     this.map.delete(key);
-    if (this._untilRemovedListeners) {
-      if (this._untilRemovedListeners.has(key)) {
-        let listeners = this._untilRemovedListeners.get(key);
+    if (this._untilRemovedListenersVar) {
+      if (this._untilRemovedListenersVar.has(key)) {
+        let listeners = this._untilRemovedListenersVar.get(key);
         if (listeners) {
           for (let listener of listeners) {
-            CallbackHelper.triggerCallback(undefined, listener);
+            CallbackHelper._triggerCallback(undefined, listener);
           }
         }
-        this._untilRemovedListeners.delete(key);
+        this._untilRemovedListenersVar.delete(key);
 
-        if (this._untilRemovedListeners.size === 0) {
-          this._untilRemovedListeners = undefined;
+        if (this._untilRemovedListenersVar.size === 0) {
+          this._untilRemovedListenersVar = undefined;
         }
       }
     }

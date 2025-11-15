@@ -78,7 +78,7 @@ describe('Sequence', () => {
 
         expect(heap).toEqual([1]);
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['_executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
       });
 
       test('after finalized no new resolution should take effect', () => {
@@ -247,7 +247,7 @@ describe('Sequence', () => {
         expect(sequence.destroyed).toBeFalsy();
         sequence.destroy();
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['_executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
       });
 
       test('destroying sequence via constructor context', () => {
@@ -257,7 +257,7 @@ describe('Sequence', () => {
         }).attachToRoot();
 
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['_executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
       });
 
       test('destroying sequence via iterator context', () => {
@@ -270,7 +270,7 @@ describe('Sequence', () => {
           .attachToRoot();
 
         expect(sequence.destroyed).toBeTruthy();
-        expect(sequence['_executor']['pipeline']).toEqual(undefined);
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
       });
 
       test('destroying parent should destroy sequence', () => {
@@ -397,15 +397,15 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
         });
 
         test('without doing further operations with resolve', () => {
@@ -417,9 +417,9 @@ describe('Sequence', () => {
           operation.trigger();
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
         });
 
         test('using chain', () => {
@@ -437,23 +437,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(0);
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(1);
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(2);
         });
 
@@ -473,23 +473,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           chainParent.destroy();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
         });
       });
@@ -504,15 +504,15 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
         });
 
         test('without doing further operations with resolve', () => {
@@ -525,9 +525,9 @@ describe('Sequence', () => {
           operation.trigger();
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
         });
 
         test('using chain', () => {
@@ -546,23 +546,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(0);
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(1);
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(2);
         });
 
@@ -583,23 +583,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           chainParent.destroy();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
         });
 
@@ -619,23 +619,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeTruthy();
 
           parent.destroy();
           expect(firstEvent.destroyed).toBeTruthy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeTruthy();
         });
       });
@@ -650,15 +650,15 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
         });
 
         test('without doing further operations with resolve', () => {
@@ -671,9 +671,9 @@ describe('Sequence', () => {
           operation.trigger();
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeFalsy();
+          expect(chain._attachIsCalled).toBeFalsy();
         });
 
         test('using chain', () => {
@@ -692,23 +692,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(0);
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(1);
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggerCount).toEqual(2);
         });
 
@@ -729,23 +729,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           chainParent.destroy();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
         });
 
@@ -765,23 +765,23 @@ describe('Sequence', () => {
 
           vi.runAllTimers();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeFalsy();
 
           operation.trigger();
           expect(firstEvent.destroyed).toBeFalsy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeFalsy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeTruthy();
 
           parent.destroy();
           expect(firstEvent.destroyed).toBeTruthy();
-          expect(firstEvent.attachIsCalled).toBeTruthy();
+          expect(firstEvent._attachIsCalled).toBeTruthy();
           expect(chain.destroyed).toBeTruthy();
-          expect(chain.attachIsCalled).toBeTruthy();
+          expect(chain._attachIsCalled).toBeTruthy();
           expect(triggered).toBeTruthy();
         });
       });
@@ -813,7 +813,7 @@ describe('Sequence', () => {
         .attachToRoot();
 
       expect(heap).toEqual([undefined]);
-      expect(sequence['_executor'].ongoingPackageCount).toEqual(0);
+      expect(sequence['_executor']._ongoingPackageCount).toEqual(0);
     });
 
     test('with data', () => {
@@ -824,7 +824,7 @@ describe('Sequence', () => {
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b', 'c']);
-      expect(sequence['_executor'].ongoingPackageCount).toEqual(0);
+      expect(sequence['_executor']._ongoingPackageCount).toEqual(0);
     });
   });
 
@@ -1648,7 +1648,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapDirect(() => {
@@ -1658,7 +1658,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -1680,7 +1680,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -1693,7 +1693,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -2375,7 +2375,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapOrdered(() => {
@@ -2385,7 +2385,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -2407,7 +2407,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -2420,7 +2420,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -3101,7 +3101,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapLatest(() => {
@@ -3111,7 +3111,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -3133,7 +3133,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -3146,7 +3146,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(2);
           expect(innerResolves.length).toEqual(2);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -3900,7 +3900,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapQueue(() => {
@@ -3910,7 +3910,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -3932,7 +3932,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -3945,7 +3945,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(1);
           expect(innerResolves.length).toEqual(1);
           innerSequences.forEach(innerSequence => {
-            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -4631,7 +4631,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapDropOngoing(() => {
@@ -4641,7 +4641,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -4663,7 +4663,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -4679,7 +4679,7 @@ describe('Sequence', () => {
             if (index < innerSequences.length - 1) {
               expect(innerSequence.destroyed).toBeTruthy();
             } else {
-              expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
+              expect(innerSequence['_executor']['_pipeline'].length).toEqual(1);
             }
           });
 
@@ -5364,7 +5364,7 @@ describe('Sequence', () => {
               innerSequence = Sequence.create(r => {
                 UnitTestHelper.callDelayed(() => r(''));
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               return innerSequence;
             })
             .asyncMapDropIncoming(() => {
@@ -5374,7 +5374,7 @@ describe('Sequence', () => {
             .attachToRoot();
 
           expect(innerSequence).toBeDefined();
-          expect(innerSequence!['_executor']['pipeline'].length).toEqual(1);
+          expect(innerSequence!['_executor']['_pipeline'].length).toEqual(1);
 
           sequence.destroy();
           expect(innerSequence!.destroyed).toBeTruthy();
@@ -5396,7 +5396,7 @@ describe('Sequence', () => {
               let innerSequence = Sequence.create<string>(r => {
                 innerResolves.push(r);
               });
-              expect(innerSequence!['_executor']['pipeline'].length).toEqual(0);
+              expect(innerSequence!['_executor']['_pipeline'].length).toEqual(0);
               innerSequences.push(innerSequence);
               return innerSequence;
             })
@@ -5409,7 +5409,7 @@ describe('Sequence', () => {
           expect(innerSequences.length).toEqual(1);
           expect(innerResolves.length).toEqual(1);
           innerSequences.forEach((innerSequence, index) => {
-            expect(innerSequence['_executor']['pipeline'].length).toEqual(1);
+            expect(innerSequence['_executor']['_pipeline'].length).toEqual(1);
           });
 
           sequence.destroy();
@@ -6395,13 +6395,13 @@ describe('Sequence', () => {
 
         expect(sequence1.destroyed).toBeFalsy();
         expect(sequence2.destroyed).toBeFalsy();
-        expect(sequence1['_executor']['onDestroyListeners'].size).toEqual(1);
-        expect(sequence2['_executor']['onDestroyListeners'].size).toEqual(1);
+        expect(sequence1['_executor']['_onDestroyListeners'].size).toEqual(1);
+        expect(sequence2['_executor']['_onDestroyListeners'].size).toEqual(1);
         merged.destroy();
         expect(sequence1.destroyed).toBeTruthy();
         expect(sequence2.destroyed).toBeTruthy();
-        expect(sequence1['_executor']['onDestroyListeners'].size).toEqual(0);
-        expect(sequence2['_executor']['onDestroyListeners'].size).toEqual(0);
+        expect(sequence1['_executor']['_onDestroyListeners'].size).toEqual(0);
+        expect(sequence2['_executor']['_onDestroyListeners'].size).toEqual(0);
       });
 
       test('children destroy -> merge destroy', async () => {

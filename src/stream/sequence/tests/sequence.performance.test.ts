@@ -4,6 +4,13 @@ import { describe, test } from 'vitest';
 import { Sequence } from '../../../../dist/index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  test('build test', async () => {
+    let sequence = Sequence.instant()
+      .read(() => console.log('okay'))
+      .attachToRoot();
+    sequence.destroy();
+  });
+
   test('sequence instant', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
@@ -12,7 +19,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.27430009841918945
-    // pending change: 0.14389991760253906
+    // pending change: 0.14010000228881836
   }, 60000);
 
   test('chainingsequence instant', async () => {

@@ -15,10 +15,10 @@ export class IDAttachable extends Attachable {
   }
   // ----------------------------- END CLASSID -----------------------------
 
-  readonly id: number = AttachmentTargetStore.registerIDAttachable(this);
+  readonly id: number = AttachmentTargetStore._registerIDAttachable(this);
 
   static validateID(this: typeof IDAttachable, id: number): boolean {
-    return AttachmentTargetStore.validateIDForClass(id, this);
+    return AttachmentTargetStore._validateIDForClass(id, this);
   }
 
   private _onDestroyListeners: Set<() => void> | undefined;
@@ -29,7 +29,7 @@ export class IDAttachable extends Attachable {
 
   destroy(): void {
     if (!this.destroyed) {
-      AttachmentTargetStore.unregisterIDAttachable(this);
+      AttachmentTargetStore._unregisterIDAttachable(this);
 
       let listeners = this._onDestroyListeners;
       this._onDestroyListeners = undefined;
@@ -46,7 +46,7 @@ export class IDAttachable extends Attachable {
   onDestroy(callback?: () => void): SingleEvent<void> {
     if (this.destroyed) {
       if (callback) {
-        CallbackHelper.triggerCallback(undefined, callback);
+        CallbackHelper._triggerCallback(undefined, callback);
       }
       return SingleEvent.create<void>(resolve => resolve());
     } else {
@@ -57,7 +57,7 @@ export class IDAttachable extends Attachable {
       return SingleEvent.create<void>(resolve => {
         let listener = () => {
           if (callback) {
-            CallbackHelper.triggerCallback(undefined, callback);
+            CallbackHelper._triggerCallback(undefined, callback);
           }
           resolve();
         };

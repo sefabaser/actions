@@ -25,7 +25,7 @@ export class ClassID {
    * Required to be called before or after each unit test to reset the store
    * @internal
    */
-  static hardReset(): void {
+  static _hardReset(): void {
     this._nextClassID = 1;
     this._classToClassID = new WeakMap<typeof ClassID, number>();
   }

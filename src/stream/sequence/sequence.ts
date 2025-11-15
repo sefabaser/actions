@@ -8,8 +8,8 @@ import { ISequenceCreatorContext, ISequenceLinkContext, SequenceContext, Sequenc
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
 
 type ExecutionOrderQueuer = {
-  callback?: () => void;
-  context: ISequenceLinkContext;
+  _callback?: () => void;
+  _context: ISequenceLinkContext;
 };
 
 export class Sequence<T = void> implements IAttachment {
@@ -29,7 +29,7 @@ export class Sequence<T = void> implements IAttachment {
       };
     });
 
-    this._waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence._executor.final());
+    this._waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence._executor._final());
     return mergedSequence;
   }
 
@@ -76,7 +76,7 @@ export class Sequence<T = void> implements IAttachment {
       };
     });
 
-    this._waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence._executor.final());
+    this._waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence._executor._final());
     return combinedSequence;
   }
 
@@ -93,7 +93,7 @@ export class Sequence<T = void> implements IAttachment {
       for (let i = 0; i < streams.length; i++) {
         let stream = streams[i];
         if (stream instanceof Sequence) {
-          stream._executor._attachIsCalled = true;
+          stream._executor._attachIsCalledVar = true;
         }
       }
 
@@ -124,7 +124,7 @@ export class Sequence<T = void> implements IAttachment {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
-          sequence._executor.onDestroyListeners.add(() => oneDestroyed(sequence));
+          sequence._executor._onDestroyListeners.add(() => oneDestroyed(sequence));
         }
       }
     }
@@ -136,13 +136,13 @@ export class Sequence<T = void> implements IAttachment {
     let sequenceExecutor = new SequenceExecutor();
 
     try {
-      let destroyCallback = executor(sequenceExecutor.trigger.bind(sequenceExecutor), {
+      let destroyCallback = executor(sequenceExecutor._trigger.bind(sequenceExecutor), {
         attachable: sequenceExecutor,
-        final: sequenceExecutor.final.bind(sequenceExecutor),
+        final: sequenceExecutor._final.bind(sequenceExecutor),
         destroy: sequenceExecutor.destroy.bind(sequenceExecutor)
       });
       if (destroyCallback) {
-        sequenceExecutor.onDestroyListeners.add(destroyCallback);
+        sequenceExecutor._onDestroyListeners.add(destroyCallback);
       }
     } catch (e) {
       console.error(e);
@@ -160,8 +160,8 @@ export class Sequence<T = void> implements IAttachment {
       data = [undefined as S];
     }
 
-    sequenceExecutor.pendingValues = data;
-    sequenceExecutor.ongoingPackageCount = data.length;
+    sequenceExecutor._pendingValues = data;
+    sequenceExecutor._ongoingPackageCount = data.length;
     return new Sequence<S>(sequenceExecutor);
   }
 
@@ -169,8 +169,8 @@ export class Sequence<T = void> implements IAttachment {
     return this._executor.destroyed;
   }
 
-  get attachIsCalled(): boolean {
-    return this._executor.attachIsCalled;
+  get _attachIsCalled(): boolean {
+    return this._executor._attachIsCalled;
   }
 
   private _linked = false;
@@ -183,7 +183,7 @@ export class Sequence<T = void> implements IAttachment {
   read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
     this._validateBeforeLinking();
 
-    this._executor.enterPipeline<T, T>((data, context, resolve) => {
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
       try {
         callback(data, context);
       } catch (e) {
@@ -199,7 +199,7 @@ export class Sequence<T = void> implements IAttachment {
   map<K>(callback: (data: T, context: ISequenceLinkContext) => K): Sequence<K> {
     this._validateBeforeLinking();
 
-    this._executor.enterPipeline<T, K>((data, context, resolve) => {
+    this._executor._enterPipeline<T, K>((data, context, resolve) => {
       let executionReturn: K;
 
       try {
@@ -234,7 +234,7 @@ export class Sequence<T = void> implements IAttachment {
 
     let ongoingContexts = new Set<ISequenceLinkContext>();
 
-    this._executor.enterPipeline<T, K>(
+    this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -247,7 +247,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          .readSingle(resolvedData => {
+          ._readSingle(resolvedData => {
             ongoingContexts.delete(context);
             resolve(resolvedData);
           })
@@ -285,11 +285,11 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
-    this._executor.enterPipeline<T, K>(
+    this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
-        let queuer: ExecutionOrderQueuer = { context };
+        let queuer: ExecutionOrderQueuer = { _context: context };
         queue.add(queuer);
 
         try {
@@ -300,18 +300,18 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          .readSingle(resolvedData => {
-            queuer.callback = () => resolve(resolvedData);
+          ._readSingle(resolvedData => {
+            queuer._callback = () => resolve(resolvedData);
 
             if (queue.peek() === queuer) {
               queue.pop();
               resolve(resolvedData);
 
-              while (queue.peek()?.callback) {
-                queue.pop()?.callback!();
+              while (queue.peek()?._callback) {
+                queue.pop()?._callback!();
               }
             } else {
-              queuer.callback = () => resolve(resolvedData);
+              queuer._callback = () => resolve(resolvedData);
             }
           })
           .attach(context.attachable);
@@ -343,11 +343,11 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
-    this._executor.enterPipeline<T, K>(
+    this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
-        let queuer: ExecutionOrderQueuer = { context };
+        let queuer: ExecutionOrderQueuer = { _context: context };
         queue.add(queuer);
 
         try {
@@ -358,12 +358,12 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          .readSingle(resolvedData => {
+          ._readSingle(resolvedData => {
             while (queue.notEmpty) {
               let firstInTheLine = queue.pop();
 
-              if (firstInTheLine && firstInTheLine.context !== context) {
-                firstInTheLine.context.drop();
+              if (firstInTheLine && firstInTheLine._context !== context) {
+                firstInTheLine._context.drop();
               } else {
                 break;
               }
@@ -405,7 +405,7 @@ export class Sequence<T = void> implements IAttachment {
     let queue = new Queue<ExecutionOrderQueuer>();
     let previousResult: K | undefined;
 
-    this._executor.enterPipeline<T, K>(
+    this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let execute = () => {
           let executionReturn: AsyncOperation<K>;
@@ -417,17 +417,17 @@ export class Sequence<T = void> implements IAttachment {
           }
 
           executionReturn
-            .readSingle(resolvedData => {
+            ._readSingle(resolvedData => {
               queue.pop();
               previousResult = resolvedData;
               resolve(resolvedData);
-              queue.peek()?.callback!();
+              queue.peek()?._callback!();
             })
             .attach(context.attachable);
         };
 
         let queueWasEmpty = queue.empty;
-        let queuer: ExecutionOrderQueuer = { context, callback: execute };
+        let queuer: ExecutionOrderQueuer = { _context: context, _callback: execute };
         queue.add(queuer);
 
         if (queueWasEmpty) {
@@ -461,7 +461,7 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this._executor.enterPipeline<T, K>(
+    this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -475,7 +475,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          .readSingle(resolvedData => {
+          ._readSingle(resolvedData => {
             ongoingContext = undefined;
             resolve(resolvedData);
           })
@@ -510,7 +510,7 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this._executor.enterPipeline<T, K>(
+    this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let executionReturn: AsyncOperation<K>;
 
@@ -526,7 +526,7 @@ export class Sequence<T = void> implements IAttachment {
           }
 
           executionReturn
-            .readSingle(resolvedData => {
+            ._readSingle(resolvedData => {
               ongoingContext = undefined;
               resolve(resolvedData);
             })
@@ -547,7 +547,7 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let previousValue: T | undefined;
-    this._executor.enterPipeline<T, T>((data, context, resolve) => {
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
       let passedTheFilter: boolean;
       try {
         passedTheFilter = callback(data, previousValue, context);
@@ -571,7 +571,7 @@ export class Sequence<T = void> implements IAttachment {
 
     let taken = 0;
 
-    this._executor.enterPipeline<T, T>((data, context, resolve) => {
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
       taken++;
 
       if (taken >= count) {
@@ -609,7 +609,7 @@ export class Sequence<T = void> implements IAttachment {
     let skipped = 0;
     let blocked = count > 0;
 
-    this._executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
       if (blocked) {
         skipped++;
         if (skipped > count) {
@@ -625,10 +625,10 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /** @internal */
-  readSingle(callback: (data: T) => void): Sequence<T> {
+  _readSingle(callback: (data: T) => void): Sequence<T> {
     this._validateBeforeLinking();
 
-    this._executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
       try {
         callback(data);
         this.destroy();
@@ -647,7 +647,7 @@ export class Sequence<T = void> implements IAttachment {
   subscribe(callback: (data: T) => void): Sequence<T> {
     this._validateBeforeLinking();
 
-    this._executor.enterPipeline<T, T>((data, _, resolve) => {
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
       try {
         callback(data);
       } catch (e) {
@@ -679,11 +679,11 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this._executor.enterPipeline<T, T>((data, _, resolve) => {
-      chainExecutor.trigger(data);
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor._trigger(data);
       resolve(data);
     });
-    this._executor.chainedTo = chainExecutor;
+    this._executor._chainedTo = chainExecutor;
     this._executor.attach(parent);
 
     return new Sequence(chainExecutor);
@@ -693,11 +693,11 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this._executor.enterPipeline<T, T>((data, _, resolve) => {
-      chainExecutor.trigger(data);
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor._trigger(data);
       resolve(data);
     });
-    this._executor.chainedTo = chainExecutor;
+    this._executor._chainedTo = chainExecutor;
     this._executor.attachByID(id);
 
     return new Sequence(chainExecutor);
@@ -707,11 +707,11 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this._executor.enterPipeline<T, T>((data, _, resolve) => {
-      chainExecutor.trigger(data);
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
+      chainExecutor._trigger(data);
       resolve(data);
     });
-    this._executor.chainedTo = chainExecutor;
+    this._executor._chainedTo = chainExecutor;
     this._executor.attachToRoot();
 
     return new Sequence(chainExecutor);
@@ -719,16 +719,16 @@ export class Sequence<T = void> implements IAttachment {
 
   private _destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: SequenceContext): void {
     if (finalContext) {
-      while (queue.notEmpty && queue.peekLast()?.context !== finalContext) {
+      while (queue.notEmpty && queue.peekLast()?._context !== finalContext) {
         let lastInTheLine = queue.dequeue()!;
-        lastInTheLine.context.drop();
+        lastInTheLine._context.drop();
       }
       if (queue.empty) {
         throw new Error(`Sequence: Internal Error, entire queue is checked but the "final item" couldn't be found!`);
       }
     } else {
       while (queue.notEmpty) {
-        queue.pop()!.context.drop();
+        queue.pop()!._context.drop();
       }
     }
   }
@@ -737,7 +737,7 @@ export class Sequence<T = void> implements IAttachment {
     if (this._linked) {
       throw new Error('A sequence can only be linked once.');
     }
-    if (this._executor.attachIsCalled) {
+    if (this._executor._attachIsCalled) {
       throw new Error('Sequence: After attaching, you cannot add another operation.');
     }
     this._linked = true;

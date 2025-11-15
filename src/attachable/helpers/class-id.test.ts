@@ -62,10 +62,10 @@ describe('ClassID', () => {
     });
 
     test('hardReset', () => {
-      ClassID.hardReset();
+      ClassID._hardReset();
       class Child1 extends ClassID {}
       expect(Child1.id).toBe(1);
-      ClassID.hardReset();
+      ClassID._hardReset();
       class Child2 extends ClassID {}
       expect(Child2.id).toBe(1);
     });
@@ -140,10 +140,10 @@ describe('ClassID', () => {
     });
 
     test('hardReset', () => {
-      ClassID.hardReset();
+      ClassID._hardReset();
       class Child1 extends Foo {}
       expect(Child1.id).toBe(1);
-      ClassID.hardReset();
+      ClassID._hardReset();
       class Child2 extends Foo {}
       expect(Child2.id).toBe(1);
     });

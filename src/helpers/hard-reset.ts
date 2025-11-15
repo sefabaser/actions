@@ -3,7 +3,7 @@ import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.s
 
 export class ActionLibHardReset {
   static hardReset(): void {
-    ClassID.hardReset();
-    AttachmentTargetStore.hardReset();
+    ClassID._hardReset();
+    AttachmentTargetStore._hardReset();
   }
 }

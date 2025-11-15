@@ -15,7 +15,7 @@ export class ActionLibUtilities {
     return SingleEvent.create((resolve, context) => {
       allReducer
         .filter(value => value === false)
-        .readSingle(() => resolve())
+        ._readSingle(() => resolve())
         .attach(context.attachable);
       return () => {
         for (let i = 0; i < allEffectChannels.length; i++) {

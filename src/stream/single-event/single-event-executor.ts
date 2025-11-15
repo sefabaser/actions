@@ -1,9 +1,9 @@
 import { Attachable } from '../../attachable/attachable';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
-  data: A,
-  context: SingleEventContext,
-  callback: (returnData: B) => void
+  _data: A,
+  _context: SingleEventContext,
+  _callback: (returnData: B) => void
 ) => void;
 
 export interface ISingleEventContext {
@@ -27,24 +27,24 @@ class SingleEventContext implements ISingleEventContext {
   }
 
   /** @internal */
-  drop() {
+  _drop() {
     this._attachable?.destroy();
   }
 }
 
 /** @internal */
 export class SingleEventExecutor extends Attachable {
-  private _onDestroyListeners?: Set<() => void>;
-  get onDestroyListeners(): Set<() => void> {
-    if (!this._onDestroyListeners) {
-      this._onDestroyListeners = new Set();
+  private _onDestroyListenersVar?: Set<() => void>;
+  get _onDestroyListeners(): Set<() => void> {
+    if (!this._onDestroyListenersVar) {
+      this._onDestroyListenersVar = new Set();
     }
-    return this._onDestroyListeners;
+    return this._onDestroyListenersVar;
   }
 
-  resolved = false;
-  currentData: unknown;
-  chainedTo?: SingleEventExecutor;
+  _resolved = false;
+  _currentData: unknown;
+  _chainedTo?: SingleEventExecutor;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private _pipelineIndex = 0;
   private _ongoingContext?: SingleEventContext;
@@ -58,40 +58,40 @@ export class SingleEventExecutor extends Attachable {
       super.destroy();
 
       this._pipeline = undefined as any;
-      this.currentData = undefined;
-      this._ongoingContext?.drop();
+      this._currentData = undefined;
+      this._ongoingContext?._drop();
 
-      if (this._onDestroyListeners) {
-        let listeners = this._onDestroyListeners;
-        this._onDestroyListeners = undefined as any;
+      if (this._onDestroyListenersVar) {
+        let listeners = this._onDestroyListenersVar;
+        this._onDestroyListenersVar = undefined as any;
         for (let listener of listeners) {
           listener();
         }
       }
 
-      if (this.chainedTo) {
-        this.chainedTo.destroy();
-        this.chainedTo = undefined;
+      if (this._chainedTo) {
+        this._chainedTo.destroy();
+        this._chainedTo = undefined;
       }
     }
   }
 
-  trigger(data: unknown): void {
-    if (this.resolved) {
+  _trigger(data: unknown): void {
+    if (this._resolved) {
       throw new Error('Single Event: It can only resolve once.');
     }
 
     if (!this.destroyed) {
-      this.resolved = true;
-      this.currentData = data;
+      this._resolved = true;
+      this._currentData = data;
 
-      if (this.attachIsCalled) {
-        this._iteratePackage(this.currentData);
+      if (this._attachIsCalled) {
+        this._iteratePackage(this._currentData);
       }
     }
   }
 
-  enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
+  _enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
     if (!this.destroyed) {
       this.destroyIfNotAttached = false;
       this._pipeline.push(iterator);
@@ -99,22 +99,22 @@ export class SingleEventExecutor extends Attachable {
   }
 
   attach(parent: Attachable): this {
-    if (this.resolved) {
-      this._iteratePackage(this.currentData);
+    if (this._resolved) {
+      this._iteratePackage(this._currentData);
     }
     return super.attach(parent);
   }
 
   attachByID(id: number): this {
-    if (this.resolved) {
-      this._iteratePackage(this.currentData);
+    if (this._resolved) {
+      this._iteratePackage(this._currentData);
     }
     return super.attachByID(id);
   }
 
   attachToRoot(): this {
-    if (this.resolved) {
-      this._iteratePackage(this.currentData);
+    if (this._resolved) {
+      this._iteratePackage(this._currentData);
     }
     return super.attachToRoot();
   }
@@ -132,7 +132,7 @@ export class SingleEventExecutor extends Attachable {
   }
 
   private _resolve = (returnData: unknown) => {
-    this._ongoingContext?.drop();
+    this._ongoingContext?._drop();
     this._ongoingContext = undefined;
 
     this._pipelineIndex++;

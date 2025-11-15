@@ -86,7 +86,7 @@ describe('ObservableMapNotifier', () => {
       expect(subscription.destroyed).toBe(false);
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListeners']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
 
       expect(triggeredWith).toBe('test');
     });
@@ -94,11 +94,11 @@ describe('ObservableMapNotifier', () => {
     test('subscription cleanup removes listener', () => {
       let subscription = notifier.waitUntilAdded(1).attachToRoot();
 
-      expect(notifier['_untilAddedListeners']?.get(1)?.size).toBe(1);
+      expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(1);
 
       subscription.destroy();
 
-      expect(notifier['_untilAddedListeners']?.get(1)?.size).toBe(0);
+      expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(0);
     });
 
     test('not triggered if subscription is destroyed before item is added', () => {
@@ -114,7 +114,7 @@ describe('ObservableMapNotifier', () => {
       subscription.destroy();
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListeners']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
 
       expect(triggered).toBe(false);
     });
@@ -137,10 +137,10 @@ describe('ObservableMapNotifier', () => {
         })
         .attachToRoot();
 
-      expect(notifier['_untilAddedListeners']?.get(1)?.size).toBe(2);
+      expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(2);
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListeners']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
 
       expect(triggered1).toBe(true);
       expect(triggered2).toBe(true);
@@ -169,7 +169,7 @@ describe('ObservableMapNotifier', () => {
         .attachToRoot();
 
       notifier['map'].set(2, 'test2');
-      notifier['_untilAddedListeners']?.get(2)?.forEach(callback => callback(2));
+      notifier['_untilAddedListenersVar']?.get(2)?.forEach(callback => callback(2));
 
       expect(subscription2Called).toBe(true);
 
@@ -329,8 +329,8 @@ describe('ObservableMapNotifier', () => {
 
       notifier2.waitUntilAdded(2).attachToRoot();
 
-      expect(notifier['_untilAddedListeners']).toBe(notifier2['_untilAddedListeners']);
-      expect(notifier['_untilAddedListeners']?.size).toBe(2);
+      expect(notifier['_untilAddedListenersVar']).toBe(notifier2['_untilAddedListenersVar']);
+      expect(notifier['_untilAddedListenersVar']?.size).toBe(2);
     });
 
     test('destroying subscription of one notifier should effect the other notifier', () => {
@@ -350,14 +350,14 @@ describe('ObservableMapNotifier', () => {
         })
         .attachToRoot();
 
-      expect(notifier['_untilAddedListeners']?.get(1)?.size).toBe(1);
+      expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(1);
 
       subscription.destroy();
 
-      expect(notifier['_untilAddedListeners']?.get(1)?.size).toBe(0);
+      expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(0);
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListeners']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
 
       expect(triggered).toBe(false);
     });
@@ -384,7 +384,7 @@ describe('ObservableMapNotifier', () => {
 
       let notifier = new ObservableMapNotifier(map, untilAddedListeners, untilRemovedListeners);
 
-      expect(notifier['_untilAddedListeners']).toBe(untilAddedListeners);
+      expect(notifier['_untilAddedListenersVar']).toBe(untilAddedListeners);
       expect(notifier['_untilRemovedListeners']).toBe(untilRemovedListeners);
     });
   });
@@ -392,23 +392,23 @@ describe('ObservableMapNotifier', () => {
   describe('Lazy initialization', () => {
     test('untilAddedListeners initialized on first use', () => {
       let notifier = new ObservableMapNotifier(new Map());
-      expect(notifier['_untilAddedListeners']).toBeUndefined();
+      expect(notifier['_untilAddedListenersVar']).toBeUndefined();
 
       notifier.waitUntilAdded(1).attachToRoot();
 
-      expect(notifier['_untilAddedListeners']).toBeDefined();
-      expect(notifier['_untilAddedListeners']).toBeInstanceOf(Map);
+      expect(notifier['_untilAddedListenersVar']).toBeDefined();
+      expect(notifier['_untilAddedListenersVar']).toBeInstanceOf(Map);
     });
 
     test('untilRemovedListeners initialized on first use', () => {
       let map = new Map<number, string>([[1, 'test']]);
       let notifier = new ObservableMapNotifier(map);
-      expect(notifier['_untilRemovedListeners']).toBeUndefined();
+      expect(notifier['_untilRemovedListenersVar']).toBeUndefined();
 
       notifier.waitUntilRemoved(1).attachToRoot();
 
-      expect(notifier['_untilRemovedListeners']).toBeDefined();
-      expect(notifier['_untilRemovedListeners']).toBeInstanceOf(Map);
+      expect(notifier['_untilRemovedListenersVar']).toBeDefined();
+      expect(notifier['_untilRemovedListenersVar']).toBeInstanceOf(Map);
     });
   });
 });

@@ -12,7 +12,7 @@ class SampleModel {
 
 describe('Notifier', () => {
   let triggerNotifierWith = <T>(data: T, notifier: Notifier<T>) => {
-    notifier['_listenersMap'].forEach(listener => CallbackHelper.triggerCallback(data, listener));
+    notifier['_listenersMap'].forEach(listener => CallbackHelper._triggerCallback(data, listener));
   };
 
   describe('Basics', () => {
@@ -116,7 +116,7 @@ describe('Notifier', () => {
       let listenerTriggeredWith: any;
 
       let subscription = notifier
-        .readSingle(message => {
+        ._readSingle(message => {
           listenerTriggeredWith = message;
         })
         .attachToRoot();
@@ -199,7 +199,7 @@ describe('Notifier', () => {
 
     test('iterate without listeners', () =>
       new Promise<void>(done => {
-        notifier.triggerAll('');
+        notifier._triggerAll('');
         done();
       }));
 
@@ -217,7 +217,7 @@ describe('Notifier', () => {
         })
         .attachToRoot();
 
-      notifier.triggerAll('');
+      notifier._triggerAll('');
 
       expect(count).toEqual(2);
     });
@@ -228,7 +228,7 @@ describe('Notifier', () => {
       notifier.subscribe(message => heap.push(message)).attachToRoot();
       notifier.subscribe(message => heap.push(message)).attachToRoot();
 
-      notifier.triggerAll('message');
+      notifier._triggerAll('message');
 
       expect(heap).toEqual(['message', 'message']);
     });
@@ -241,7 +241,7 @@ describe('Notifier', () => {
       notifier.subscribe(message => heap.push('3' + message)).attachToRoot();
 
       secondSubscription.destroy();
-      notifier.triggerAll('message');
+      notifier._triggerAll('message');
 
       expect(heap).toEqual(['1message', '3message']);
     });
@@ -267,7 +267,7 @@ describe('Notifier', () => {
         })
         .attachToRoot();
 
-      notifier.triggerAll('sample');
+      notifier._triggerAll('sample');
 
       expect(listener1).toEqual(true);
       expect(listener2).toEqual(true);
@@ -302,7 +302,7 @@ describe('Notifier', () => {
         .read(() => (triggered = true))
         .attachToRoot();
 
-      notifier.triggerAll();
+      notifier._triggerAll();
       expect(triggered).toEqual(true);
     });
 
@@ -332,7 +332,7 @@ describe('Notifier', () => {
         .read(() => (triggered = true))
         .attachToRoot();
 
-      notifier.triggerAll();
+      notifier._triggerAll();
       expect(triggered).toEqual(true);
     });
 
@@ -348,7 +348,7 @@ describe('Notifier', () => {
       let notifier = new Notifier<void>();
       notifier.toSingleEvent().attachToRoot();
       expect(notifier.listenerCount).toEqual(1);
-      notifier.triggerAll();
+      notifier._triggerAll();
       expect(notifier.listenerCount).toEqual(0);
     });
   });

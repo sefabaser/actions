@@ -44,13 +44,13 @@ export class Variable<T> extends Notifier<T> {
 
   private _notifyAlwaysNoCloneSet(data: T): this {
     this._currentValue = data;
-    this.triggerAll(data);
+    this._triggerAll(data);
     return this;
   }
 
   private _notifyAlwaysCloneSet(data: T): this {
     this._currentValue = JsonHelper.deepCopy(data);
-    this.triggerAll(data);
+    this._triggerAll(data);
     return this;
   }
 
@@ -59,7 +59,7 @@ export class Variable<T> extends Notifier<T> {
     this._currentValue = data;
 
     if (!Comparator.isEqual(previousData, data)) {
-      this.triggerAll(data);
+      this._triggerAll(data);
     }
 
     return this;
@@ -70,20 +70,20 @@ export class Variable<T> extends Notifier<T> {
     this._currentValue = JsonHelper.deepCopy(data);
 
     if (!Comparator.isEqual(previousData, data)) {
-      this.triggerAll(data);
+      this._triggerAll(data);
     }
 
     return this;
   }
 
   subscribe(callback: VariableListenerCallbackFunction<T>): IAttachment {
-    CallbackHelper.triggerCallback(this._currentValue, callback);
+    CallbackHelper._triggerCallback(this._currentValue, callback);
     return super.subscribe(callback);
   }
 
   /** @internal */
-  readSingle(callback: (data: T) => void): IAttachment {
-    CallbackHelper.triggerCallback(this._currentValue, callback);
+  _readSingle(callback: (data: T) => void): IAttachment {
+    CallbackHelper._triggerCallback(this._currentValue, callback);
     return Attachable.getDestroyed();
   }
 }

@@ -23,13 +23,13 @@ export class Action<T = void> extends Notifier<T> {
   }
 
   private _noCloneTrigger(data: T): this {
-    this.triggerAll(data);
+    this._triggerAll(data);
     return this;
   }
 
   private _cloneTrigger(data: T): this {
     data = JsonHelper.deepCopy(data);
-    this.triggerAll(data);
+    this._triggerAll(data);
     return this;
   }
 }

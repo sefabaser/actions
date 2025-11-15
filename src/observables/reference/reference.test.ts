@@ -8,7 +8,7 @@ describe('Reference', () => {
   let parent: IDAttachable;
 
   beforeEach(() => {
-    AttachmentTargetStore.hardReset();
+    AttachmentTargetStore._hardReset();
     parent = new IDAttachable().attachToRoot();
   });
 

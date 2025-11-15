@@ -257,15 +257,15 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
       });
 
       test('without doing further operations with resolve', () => {
@@ -277,9 +277,9 @@ describe('SingleEvent', () => {
         operation.trigger();
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
       });
 
       test('using chain', () => {
@@ -297,16 +297,16 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeTruthy();
       });
 
@@ -326,23 +326,23 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         chainParent.destroy();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
       });
     });
@@ -357,15 +357,15 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
       });
 
       test('without doing further operations with resolve', () => {
@@ -378,9 +378,9 @@ describe('SingleEvent', () => {
         operation.trigger();
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
       });
 
       test('using chain', () => {
@@ -399,16 +399,16 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeTruthy();
       });
 
@@ -429,23 +429,23 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         chainParent.destroy();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
       });
 
@@ -465,16 +465,16 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         parent.destroy();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
       });
     });
@@ -489,15 +489,15 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
       });
 
       test('without doing further operations with resolve', () => {
@@ -510,9 +510,9 @@ describe('SingleEvent', () => {
         operation.trigger();
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeFalsy();
+        expect(chain._attachIsCalled).toBeFalsy();
       });
 
       test('using chain', () => {
@@ -531,16 +531,16 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeTruthy();
       });
 
@@ -561,23 +561,23 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         chainParent.destroy();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         operation.trigger();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
       });
 
@@ -597,16 +597,16 @@ describe('SingleEvent', () => {
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
 
         parent.destroy();
         expect(firstEvent.destroyed).toBeTruthy();
-        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(firstEvent._attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
-        expect(chain.attachIsCalled).toBeTruthy();
+        expect(chain._attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
       });
     });
@@ -1276,7 +1276,7 @@ describe('SingleEvent', () => {
             try {
               sequence.asyncMapDirect(() => event).attachToRoot();
             } catch (e) {
-              sequence['_executor']['_attachIsCalled'] = true; // silence the error
+              sequence['_executor']['_attachIsCalledVar'] = true; // silence the error
               throw e;
             }
           });

@@ -26,12 +26,12 @@ export class Notifier<T> {
     attachByID: (parent: number) => Notifier<S>;
     attachToRoot: () => Notifier<S>;
   } {
-    if (sequence.attachIsCalled) {
+    if (sequence._attachIsCalled) {
       throw new Error('Attached sequences cannot be converted to notifier!');
     }
 
     let notifier = new Notifier<S>();
-    sequence.readSingle(data => notifier.triggerAll(data));
+    sequence._readSingle(data => notifier._triggerAll(data));
     return {
       attach: (parent: Attachable) => {
         sequence.attach(parent);
@@ -112,15 +112,15 @@ export class Notifier<T> {
   }
 
   /** @internal */
-  triggerAll(data: T): void {
+  _triggerAll(data: T): void {
     let listeners = [...this._listenersMap.values()];
     for (let i = 0; i < listeners.length; i++) {
-      CallbackHelper.triggerCallback(data, listeners[i]);
+      CallbackHelper._triggerCallback(data, listeners[i]);
     }
   }
 
   /** @internal */
-  readSingle(callback: (data: T) => void): IAttachment {
+  _readSingle(callback: (data: T) => void): IAttachment {
     let subscriptionID = this._nextAvailableSubscriptionID++;
 
     let subscription = new ActionSubscription(() => {

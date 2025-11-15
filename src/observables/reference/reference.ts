@@ -66,13 +66,13 @@ export class Reference<T extends number | object = number> extends Attachable {
 
       if (data) {
         let referenceID = this._getReferenceID(data, this._options.path);
-        this._destroySubscription = AttachmentTargetStore.findAttachmentTarget(referenceID).onDestroy(() => {
+        this._destroySubscription = AttachmentTargetStore._findAttachmentTarget(referenceID).onDestroy(() => {
           !this.destroyed && this.set(undefined);
         });
 
-        if (this.attachIsCalled) {
-          if (this.attachedParent) {
-            this._destroySubscription.attach(this.attachedParent);
+        if (this._attachIsCalled) {
+          if (this._attachedParent) {
+            this._destroySubscription.attach(this._attachedParent);
           } else {
             this._destroySubscription.attachToRoot();
           }
@@ -94,13 +94,13 @@ export class Reference<T extends number | object = number> extends Attachable {
 
   attach(parent: Attachable): this {
     super.attach(parent);
-    this._destroySubscription?.attach(this.attachedParent!);
+    this._destroySubscription?.attach(this._attachedParent!);
     return this;
   }
 
   attachByID(id: number): this {
     super.attachByID(id);
-    this._destroySubscription?.attach(this.attachedParent!);
+    this._destroySubscription?.attach(this._attachedParent!);
     return this;
   }
 

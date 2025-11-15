@@ -1,10 +1,16 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { describe, test } from 'vitest';
 
-import { Action } from '../action/action';
-import { Variable } from '../variable/variable';
+import { Action, Variable } from '../../../dist/index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  test('build test', async () => {
+    let action = new Action<void>();
+    let subscription = action.subscribe(() => console.log('okay')).attachToRoot();
+    action.trigger();
+    subscription.destroy();
+  });
+
   test('action subscribe single', async () => {
     let action = new Action<void>();
     await UnitTestHelper.testPerformance(() => {
@@ -61,6 +67,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 5.21779990196228
     // trigger all change: 4.310899972915649
     // read single changes: 4.205600261688232
+    // 2.3874001502990723
   }, 60000);
 
   test('variable subscribe and set 10x', async () => {
@@ -100,6 +107,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 4.546999931335449
     // splitting set functions: 4.5386998653411865
     // read single changes: 4.561299800872803
+    // 2.5963997840881348
   }, 60000);
 
   test('manual take next', async () => {
@@ -131,6 +139,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.5446999073028564
     // trigger all change: 0.5025999546051025
     // read single changes: 0.5067000389099121
+    // 0.37199974060058594
   }, 60000);
 
   test('take one by single event', async () => {
@@ -142,7 +151,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       action.trigger();
     });
-    // 0.32050037384033203
+    // 0.3014998435974121
   }, 60000);
 
   test('action to sequence read', async () => {
@@ -164,6 +173,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // read single changes: 0.4247000217437744
     // removing bind: 0.40780019760131836
     // manual subscription: 0.32919979095458984
+    // 0.3203001022338867
   }, 60000);
 
   test('action to single event read', async () => {
@@ -176,7 +186,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
       sequence.destroy();
     });
-    // 0.32399988174438477
+    // 0.3113999366760254
   }, 60000);
 
   test('action to notifier', async () => {
@@ -186,5 +196,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
     });
     // Min:  0.20210027694702148
+    // 0.19529962539672852
   }, 60000);
 });

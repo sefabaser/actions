@@ -3,24 +3,24 @@ import { Sequence } from '../../stream/sequence/sequence';
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
 
-  protected _untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
-  private get _getUntilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
-    if (!this._untilAddedListeners) {
-      this._untilAddedListeners = new Map();
+  protected _untilAddedListenersVar?: Map<KeyType, Set<(data: KeyType) => void>>;
+  private get _UntilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
+    if (!this._untilAddedListenersVar) {
+      this._untilAddedListenersVar = new Map();
     }
-    return this._untilAddedListeners;
+    return this._untilAddedListenersVar;
   }
 
-  protected _untilRemovedListeners?: Map<KeyType, Set<() => void>>;
-  private get _getUntilRemovedListeners(): Map<KeyType, Set<() => void>> {
-    if (!this._untilRemovedListeners) {
-      this._untilRemovedListeners = new Map();
+  protected _untilRemovedListenersVar?: Map<KeyType, Set<() => void>>;
+  private get _untilRemovedListeners(): Map<KeyType, Set<() => void>> {
+    if (!this._untilRemovedListenersVar) {
+      this._untilRemovedListenersVar = new Map();
     }
-    return this._untilRemovedListeners;
+    return this._untilRemovedListenersVar;
   }
 
   get notifier(): ObservableMapNotifier<KeyType, ValueType> {
-    return new ObservableMapNotifier<KeyType, ValueType>(this.map, this._untilAddedListeners, this._untilRemovedListeners);
+    return new ObservableMapNotifier<KeyType, ValueType>(this.map, this._untilAddedListenersVar, this._untilRemovedListenersVar);
   }
 
   constructor(
@@ -29,8 +29,8 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     untilRemovedListeners?: Map<KeyType, Set<() => void>>
   ) {
     this.map = map ?? new Map<KeyType, ValueType>();
-    this._untilAddedListeners = untilAddedListeners;
-    this._untilRemovedListeners = untilRemovedListeners;
+    this._untilAddedListenersVar = untilAddedListeners;
+    this._untilRemovedListenersVar = untilRemovedListeners;
   }
 
   convertToMap(): Map<KeyType, ValueType> {
@@ -59,15 +59,15 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
       if (this.map.has(value)) {
         resolveAndDestroy();
       } else {
-        let untilAddedListenerSet = this._getUntilAddedListeners.get(value);
+        let untilAddedListenerSet = this._UntilAddedListeners.get(value);
         if (!untilAddedListenerSet) {
           untilAddedListenerSet = new Set();
-          this._getUntilAddedListeners.set(value, untilAddedListenerSet);
+          this._UntilAddedListeners.set(value, untilAddedListenerSet);
         }
 
         untilAddedListenerSet.add(resolveAndDestroy);
         return () => {
-          this._untilAddedListeners?.get(value)?.delete(resolveAndDestroy);
+          this._untilAddedListenersVar?.get(value)?.delete(resolveAndDestroy);
         };
       }
     });
@@ -83,15 +83,15 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
       if (!this.map.has(value)) {
         resolveAndDestroy();
       } else {
-        let untilRemovedListenerSet = this._getUntilRemovedListeners.get(value);
+        let untilRemovedListenerSet = this._untilRemovedListeners.get(value);
         if (!untilRemovedListenerSet) {
           untilRemovedListenerSet = new Set();
-          this._getUntilRemovedListeners.set(value, untilRemovedListenerSet);
+          this._untilRemovedListeners.set(value, untilRemovedListenerSet);
         }
 
         untilRemovedListenerSet.add(resolveAndDestroy);
         return () => {
-          this._untilRemovedListeners?.get(value)?.delete(resolveAndDestroy);
+          this._untilRemovedListenersVar?.get(value)?.delete(resolveAndDestroy);
         };
       }
     });
