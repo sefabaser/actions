@@ -4,14 +4,12 @@ import { describe, test } from 'vitest';
 import { SingleEvent, Variable } from '../../../../dist/index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
-  test('promise', async () => {
-    await UnitTestHelper.testPerformance(() => {
-      new Promise<void>(resolve => {
-        resolve();
-      }).then(() => {});
-    });
-    // singleEvent: 0.03639984130859375
-  }, 60000);
+  test('build test', async () => {
+    let sequence = SingleEvent.instant()
+      .read(() => console.log('okay'))
+      .attachToRoot();
+    sequence.destroy();
+  });
 
   test('instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
@@ -45,7 +43,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
       singleEvent.destroy();
     });
-    // 0.25729990005493164
+    // 0.25729990005493164 no significant performance increase
   }, 60000);
 
   test('instant triggered multiple reads', async () => {
@@ -222,5 +220,34 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 0.8601999282836914
     // 0.8238000869750977
     // read single changes: 0.8571000099182129
+  }, 60000);
+
+  test('single event promise comparison', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      return new Promise<void>(resolve => resolve());
+    });
+    // base cost: 0.06969976425170898
+
+    await UnitTestHelper.testPerformance(() => {
+      return new Promise<void>(resolve => {
+        return new Promise<void>(r => r()).then(() => {
+          resolve();
+        });
+      });
+    });
+    // 0.13959980010986328 - base = 0.0699000358581543
+
+    await UnitTestHelper.testPerformance(() => {
+      return new Promise<void>(resolve => {
+        let singleEvent = SingleEvent.instant()
+          .read(() => resolve())
+          .attachToRoot();
+
+        singleEvent.destroy();
+      });
+    });
+    // singleEvent: 0.28189992904663086 - base = 0.21220016479492188
+
+    // promise is ~3x more efficient
   }, 60000);
 });
