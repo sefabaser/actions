@@ -1,6 +1,6 @@
 import { Attachable, IAttachment } from '../../attachable/attachable';
 
-type SequencePipelineDestructor = (finalContext?: SequenceContext) => void;
+type SequencePipelineDestructor = (finalContext?: ISequenceLinkContext) => void;
 type SequencePipelineIterator<A = unknown, B = unknown> = (
   _data: A,
   _context: ISequenceLinkContext,
@@ -31,8 +31,7 @@ class SequencePackage {
   }
 }
 
-/** @internal */
-export class SequenceContext implements ISequenceLinkContext {
+class SequenceContext implements ISequenceLinkContext {
   _attachableVar?: Attachable;
   get attachable(): Attachable {
     if (!this._attachableVar) {

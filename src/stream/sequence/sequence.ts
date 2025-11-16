@@ -3,7 +3,8 @@ import { Comparator, Queue } from 'helpers-lib';
 import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AsyncOperation } from '../../common';
 import { Notifier } from '../../observables/_notifier/notifier';
-import { ISequenceCreatorContext, ISequenceLinkContext, SequenceContext, SequenceExecutor } from './sequence-executor';
+import { SingleEvent } from '../single-event/single-event';
+import { ISequenceCreatorContext, ISequenceLinkContext, SequenceExecutor } from './sequence-executor';
 
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
 
@@ -253,7 +254,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: SequenceContext) => {
+      (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
           for (let context of ongoingContexts) {
             context.drop();
@@ -316,7 +317,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: SequenceContext) => {
+      (finalContext?: ISequenceLinkContext) => {
         this._destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
@@ -373,7 +374,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: SequenceContext) => {
+      (finalContext?: ISequenceLinkContext) => {
         this._destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
@@ -434,7 +435,7 @@ export class Sequence<T = void> implements IAttachment {
           execute();
         }
       },
-      (finalContext?: SequenceContext) => {
+      (finalContext?: ISequenceLinkContext) => {
         this._destroyPackagesUntilCurrent(queue, finalContext);
       }
     );
@@ -481,7 +482,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: SequenceContext) => {
+      (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
           ongoingContext?.drop();
         }
@@ -533,7 +534,7 @@ export class Sequence<T = void> implements IAttachment {
             .attach(context.attachable);
         }
       },
-      (finalContext?: SequenceContext) => {
+      (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
           ongoingContext?.drop();
         }
@@ -586,9 +587,62 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this._executor);
   }
 
-  // TODO: wait
-  // TODO: debounce
-  // TODO: takeOne (convert to single event)
+  wait(duration?: number): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let queue = new Queue<ExecutionOrderQueuer>();
+    this._executor._enterPipeline<T, T>(
+      (data, context, resolve) => {
+        let queuer: ExecutionOrderQueuer = { _context: context };
+        queue.add(queuer);
+
+        SingleEvent.create(innerResolve => {
+          let timeout = setTimeout(innerResolve, duration);
+          return () => {
+            clearTimeout(timeout);
+          };
+        })
+          .read(() => {
+            let item = queue.pop();
+            if (item !== queuer) {
+              throw new Error('Sequence: Internal Error. Wait queue is curropted.');
+            }
+            resolve(data);
+          })
+          .attach(context.attachable);
+      },
+      (finalContext?: ISequenceLinkContext) => {
+        console.log(finalContext);
+        this._destroyPackagesUntilCurrent(queue, finalContext);
+      }
+    );
+
+    return new Sequence<T>(this._executor);
+  }
+
+  /**
+   * Drops the previous package that is still waiting for the timeout.
+   */
+  debounce(duration: number): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let ongoingContext: ISequenceLinkContext | undefined;
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      ongoingContext?.drop();
+      ongoingContext = context;
+
+      SingleEvent.create(innerResolve => {
+        let timeout = setTimeout(innerResolve, duration);
+        return () => {
+          clearTimeout(timeout);
+        };
+      })
+        .read(() => resolve(data))
+        .attach(context.attachable);
+    });
+
+    return new Sequence<T>(this._executor);
+  }
 
   /*
   takeOne(): SingleEvent<T> {
@@ -722,7 +776,7 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence(chainExecutor);
   }
 
-  private _destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: SequenceContext): void {
+  private _destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: ISequenceLinkContext): void {
     if (finalContext) {
       while (queue.notEmpty && queue.peekLast()?._context !== finalContext) {
         let lastInTheLine = queue.dequeue()!;
@@ -756,7 +810,7 @@ export const SequenceClassNames = [
   Sequence.name,
   SequenceExecutor.name,
   SequencePackageClassName,
-  SequenceContext.name,
+  'SequenceLinkContext',
   Queue.name,
   'DoublyLinkedListNode'
 ];

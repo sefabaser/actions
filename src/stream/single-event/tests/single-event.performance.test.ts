@@ -92,7 +92,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       singleEvent.destroy();
     });
-    // 1.5506997108459473
+    // 1.5454998016357422
   }, 60000);
 
   test('single read', async () => {
