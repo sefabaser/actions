@@ -2,7 +2,6 @@
   "name": "actions-lib",
   "version": "2.0.0",
   "description": "Typescript Helpers Library",
-  "type": "module",
   "main": "dist/index.js",
   "files": [
     "dist/**/*.js",
@@ -29,10 +28,10 @@
     "test": "vitest run --mode=quick",
     "test-full": "vitest run",
     "start": "npm run build && node dist",
-    "build": "tsup && node scripts/clean-dts.cjs",
+    "build": "tsup && npx ts-node scripts/remove-private-properties-from-build.ts",
     "lint": "biome check . --write --max-diagnostics=1",
     "deploy": "vitest run && npm run build && npm publish",
-    "prepack": "cp package.json package.json.bak && node scripts/prepare-package-json.cjs",
+    "prepack": "cp package.json package.json.bak && npx ts-node scripts/prepare-package-json.ts",
     "postpack": "mv package.json.bak package.json"
   },
   "peerDependencies": {
@@ -45,5 +44,6 @@
     "tsup": "8.5.1",
     "typescript": "5.3.3",
     "vitest": "3.2.4"
-  }
+  },
+  "types": "dist/index.d.ts"
 }
