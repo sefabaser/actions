@@ -116,11 +116,6 @@ export class SingleEvent<T = void> implements IAttachment {
   // TODO: wait
   // TODO: debounce
 
-  /*
-  chain(): SingleEvent<T> {
-    return;
-  }*/
-
   /** @internal */
   _readSingle(callback: (data: T) => void): SingleEvent<T> {
     this._validateBeforeLinking();
@@ -172,6 +167,7 @@ export class SingleEvent<T = void> implements IAttachment {
     return this;
   }
 
+  // TODO: improve chaining performance
   chain(parent: Attachable): SingleEvent<T> {
     this._validateBeforeLinking();
 

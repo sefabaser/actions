@@ -586,6 +586,10 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this._executor);
   }
 
+  // TODO: wait
+  // TODO: debounce
+  // TODO: takeOne (convert to single event)
+
   /*
   takeOne(): SingleEvent<T> {
     this.validateBeforeLinking();
@@ -675,6 +679,7 @@ export class Sequence<T = void> implements IAttachment {
     return this;
   }
 
+  // TODO: improve chaining performance
   chain(parent: Attachable): Sequence<T> {
     this._validateBeforeLinking();
 
