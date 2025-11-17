@@ -42,16 +42,12 @@ export class SingleEventExecutor extends Attachable {
     return this._onDestroyListenersVar;
   }
 
-  _resolved = false;
+  _resolved?: boolean;
   _currentData: unknown;
   _chainedTo?: SingleEventExecutor;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private _pipelineIndex = 0;
   private _ongoingContext?: SingleEventContext;
-
-  constructor() {
-    super(true);
-  }
 
   destroy(): void {
     if (!this.destroyed) {
@@ -93,7 +89,6 @@ export class SingleEventExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
     if (!this.destroyed) {
-      this.destroyIfNotAttached = false;
       this._pipeline.push(iterator);
     }
   }
@@ -138,4 +133,15 @@ export class SingleEventExecutor extends Attachable {
     this._pipelineIndex++;
     this._iteratePackage(returnData);
   };
+
+  /** @internal */
+  protected _checkAfterMicrotask(): void {
+    if (!this.destroyed) {
+      if (this._pipeline.length === 0) {
+        this.destroy();
+      } else {
+        super._checkAfterMicrotask();
+      }
+    }
+  }
 }

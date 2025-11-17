@@ -31,7 +31,7 @@ export class Notifier<T> {
     }
 
     let notifier = new Notifier<S>();
-    sequence._readSingle(data => notifier._triggerAll(data));
+    sequence._subscribeSingle(data => notifier._triggerAll(data));
     return {
       attach: (parent: Attachable) => {
         sequence.attach(parent);
@@ -120,7 +120,7 @@ export class Notifier<T> {
   }
 
   /** @internal */
-  _readSingle(callback: (data: T) => void): IAttachment {
+  _subscribeSingle(callback: (data: T) => void): IAttachment {
     let subscriptionID = this._nextAvailableSubscriptionID++;
 
     let subscription = new ActionSubscription(() => {

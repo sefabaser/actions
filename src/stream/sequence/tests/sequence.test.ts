@@ -515,6 +515,57 @@ describe('Sequence', () => {
         expect(chain.attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
       });
+
+      test('multiple chain', () => {
+        let operation = new Action();
+
+        let triggerCount1 = 0;
+        let triggerCount2 = 0;
+
+        let firstEvent = operation.toSequence();
+        let chain1 = firstEvent.chainToRoot();
+        let chain2 = chain1
+          .read(() => {
+            triggerCount1++;
+          })
+          .chainToRoot();
+
+        chain2
+          .read(() => {
+            triggerCount2++;
+          })
+          .attachToRoot();
+
+        vi.runAllTimers();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(0);
+        expect(triggerCount2).toEqual(0);
+
+        operation.trigger();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(1);
+        expect(triggerCount2).toEqual(1);
+
+        operation.trigger();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(2);
+        expect(triggerCount2).toEqual(2);
+      });
     });
 
     describe('directly', () => {
@@ -661,6 +712,58 @@ describe('Sequence', () => {
         expect(chain.attachIsCalled).toBeTruthy();
         expect(triggered).toBeTruthy();
       });
+
+      test('multiple chain', () => {
+        let parent = new Attachable().attachToRoot();
+        let operation = new Action();
+
+        let triggerCount1 = 0;
+        let triggerCount2 = 0;
+
+        let firstEvent = operation.toSequence();
+        let chain1 = firstEvent.chain(parent);
+        let chain2 = chain1
+          .read(() => {
+            triggerCount1++;
+          })
+          .chain(parent);
+
+        chain2
+          .read(() => {
+            triggerCount2++;
+          })
+          .attachToRoot();
+
+        vi.runAllTimers();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(0);
+        expect(triggerCount2).toEqual(0);
+
+        operation.trigger();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(1);
+        expect(triggerCount2).toEqual(1);
+
+        operation.trigger();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(2);
+        expect(triggerCount2).toEqual(2);
+      });
     });
 
     describe('by id', () => {
@@ -806,6 +909,58 @@ describe('Sequence', () => {
         expect(chain.destroyed).toBeTruthy();
         expect(chain.attachIsCalled).toBeTruthy();
         expect(triggered).toBeTruthy();
+      });
+
+      test('multiple chain', () => {
+        let parent = new IDAttachable().attachToRoot();
+        let operation = new Action();
+
+        let triggerCount1 = 0;
+        let triggerCount2 = 0;
+
+        let firstEvent = operation.toSequence();
+        let chain1 = firstEvent.chainByID(parent.id);
+        let chain2 = chain1
+          .read(() => {
+            triggerCount1++;
+          })
+          .chainByID(parent.id);
+
+        chain2
+          .read(() => {
+            triggerCount2++;
+          })
+          .attachToRoot();
+
+        vi.runAllTimers();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(0);
+        expect(triggerCount2).toEqual(0);
+
+        operation.trigger();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(1);
+        expect(triggerCount2).toEqual(1);
+
+        operation.trigger();
+        expect(firstEvent.destroyed).toBeFalsy();
+        expect(firstEvent.attachIsCalled).toBeTruthy();
+        expect(chain1.destroyed).toBeFalsy();
+        expect(chain1.attachIsCalled).toBeTruthy();
+        expect(chain2.destroyed).toBeFalsy();
+        expect(chain2.attachIsCalled).toBeTruthy();
+        expect(triggerCount1).toEqual(2);
+        expect(triggerCount2).toEqual(2);
       });
     });
   });
@@ -969,27 +1124,19 @@ describe('Sequence', () => {
 
     test('complex merge and combine destroyed by sequences', async () => {
       let sequence1 = Sequence.create<number>((resolve, context) => {
-        UnitTestHelper.callEachDelayed(
-          [10, 11],
-          delayedValue => resolve(delayedValue),
-          () => context.final()
-        );
+        UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue), {
+          allDone: () => context.final()
+        });
       }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) =>
-          UnitTestHelper.callEachDelayed(
-            [value + 's1'],
-            delayedValue => resolve(delayedValue),
-            () => context.final()
-          )
+          UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue), {
+            allDone: () => context.final()
+          })
         )
       );
 
       let sequence2 = Sequence.create<number>((resolve, context) => {
-        UnitTestHelper.callEachDelayed(
-          [20, 21],
-          delayedValue => resolve(delayedValue),
-          () => context.final()
-        );
+        UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue), { allDone: () => context.final() });
       }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + 's2');
@@ -1012,11 +1159,9 @@ describe('Sequence', () => {
         context.final();
       }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
-          UnitTestHelper.callEachDelayed(
-            [value + 's4'],
-            delayedValue => resolve(delayedValue),
-            () => context.final()
-          );
+          UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue), {
+            allDone: () => context.final()
+          });
         })
       );
 

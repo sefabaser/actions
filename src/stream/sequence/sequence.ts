@@ -104,7 +104,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   private static _waitUntilAllSequencesDestroyed(streams: Set<AsyncOperation<unknown>>, callback: () => void): void {
-    let notifierFound = false;
+    let notifierFound: boolean | undefined;
     for (let stream of streams) {
       if (stream instanceof Notifier) {
         notifierFound = true;
@@ -174,7 +174,7 @@ export class Sequence<T = void> implements IAttachment {
     return this._executor.attachIsCalled;
   }
 
-  private _linked = false;
+  private _linked?: boolean;
   private constructor(private _executor: SequenceExecutor) {}
 
   destroy(): void {
@@ -248,7 +248,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          ._readSingle(resolvedData => {
+          ._subscribeSingle(resolvedData => {
             ongoingContexts.delete(context);
             resolve(resolvedData);
           })
@@ -301,7 +301,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          ._readSingle(resolvedData => {
+          ._subscribeSingle(resolvedData => {
             queuer._callback = () => resolve(resolvedData);
 
             if (queue.peek() === queuer) {
@@ -357,7 +357,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          ._readSingle(resolvedData => {
+          ._subscribeSingle(resolvedData => {
             while (queue.notEmpty) {
               let firstInTheLine = queue.pop();
 
@@ -414,7 +414,7 @@ export class Sequence<T = void> implements IAttachment {
           }
 
           executionReturn
-            ._readSingle(resolvedData => {
+            ._subscribeSingle(resolvedData => {
               queue.pop();
               previousResult = resolvedData;
               resolve(resolvedData);
@@ -470,7 +470,7 @@ export class Sequence<T = void> implements IAttachment {
         }
 
         executionReturn
-          ._readSingle(resolvedData => {
+          ._subscribeSingle(resolvedData => {
             ongoingContext = undefined;
             resolve(resolvedData);
           })
@@ -522,7 +522,7 @@ export class Sequence<T = void> implements IAttachment {
           }
 
           executionReturn
-            ._readSingle(resolvedData => {
+            ._subscribeSingle(resolvedData => {
               ongoingContext = undefined;
               resolve(resolvedData);
             })
@@ -645,17 +645,16 @@ export class Sequence<T = void> implements IAttachment {
 
   /*
   takeOne(): SingleEvent<T> {
-    this.validateBeforeLinking();
+    this._validateBeforeLinking();
 
     let singleEvent = SingleEvent.create<T>(singleEventResolve => {
-      this.executor.enterPipeline<T, T>((data, context, resolve) => {
+      this._executor._enterPipeline<T, T>((data, context, resolve) => {
         singleEventResolve(data);
         context.destroy();
       });
     });
 
-    this.executor.chainedTo = singleEvent;
-    singleEvent.
+    this._executor._chainedTo = singleEvent;
 
     return singleEvent;
   }*/
@@ -682,7 +681,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /** @internal */
-  _readSingle(callback: (data: T) => void): Sequence<T> {
+  _subscribeSingle(callback: (data: T) => void): Sequence<T> {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, _, resolve) => {

@@ -87,10 +87,6 @@ export class SequenceExecutor extends Attachable {
   _pendingValues?: unknown[];
   private _finalized?: boolean;
 
-  constructor() {
-    super(true);
-  }
-
   destroy(): void {
     if (!this.destroyed) {
       super.destroy();
@@ -130,8 +126,6 @@ export class SequenceExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SequencePipelineIterator<A, B>, destructor?: SequencePipelineDestructor) {
     if (!this.destroyed) {
-      this.destroyIfNotAttached = false;
-
       if (destructor) {
         if (!this._asyncPipelineIndices) {
           this._asyncPipelineIndices = new Set();
@@ -201,6 +195,17 @@ export class SequenceExecutor extends Attachable {
         if (this._finalized && this._ongoingPackageCount === 0) {
           this.destroy();
         }
+      }
+    }
+  }
+
+  /** @internal */
+  protected _checkAfterMicrotask(): void {
+    if (!this.destroyed) {
+      if (this._pipeline.length === 0) {
+        this.destroy();
+      } else {
+        super._checkAfterMicrotask();
       }
     }
   }

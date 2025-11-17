@@ -305,27 +305,17 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
     test('complex merge and combine destroyed by sequences', async () => {
       let sequence1 = Sequence.create<number>((resolve, executor) => {
-        UnitTestHelper.callEachDelayed(
-          [10, 11],
-          delayedValue => resolve(delayedValue),
-          () => executor.final()
-        );
+        UnitTestHelper.callEachDelayed([10, 11], delayedValue => resolve(delayedValue), { allDone: () => executor.final() });
       }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) =>
-          UnitTestHelper.callEachDelayed(
-            [value + 's1'],
-            delayedValue => resolve(delayedValue),
-            () => executor.final()
-          )
+          UnitTestHelper.callEachDelayed([value + 's1'], delayedValue => resolve(delayedValue), {
+            allDone: () => executor.final()
+          })
         )
       );
 
       let sequence2 = Sequence.create<number>((resolve, executor) => {
-        UnitTestHelper.callEachDelayed(
-          [20, 21],
-          delayedValue => resolve(delayedValue),
-          () => executor.final()
-        );
+        UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue), { allDone: () => executor.final() });
       }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + 's2');
@@ -348,11 +338,9 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         executor.final();
       }).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
-          UnitTestHelper.callEachDelayed(
-            [value + 's4'],
-            delayedValue => resolve(delayedValue),
-            () => executor.final()
-          );
+          UnitTestHelper.callEachDelayed([value + 's4'], delayedValue => resolve(delayedValue), {
+            allDone: () => executor.final()
+          });
         })
       );
 

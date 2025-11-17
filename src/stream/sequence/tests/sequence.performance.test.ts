@@ -169,7 +169,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // after bundle: 0.6985001564025879
   }, 60000);
 
-  test('sequence 10x read and resolve', async () => {
+  test('sequence 10x read and resolve after attach', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
@@ -206,6 +206,39 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 3.5271999835968018
     // context functions: 2.7063002586364746
     // pending change: 2.5808000564575195
+    // after bundle: 2.5227999687194824
+  }, 60000);
+
+  test('sequence 10x read and resolve before attach', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.create(resolve => {
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+        resolve();
+      });
+
+      sequence
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .read(() => {})
+        .attachToRoot();
+      sequence.destroy();
+    });
+    // 2.576399803161621
   }, 60000);
 
   test('sequence 10x map and resolve', async () => {

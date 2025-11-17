@@ -19,6 +19,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
       singleEvent.destroy();
     });
+    // sequence to singleEvent: 0.14010000228881836 -> 0.1370997428894043
     // singleEvent: 0.1370997428894043
   }, 60000);
 
@@ -30,6 +31,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
       singleEvent.destroy();
     });
+    // sequence to singleEvent: 0.28600025177001953 -> 0.2734999656677246
     // 0.2734999656677246
   }, 60000);
 
@@ -92,6 +94,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       singleEvent.destroy();
     });
+    // sequence to singleEvent: 1.9693999290466309 -> 1.5454998016357422
     // 1.5454998016357422
   }, 60000);
 
@@ -107,6 +110,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       singleEvent.destroy();
     });
+    // sequence to singleEvent: 0.14840030670166016 -> 0.14529991149902344
     // singleEvent: 0.1549999713897705
     // 0.1466999053955078
     // arrow function resolve: 0.14529991149902344
@@ -123,6 +127,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       singleEvent.destroy();
     });
+    // sequence to singleEvent: 0.14980030059814453 -> 0.1482996940612793
     // singleEvent: 0.15720009803771973
     // 0.14890003204345703
     // arrow function resolve: 0.1482996940612793
@@ -139,10 +144,12 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       resolve();
       singleEvent.destroy();
     });
+    // sequence to singleEvent: 0.7420997619628906 -> 0.5767998695373535
     // singleEvent: 0.9242000579833984
     // 0.4514000415802002
     // 0.42370009422302246
     // arrow function resolve: 0.411099910736084
+    // 0.5767998695373535
   }, 60000);
 
   test('single event 10x read', async () => {
@@ -161,6 +168,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       singleEvent.destroy();
     });
+    // 0.6243000030517578 -> 0.42190027236938477
     // 0.511199951171875
     // arrow function resolve: 0.42190027236938477
   }, 60000);

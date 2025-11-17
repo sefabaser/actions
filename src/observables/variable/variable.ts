@@ -82,7 +82,7 @@ export class Variable<T> extends Notifier<T> {
   }
 
   /** @internal */
-  _readSingle(callback: (data: T) => void): IAttachment {
+  _subscribeSingle(callback: (data: T) => void): IAttachment {
     CallbackHelper._triggerCallback(this._currentValue, callback);
     return Attachable.getDestroyed();
   }

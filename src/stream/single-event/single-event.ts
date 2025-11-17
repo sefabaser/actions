@@ -40,7 +40,7 @@ export class SingleEvent<T = void> implements IAttachment {
     return this._executor.attachIsCalled;
   }
 
-  private _linked = false;
+  private _linked?: boolean;
 
   private constructor(private _executor: SingleEventExecutor) {}
 
@@ -107,7 +107,7 @@ export class SingleEvent<T = void> implements IAttachment {
         return;
       }
 
-      executionReturn._readSingle(resolve).attach(context.attachable);
+      executionReturn._subscribeSingle(resolve).attach(context.attachable);
     });
 
     return new SingleEvent<K>(this._executor);
@@ -131,7 +131,7 @@ export class SingleEvent<T = void> implements IAttachment {
   }
 
   /** @internal */
-  _readSingle(callback: (data: T) => void): SingleEvent<T> {
+  _subscribeSingle(callback: (data: T) => void): SingleEvent<T> {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, _, resolve) => {

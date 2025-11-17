@@ -116,7 +116,7 @@ describe('Notifier', () => {
       let listenerTriggeredWith: any;
 
       let subscription = notifier
-        ._readSingle(message => {
+        ._subscribeSingle(message => {
           listenerTriggeredWith = message;
         })
         .attachToRoot();

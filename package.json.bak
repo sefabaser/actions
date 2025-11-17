@@ -28,9 +28,10 @@
     "test": "vitest run --mode=quick",
     "test-full": "vitest run",
     "start": "npm run build && node dist",
-    "build": "tsup && npx ts-node scripts/remove-private-properties-from-build.ts",
+    "build": "tsup && npx ts-node scripts/remove-private-properties-from-build.ts && npm run restart-vitest",
+    "restart-vitest": "touch vitest.config.ts",
     "lint": "biome check . --write --max-diagnostics=1",
-    "deploy": "vitest run && npm run build && npm publish",
+    "deploy": "npm run test-full && npm run build && npm publish",
     "prepack": "cp package.json package.json.bak && npx ts-node scripts/prepare-package-json.ts",
     "postpack": "mv package.json.bak package.json"
   },
