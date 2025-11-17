@@ -2,8 +2,18 @@ import { takeNodeMinimalHeap } from '@memlab/core';
 import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Action } from './observables/action/action';
-import { Sequence, SequenceClassNames, SequencePackageClassName } from './stream/sequence/sequence';
+import { Action } from '../../../observables/action/action';
+import { Sequence } from '../sequence';
+
+const SequencePackageClassName = 'SequencePackage';
+const SequenceClassNames = [
+  Sequence.name,
+  'SequenceExecutor',
+  SequencePackageClassName,
+  'SequenceLinkContext',
+  'Queue',
+  'DoublyLinkedListNode'
+];
 
 describe.skipIf(process.env.QUICK)('Memory Leak', () => {
   beforeEach(() => {
@@ -67,7 +77,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         resolve(2);
       });
 
-      expect(sequence['executor']['_pendingValues']?.length).toBeTruthy();
+      expect(sequence['_executor']['_pendingValues']?.length).toBeTruthy();
 
       sequence.destroy();
       sequence.attachToRoot();

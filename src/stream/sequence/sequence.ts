@@ -801,15 +801,3 @@ export class Sequence<T = void> implements IAttachment {
     this._linked = true;
   }
 }
-
-/** @internal */
-export const SequencePackageClassName = 'SequencePackage';
-/** @internal */
-export const SequenceClassNames = [
-  Sequence.name,
-  SequenceExecutor.name,
-  SequencePackageClassName,
-  'SequenceLinkContext',
-  Queue.name,
-  'DoublyLinkedListNode'
-];
