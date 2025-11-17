@@ -113,8 +113,22 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<K>(this._executor);
   }
 
-  // TODO: wait
-  // TODO: debounce
+  wait(duration: number): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      SingleEvent.create(innerResolve => {
+        let timeout = setTimeout(innerResolve, duration);
+        return () => {
+          clearTimeout(timeout);
+        };
+      })
+        .read(() => resolve(data))
+        .attach(context.attachable);
+    });
+
+    return new SingleEvent<T>(this._executor);
+  }
 
   /** @internal */
   _readSingle(callback: (data: T) => void): SingleEvent<T> {
@@ -125,7 +139,7 @@ export class SingleEvent<T = void> implements IAttachment {
         callback(data);
         this.destroy();
       } catch (e) {
-        console.error('Sequence callback function error: ', e);
+        console.error('SingleEvent callback function error: ', e);
         return;
       }
 
@@ -143,7 +157,7 @@ export class SingleEvent<T = void> implements IAttachment {
       try {
         callback(data);
       } catch (e) {
-        console.error('Sequence callback function error: ', e);
+        console.error('SingleEvent callback function error: ', e);
         return;
       }
       resolve(data);

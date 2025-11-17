@@ -317,9 +317,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: ISequenceLinkContext) => {
-        this._destroyPackagesUntilCurrent(queue, finalContext);
-      }
+      (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
     );
 
     return new Sequence<K>(this._executor);
@@ -374,9 +372,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: ISequenceLinkContext) => {
-        this._destroyPackagesUntilCurrent(queue, finalContext);
-      }
+      (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
     );
 
     return new Sequence<K>(this._executor);
@@ -435,9 +431,7 @@ export class Sequence<T = void> implements IAttachment {
           execute();
         }
       },
-      (finalContext?: ISequenceLinkContext) => {
-        this._destroyPackagesUntilCurrent(queue, finalContext);
-      }
+      (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
     );
 
     return new Sequence<K>(this._executor);
@@ -485,6 +479,7 @@ export class Sequence<T = void> implements IAttachment {
       (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
           ongoingContext?.drop();
+          ongoingContext = undefined;
         }
       }
     );
@@ -537,6 +532,7 @@ export class Sequence<T = void> implements IAttachment {
       (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
           ongoingContext?.drop();
+          ongoingContext = undefined;
         }
       }
     );
@@ -598,9 +594,7 @@ export class Sequence<T = void> implements IAttachment {
 
         SingleEvent.create(innerResolve => {
           let timeout = setTimeout(innerResolve, duration);
-          return () => {
-            clearTimeout(timeout);
-          };
+          return () => clearTimeout(timeout);
         })
           .read(() => {
             let item = queue.pop();
@@ -611,10 +605,7 @@ export class Sequence<T = void> implements IAttachment {
           })
           .attach(context.attachable);
       },
-      (finalContext?: ISequenceLinkContext) => {
-        console.log(finalContext);
-        this._destroyPackagesUntilCurrent(queue, finalContext);
-      }
+      (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
     );
 
     return new Sequence<T>(this._executor);
@@ -627,19 +618,27 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
-    this._executor._enterPipeline<T, T>((data, context, resolve) => {
-      ongoingContext?.drop();
-      ongoingContext = context;
+    this._executor._enterPipeline<T, T>(
+      (data, context, resolve) => {
+        ongoingContext?.drop();
+        ongoingContext = context;
 
-      SingleEvent.create(innerResolve => {
-        let timeout = setTimeout(innerResolve, duration);
-        return () => {
-          clearTimeout(timeout);
-        };
-      })
-        .read(() => resolve(data))
-        .attach(context.attachable);
-    });
+        SingleEvent.create(innerResolve => {
+          let timeout = setTimeout(innerResolve, duration);
+          return () => {
+            clearTimeout(timeout);
+          };
+        })
+          .read(() => resolve(data))
+          .attach(context.attachable);
+      },
+      (finalContext?: ISequenceLinkContext) => {
+        if (!finalContext) {
+          ongoingContext?.drop();
+          ongoingContext = undefined;
+        }
+      }
+    );
 
     return new Sequence<T>(this._executor);
   }
