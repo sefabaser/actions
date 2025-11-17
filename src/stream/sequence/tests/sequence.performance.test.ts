@@ -166,6 +166,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // read single changes: 0.7562999725341797
     // context functions: 0.7410998344421387
     // pending change: 0.7325997352600098
+    // after bundle: 0.6985001564025879
   }, 60000);
 
   test('sequence 10x read and resolve', async () => {
@@ -253,7 +254,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // pending change: 2.8305001258850098
   }, 60000);
 
-  test('sequence 10x async map and resolve', async () => {
+  test('sequence 10x async map', async () => {
     await UnitTestHelper.testPerformance(() => {
       let resolve!: () => void;
       let sequence = Sequence.create(r => {
@@ -280,6 +281,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // read single changes: 9.607899904251099
     // context functions: 9.31029987335205
     // pending change: 8.045899868011475
+    // after bundle: 7.693600177764893
   }, 60000);
 
   test('combine new object', async () => {
