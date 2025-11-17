@@ -7,12 +7,9 @@ import { Sequence } from '../../sequence';
 
 describe('Sequence Wait', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     ActionLibHardReset.hardReset();
     UnitTestHelper.reset();
-  });
-
-  beforeEach(() => {
-    vi.useFakeTimers();
   });
 
   describe('Behavior', () => {
