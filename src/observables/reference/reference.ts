@@ -21,7 +21,7 @@ interface Options<T extends number | object> {
 
 export class Reference<T extends number | object = number> extends Attachable {
   get value(): T | undefined {
-    if (this.destroyed) {
+    if (this._destroyed) {
       return undefined;
     }
 
@@ -32,7 +32,7 @@ export class Reference<T extends number | object = number> extends Attachable {
   }
 
   get listenerCount(): number {
-    if (this.destroyed) {
+    if (this._destroyed) {
       return 0;
     }
 
@@ -56,7 +56,7 @@ export class Reference<T extends number | object = number> extends Attachable {
   }
 
   set(data: T | undefined): this {
-    if (this.destroyed) {
+    if (this._destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be set!`);
     }
 
@@ -67,7 +67,7 @@ export class Reference<T extends number | object = number> extends Attachable {
       if (data) {
         let referenceID = this._getReferenceID(data, this._options.path);
         this._destroySubscription = AttachmentTargetStore._findAttachmentTarget(referenceID).onDestroy(() => {
-          !this.destroyed && this.set(undefined);
+          !this._destroyed && this.set(undefined);
         });
 
         if (this.attachIsCalled) {
@@ -85,7 +85,7 @@ export class Reference<T extends number | object = number> extends Attachable {
   }
 
   subscribe(callback: VariableListenerCallbackFunction<T | undefined>): IAttachment {
-    if (this.destroyed) {
+    if (this._destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
     }
 

@@ -24,7 +24,7 @@ export class IDAttachable extends Attachable {
   private _onDestroyListeners: Set<() => void> | undefined;
 
   destroy(): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       AttachmentTargetStore._unregisterIDAttachable(this);
 
       let listeners = this._onDestroyListeners;
@@ -40,7 +40,7 @@ export class IDAttachable extends Attachable {
   }
 
   onDestroy(callback?: () => void): SingleEvent<void> {
-    if (this.destroyed) {
+    if (this._destroyed) {
       if (callback) {
         CallbackHelper._triggerCallback(undefined, callback);
       }

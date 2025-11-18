@@ -15,7 +15,7 @@ export class Attachable implements IAttachment {
    */
   static getDestroyed(): IAttachment {
     let destroyedSubscription = new Attachable();
-    destroyedSubscription._destroyedVar = true;
+    destroyedSubscription._destroyed = true;
     return destroyedSubscription;
   }
 
@@ -27,9 +27,10 @@ export class Attachable implements IAttachment {
     return this._attachedParent;
   }
 
-  private _destroyedVar = false;
+  /** @internal */
+  _destroyed = false;
   get destroyed(): boolean {
-    return this._destroyedVar;
+    return this._destroyed;
   }
 
   /** @internal */
@@ -43,7 +44,7 @@ export class Attachable implements IAttachment {
   }
 
   destroy(): void {
-    if (!this._destroyedVar) {
+    if (!this._destroyed) {
       if (this._attachedParent) {
         this._attachedParent._removeAttachment(this);
         this._attachedParent = undefined;
@@ -57,7 +58,7 @@ export class Attachable implements IAttachment {
         }
       }
 
-      this._destroyedVar = true;
+      this._destroyed = true;
     }
   }
 
@@ -67,7 +68,7 @@ export class Attachable implements IAttachment {
     }
 
     this._attachIsCalled = true;
-    if (!this._destroyedVar) {
+    if (!this._destroyed) {
       this._attachedParent = parent;
       this._attachedParent._setAttachment(this);
     }
@@ -80,7 +81,7 @@ export class Attachable implements IAttachment {
     }
 
     this._attachIsCalled = true;
-    if (!this._destroyedVar) {
+    if (!this._destroyed) {
       this._attachedParent = AttachmentTargetStore._findAttachmentTarget(id);
       this._attachedParent._setAttachment(this);
     }
@@ -98,7 +99,7 @@ export class Attachable implements IAttachment {
 
   /** @internal */
   _setAttachment(child: IAttachment): void {
-    if (this.destroyed) {
+    if (this._destroyed) {
       child.destroy();
     } else {
       if (!this._attachments) {
@@ -115,7 +116,7 @@ export class Attachable implements IAttachment {
 
   /** @internal */
   protected _checkAfterMicrotask(): void {
-    if (!this._destroyedVar) {
+    if (!this._destroyed) {
       if (!this._attachIsCalled) {
         throw new Error(`Attachable: The object is not attached to anything!`);
       }

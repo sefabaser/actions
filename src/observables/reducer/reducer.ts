@@ -51,7 +51,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   }
 
   update(value: EffectType): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
         previous: this._,
@@ -67,7 +67,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   }
 
   destroy(): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
         previous: this._,

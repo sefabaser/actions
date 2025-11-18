@@ -24,7 +24,7 @@ class SequencePackage {
   _pipelineIndex = 0;
   _ongoingContext?: SequenceContext;
 
-  constructor(public data: unknown) {}
+  constructor(public _data: unknown) {}
 
   _destroyAttachment() {
     this._ongoingContext?._attachableVar?.destroy();
@@ -88,7 +88,7 @@ export class SequenceExecutor extends Attachable {
   private _finalized?: boolean;
 
   destroy(): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       super.destroy();
 
       this._pipeline = undefined as any;
@@ -110,7 +110,7 @@ export class SequenceExecutor extends Attachable {
   }
 
   _trigger(data: unknown): void {
-    if (!this._finalized && !this.destroyed) {
+    if (!this._finalized && !this._destroyed) {
       if (this.attachIsCalled) {
         this._ongoingPackageCount++;
         this._iteratePackage(new SequencePackage(data));
@@ -125,7 +125,7 @@ export class SequenceExecutor extends Attachable {
   }
 
   _enterPipeline<A, B>(iterator: SequencePipelineIterator<A, B>, destructor?: SequencePipelineDestructor) {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       if (destructor) {
         if (!this._asyncPipelineIndices) {
           this._asyncPipelineIndices = new Set();
@@ -175,16 +175,16 @@ export class SequenceExecutor extends Attachable {
   }
 
   private _iteratePackage(sequencePackage: SequencePackage): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       if (sequencePackage._pipelineIndex < this._pipeline.length) {
         let context = new SequenceContext(this, sequencePackage);
         sequencePackage._ongoingContext = context;
 
-        this._pipeline[sequencePackage._pipelineIndex].iterator(sequencePackage.data, context, returnData => {
+        this._pipeline[sequencePackage._pipelineIndex].iterator(sequencePackage._data, context, returnData => {
           sequencePackage._destroyAttachment();
           sequencePackage._ongoingContext = undefined;
 
-          sequencePackage.data = returnData;
+          sequencePackage._data = returnData;
           sequencePackage._pipelineIndex++;
           this._iteratePackage(sequencePackage);
         });

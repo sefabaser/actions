@@ -50,7 +50,7 @@ export class SingleEventExecutor extends Attachable {
   private _ongoingContext?: SingleEventContext;
 
   destroy(): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       super.destroy();
 
       this._pipeline = undefined as any;
@@ -77,7 +77,7 @@ export class SingleEventExecutor extends Attachable {
       throw new Error('Single Event: It can only resolve once.');
     }
 
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       this._resolved = true;
       this._currentData = data;
 
@@ -88,7 +88,7 @@ export class SingleEventExecutor extends Attachable {
   }
 
   _enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       this._pipeline.push(iterator);
     }
   }
@@ -115,7 +115,7 @@ export class SingleEventExecutor extends Attachable {
   }
 
   private _iteratePackage(data: unknown): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       if (this._pipelineIndex < this._pipeline.length) {
         this._ongoingContext = new SingleEventContext(this);
 
@@ -136,7 +136,7 @@ export class SingleEventExecutor extends Attachable {
 
   /** @internal */
   protected _checkAfterMicrotask(): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       if (this._pipeline.length === 0) {
         this.destroy();
       } else {

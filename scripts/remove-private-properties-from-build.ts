@@ -4,7 +4,7 @@ import path from 'path';
 let dtsPath = path.join(process.cwd(), 'dist/index.d.ts');
 
 if (!fs.existsSync(dtsPath)) {
-  console.error('❌ dist/index.d.ts not found');
+  console.error('❌ "dist/index.d.ts" not found');
   process.exit(1);
 }
 
@@ -18,5 +18,5 @@ let cleaned = dts
   .join('\n');
 
 fs.writeFileSync(dtsPath, cleaned);
-console.log('✅ Cleaned private _ members from .d.ts');
+console.log('✅ The private members of "dist/index.d.ts" are cleaned.');
 

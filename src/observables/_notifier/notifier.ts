@@ -11,7 +11,7 @@ export class ActionSubscription extends Attachable {
   }
 
   destroy(): void {
-    if (!this.destroyed) {
+    if (!this._destroyed) {
       this._destroyCallback();
       super.destroy();
     }
