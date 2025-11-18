@@ -198,15 +198,4 @@ export class SequenceExecutor extends Attachable {
       }
     }
   }
-
-  /** @internal */
-  protected _checkAfterMicrotask(): void {
-    if (!this.destroyed) {
-      if (this._pipeline.length === 0) {
-        this.destroy();
-      } else {
-        super._checkAfterMicrotask();
-      }
-    }
-  }
 }

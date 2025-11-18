@@ -133,15 +133,4 @@ export class SingleEventExecutor extends Attachable {
     this._pipelineIndex++;
     this._iteratePackage(returnData);
   };
-
-  /** @internal */
-  protected _checkAfterMicrotask(): void {
-    if (!this._destroyed) {
-      if (this._pipeline.length === 0) {
-        this.destroy();
-      } else {
-        super._checkAfterMicrotask();
-      }
-    }
-  }
 }
