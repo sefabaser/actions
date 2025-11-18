@@ -130,7 +130,7 @@ export class SequenceExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SequencePipelineIterator<A, B>, destructor?: SequencePipelineDestructor) {
     if (!this._destroyed) {
-      this.destroyIfNotAttached = false;
+      this._destroyIfNotAttached = false;
 
       if (destructor) {
         if (!this._asyncPipelineIndices) {

@@ -39,10 +39,10 @@ export class Attachable implements IAttachment {
     return this._attachIsCalled;
   }
 
-  constructor(protected destroyIfNotAttached = false) {
+  constructor(protected _destroyIfNotAttached = false) {
     queueMicrotask(() => {
       if (!this._attachIsCalled && !this._destroyed) {
-        if (this.destroyIfNotAttached) {
+        if (this._destroyIfNotAttached) {
           this.destroy();
         } else {
           throw new Error(`Attachable: The object is not attached to anything!`);

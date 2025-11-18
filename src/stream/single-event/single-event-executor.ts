@@ -93,7 +93,7 @@ export class SingleEventExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
     if (!this._destroyed) {
-      this.destroyIfNotAttached = false;
+      this._destroyIfNotAttached = false;
       this._pipeline.push(iterator);
     }
   }
