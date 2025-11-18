@@ -66,12 +66,11 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .read(() => {})
         .chainToRoot()
         .read(() => {})
-        .read(() => {})
         .attachToRoot();
       sequence.destroy();
     });
     // 0.38279999792575836
-    // without pipeline: 0.3312999978661537 no chain: 0.22509999573230743
+    // without pipeline: 0.3312999978661537 chain cost: ~0.1
   }, 60000);
 
   test('sequence instant', async () => {
