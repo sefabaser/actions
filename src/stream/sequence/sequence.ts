@@ -736,10 +736,6 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this._executor._enterPipeline<T, T>((data, _, resolve) => {
-      chainExecutor._trigger(data);
-      resolve(data);
-    });
     this._executor._chainedTo = chainExecutor;
     this._executor.attach(parent);
 
@@ -750,10 +746,6 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this._executor._enterPipeline<T, T>((data, _, resolve) => {
-      chainExecutor._trigger(data);
-      resolve(data);
-    });
     this._executor._chainedTo = chainExecutor;
     this._executor.attachByID(id);
 
@@ -764,10 +756,6 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
-    this._executor._enterPipeline<T, T>((data, _, resolve) => {
-      chainExecutor._trigger(data);
-      resolve(data);
-    });
     this._executor._chainedTo = chainExecutor;
     this._executor.attachToRoot();
 

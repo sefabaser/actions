@@ -1,4 +1,4 @@
-import { Attachable, IAttachment } from '../../attachable/attachable';
+import { Attachable } from '../../attachable/attachable';
 
 type SequencePipelineDestructor = (finalContext?: ISequenceLinkContext) => void;
 type SequencePipelineIterator<A = unknown, B = unknown> = (
@@ -83,9 +83,13 @@ export class SequenceExecutor extends Attachable {
   _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   _asyncPipelineIndices?: Set<number>;
   _ongoingPackageCount = 0;
-  _chainedTo?: IAttachment;
+  _chainedTo?: SequenceExecutor;
   _pendingValues?: unknown[];
   private _finalized?: boolean;
+
+  constructor() {
+    super(true);
+  }
 
   destroy(): void {
     if (!this._destroyed) {
@@ -126,6 +130,8 @@ export class SequenceExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SequencePipelineIterator<A, B>, destructor?: SequencePipelineDestructor) {
     if (!this._destroyed) {
+      this.destroyIfNotAttached = false;
+
       if (destructor) {
         if (!this._asyncPipelineIndices) {
           this._asyncPipelineIndices = new Set();
@@ -189,6 +195,10 @@ export class SequenceExecutor extends Attachable {
           this._iteratePackage(sequencePackage);
         });
       } else {
+        if (this._chainedTo) {
+          this._chainedTo._trigger(sequencePackage._data);
+        }
+
         sequencePackage._destroyAttachment();
         this._ongoingPackageCount--;
 

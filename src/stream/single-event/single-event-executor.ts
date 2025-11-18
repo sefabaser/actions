@@ -49,6 +49,10 @@ export class SingleEventExecutor extends Attachable {
   private _pipelineIndex = 0;
   private _ongoingContext?: SingleEventContext;
 
+  constructor() {
+    super(true);
+  }
+
   destroy(): void {
     if (!this._destroyed) {
       super.destroy();
@@ -89,6 +93,7 @@ export class SingleEventExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
     if (!this._destroyed) {
+      this.destroyIfNotAttached = false;
       this._pipeline.push(iterator);
     }
   }
@@ -121,6 +126,9 @@ export class SingleEventExecutor extends Attachable {
 
         this._pipeline[this._pipelineIndex](data, this._ongoingContext, this._resolve);
       } else {
+        if (this._chainedTo) {
+          this._chainedTo._trigger(data);
+        }
         this.destroy();
       }
     }

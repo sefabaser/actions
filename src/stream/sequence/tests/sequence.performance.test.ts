@@ -35,6 +35,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.23120000213384628
+    // without pipeline: 0.19470000267028809
   }, 60000);
 
   test('unused sequence manual with chain no read', async () => {
@@ -43,9 +44,10 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.24880000203847885
+    // without pipeline: 0.20570000261068344
   }, 60000);
 
-  test('unused sequence instant with chain with read', async () => {
+  test('sequence instant with chain with read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
         .read(() => {})
@@ -55,18 +57,21 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       sequence.destroy();
     });
     // 0.37049999833106995
+    // without pipeline: 0.32019999623298645
   }, 60000);
 
-  test('unused sequence manual with chain with read', async () => {
+  test('sequence manual with chain with read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.create(resolve => resolve())
         .read(() => {})
         .chainToRoot()
         .read(() => {})
+        .read(() => {})
         .attachToRoot();
       sequence.destroy();
     });
     // 0.38279999792575836
+    // without pipeline: 0.3312999978661537 no chain: 0.22509999573230743
   }, 60000);
 
   test('sequence instant', async () => {
@@ -89,6 +94,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // 0.47679996490478516
     // manual destroy: 0.28600025177001953
+    // without pipeline: 0.2443000003695488
   }, 60000);
 
   /*

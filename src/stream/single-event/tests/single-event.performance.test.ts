@@ -33,6 +33,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // sequence to singleEvent: 0.28600025177001953 -> 0.2734999656677246
     // 0.2734999656677246
+    // after no pipeline: 0.24059999734163284
   }, 60000);
 
   test('custom chaining instant single event', async () => {

@@ -39,20 +39,22 @@ export class Attachable implements IAttachment {
     return this._attachIsCalled;
   }
 
-  constructor() {
+  constructor(protected destroyIfNotAttached = false) {
     queueMicrotask(() => {
-      if (!this._destroyed) {
-        if (!this._attachIsCalled) {
+      if (!this._attachIsCalled && !this._destroyed) {
+        if (this.destroyIfNotAttached) {
+          this.destroy();
+        } else {
           throw new Error(`Attachable: The object is not attached to anything!`);
         }
+      }
 
-        let currentParent: Attachable | undefined = this.attachedParent;
-        while (currentParent) {
-          if (currentParent === this) {
-            throw new Error(`Circular attachment detected!`);
-          }
-          currentParent = currentParent.attachedParent;
+      let currentParent: Attachable | undefined = this.attachedParent;
+      while (currentParent) {
+        if (currentParent === this) {
+          throw new Error(`Circular attachment detected!`);
         }
+        currentParent = currentParent.attachedParent;
       }
     });
   }
@@ -113,7 +115,7 @@ export class Attachable implements IAttachment {
 
   /** @internal */
   _setAttachment(child: IAttachment): void {
-    if (this._destroyed) {
+    if (this.destroyed) {
       child.destroy();
     } else {
       if (!this._attachments) {
