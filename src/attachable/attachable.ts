@@ -33,13 +33,15 @@ export class Attachable implements IAttachment {
     return this._destroyed;
   }
 
-  /** @internal */
   _attachIsCalled = false;
   get attachIsCalled(): boolean {
     return this._attachIsCalled;
   }
 
-  constructor(protected _destroyIfNotAttached = false) {
+  /** @internal */
+  protected _destroyIfNotAttached?: true;
+
+  constructor() {
     queueMicrotask(() => {
       if (!this._attachIsCalled && !this._destroyed) {
         if (this._destroyIfNotAttached) {

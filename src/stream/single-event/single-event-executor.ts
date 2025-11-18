@@ -50,7 +50,8 @@ export class SingleEventExecutor extends Attachable {
   private _ongoingContext?: SingleEventContext;
 
   constructor() {
-    super(true);
+    super();
+    this._destroyIfNotAttached = true;
   }
 
   destroy(): void {
@@ -93,7 +94,7 @@ export class SingleEventExecutor extends Attachable {
 
   _enterPipeline<A, B>(iterator: SingleEventPipelineIterator<A, B>) {
     if (!this._destroyed) {
-      this._destroyIfNotAttached = false;
+      this._destroyIfNotAttached = undefined;
       this._pipeline.push(iterator);
     }
   }
