@@ -11,6 +11,64 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     sequence.destroy();
   });
 
+  test('unused sequence instant normal attach', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant();
+      sequence.destroy();
+    });
+    // 0.09229999780654907
+    // no attach: 0.0867999941110611
+  }, 60000);
+
+  test('unused sequence manual normal attach', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.create(resolve => resolve());
+      sequence.destroy();
+    });
+    // 0.11140000075101852
+    // no attach: 0.10039999336004257
+  }, 60000);
+
+  test('unused sequence instant with chain no read', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant().chainToRoot();
+      sequence.destroy();
+    });
+    // 0.23120000213384628
+  }, 60000);
+
+  test('unused sequence manual with chain no read', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.create(resolve => resolve()).chainToRoot();
+      sequence.destroy();
+    });
+    // 0.24880000203847885
+  }, 60000);
+
+  test('unused sequence instant with chain with read', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant()
+        .read(() => {})
+        .chainToRoot()
+        .read(() => {})
+        .attachToRoot();
+      sequence.destroy();
+    });
+    // 0.37049999833106995
+  }, 60000);
+
+  test('unused sequence manual with chain with read', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.create(resolve => resolve())
+        .read(() => {})
+        .chainToRoot()
+        .read(() => {})
+        .attachToRoot();
+      sequence.destroy();
+    });
+    // 0.38279999792575836
+  }, 60000);
+
   test('sequence instant', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
