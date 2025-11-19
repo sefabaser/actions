@@ -53,6 +53,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 4.466700077056885
     // pending until attached: 2.0001001358032227
     // taking as args: 1.9693999290466309
+    // 2.1128000020980835
   }, 60000);
 
   test('sequence 10x read and resolve after attach', async () => {
