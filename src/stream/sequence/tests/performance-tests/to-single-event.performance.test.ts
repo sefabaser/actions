@@ -40,4 +40,13 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // 0.3075000047683716
   }, 60000);
+
+  test('with single chaining', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant().singleChainToRoot();
+      sequence.destroy();
+    });
+
+    // 0.21230000257492065
+  }, 60000);
 });
