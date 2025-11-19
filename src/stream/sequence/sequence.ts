@@ -716,6 +716,11 @@ export class Sequence<T = void> implements IAttachment {
     return this;
   }
 
+  /**
+   * Acts like .take(1) but returns a SingleEvent instead.
+   * Destroys the sequence after single package goes out of the pipeline.
+   * @returns SingleEvent
+   */
   toSingleEvent(): SingleEvent<T> {
     this._validateBeforeLinking();
 
@@ -728,6 +733,11 @@ export class Sequence<T = void> implements IAttachment {
     return SingleEvent._createManual<T>(singleEventExecutor);
   }
 
+  /**
+   * Attaches the sequence and returns a new sequence that continues from this sequence.
+   * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
+   * @returns Sequence
+   */
   chain(parent: Attachable): Sequence<T> {
     this._validateBeforeLinking();
 
@@ -738,6 +748,11 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence(chainExecutor);
   }
 
+  /**
+   * Attaches the sequence and returns a new sequence that continues from this sequence.
+   * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
+   * @returns Sequence
+   */
   chainByID(id: number): Sequence<T> {
     this._validateBeforeLinking();
 
@@ -748,6 +763,11 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence(chainExecutor);
   }
 
+  /**
+   * Attaches the sequence and returns a new sequence that continues from this sequence.
+   * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
+   * @returns Sequence
+   */
   chainToRoot(): Sequence<T> {
     this._validateBeforeLinking();
 
@@ -758,6 +778,11 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence(chainExecutor);
   }
 
+  /**
+   * Acts like .chain(parent) but returns a SingleEvent instead.
+   * Destroys the sequence after single package goes out of the pipeline.
+   * @returns SingleEvent
+   */
   singleChain(parent: Attachable): SingleEvent<T> {
     this._validateBeforeLinking();
 
@@ -770,6 +795,11 @@ export class Sequence<T = void> implements IAttachment {
     return SingleEvent._createManual(singleEventExecutor);
   }
 
+  /**
+   * Acts like .chainByID(id) but returns a SingleEvent instead.
+   * Destroys the sequence after single package goes out of the pipeline.
+   * @returns SingleEvent
+   */
   singleChainByID(id: number): SingleEvent<T> {
     this._validateBeforeLinking();
 
@@ -782,6 +812,11 @@ export class Sequence<T = void> implements IAttachment {
     return SingleEvent._createManual(singleEventExecutor);
   }
 
+  /**
+   * Acts like .chainToRoot() but returns a SingleEvent instead.
+   * Destroys the sequence after single package goes out of the pipeline.
+   * @returns SingleEvent
+   */
   singleChainToRoot(): SingleEvent<T> {
     this._validateBeforeLinking();
 
