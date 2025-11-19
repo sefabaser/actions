@@ -71,7 +71,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   }
 
   waitUntilRemoved(value: KeyType): SingleEvent<void> {
-    return SingleEvent.create((resolve, executor) => {
+    return SingleEvent.create(resolve => {
       if (!this.map.has(value)) {
         resolve();
       } else {
