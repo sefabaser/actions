@@ -86,7 +86,7 @@ describe('ObservableMapNotifier', () => {
       expect(subscription.destroyed).toBe(false);
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback('test'));
 
       expect(triggeredWith).toBe('test');
     });
@@ -114,7 +114,7 @@ describe('ObservableMapNotifier', () => {
       subscription.destroy();
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback('test'));
 
       expect(triggered).toBe(false);
     });
@@ -140,7 +140,7 @@ describe('ObservableMapNotifier', () => {
       expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(2);
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback('test'));
 
       expect(triggered1).toBe(true);
       expect(triggered2).toBe(true);
@@ -159,7 +159,7 @@ describe('ObservableMapNotifier', () => {
         })
         .attachToRoot();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Sequence callback function error: ', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('SingleEvent callback function error: ', expect.any(Error));
 
       notifier
         .waitUntilAdded(2)
@@ -169,7 +169,7 @@ describe('ObservableMapNotifier', () => {
         .attachToRoot();
 
       notifier['map'].set(2, 'test2');
-      notifier['_untilAddedListenersVar']?.get(2)?.forEach(callback => callback(2));
+      notifier['_untilAddedListenersVar']?.get(2)?.forEach(callback => callback('test2'));
 
       expect(subscription2Called).toBe(true);
 
@@ -288,7 +288,7 @@ describe('ObservableMapNotifier', () => {
         })
         .attachToRoot();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Sequence callback function error: ', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('SingleEvent callback function error: ', expect.any(Error));
 
       notifier['map'].set(2, 'test2');
 
@@ -357,7 +357,7 @@ describe('ObservableMapNotifier', () => {
       expect(notifier['_untilAddedListenersVar']?.get(1)?.size).toBe(0);
 
       notifier['map'].set(1, 'test');
-      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback(1));
+      notifier['_untilAddedListenersVar']?.get(1)?.forEach(callback => callback('test'));
 
       expect(triggered).toBe(false);
     });
@@ -378,7 +378,7 @@ describe('ObservableMapNotifier', () => {
     });
 
     test('creates with shared listener maps', () => {
-      let map = new Map<number, string>();
+      let map = new Map<number, number>();
       let untilAddedListeners = new Map<number, Set<(data: number) => void>>();
       let untilRemovedListeners = new Map<number, Set<() => void>>();
 

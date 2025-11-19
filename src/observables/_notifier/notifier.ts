@@ -95,10 +95,6 @@ export class Notifier<T> {
     return this.toSequence().map(callback);
   }
 
-  orderedMap<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
-    return this.toSequence().asyncMapOrdered(callback);
-  }
-
   filter(callback: (data: T, previousValue: T | undefined) => boolean): Sequence<T> {
     return this.toSequence().filter(callback);
   }
@@ -109,6 +105,134 @@ export class Notifier<T> {
 
   skip(count: number): Sequence<T> {
     return this.toSequence().skip(count);
+  }
+
+  wait(duration?: number): Sequence<T> {
+    return this.toSequence().wait(duration);
+  }
+
+  /**
+   * Drops the previous package that is still waiting for the timeout.
+   */
+  debounce(duration?: number): Sequence<T> {
+    return this.toSequence().debounce(duration);
+  }
+
+  /**
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.
+   *
+   * **Sample Use Case**: Showing an animation for each package, regardless of what other packages are doing.
+   *
+   * - `✅ Never Drops Packages`
+   * - `❌ Respects Package Order`
+   * - `✅ Parallel Execution`
+   *
+   * @A ---I—————————>✓-------------------
+   * @B ---------I———>✓----------------------------
+   * @C --------------I——>✓-------------------------
+   * @R -------------------B-C-----A-------------------
+   */
+  asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+    return this.toSequence().asyncMapDirect(callback);
+  }
+
+  /**
+   * **Execution**: Each incoming package **executes directly** but **waits before resolve** the package before them to resolve to keep the order.
+   *
+   * **Sample Use Case**: Using async translation service, before storing ordered event history.
+   *
+   * **⚠️Careful**: Can create a bottleneck! If an async operation never resolves, all packages behind will be stuck.
+   *
+   * - `✅ Never Drops Packages`
+   * - `✅ Respects Package Order`
+   * - `✅ Parallel Execution`
+   *
+   * @A ---I—————————>✓-------------------
+   * @B ---------I———I- - - - - - >✓-----------------
+   * @C --------------I——I- - - - - >✓----------------
+   * @R ----------------------------ABC----------------
+   */
+  asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+    return this.toSequence().asyncMapOrdered(callback);
+  }
+
+  /**
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting.
+   * The latest value is important, the packages that lacks behind are dropped.
+   *
+   * **Sample Use Case**: Converting a state with translating some keys in it with an async “translate” function.
+   *
+   * - `❌ Never Drops Packages`
+   * - `✅ Respects Package Order`
+   * - `✅ Parallel Execution`
+   *
+   * @A ---I——————Ix----------------------------
+   * @B ---------I———>✓----------------------------
+   * @C --------------I——>✓-------------------------
+   * @R -------------------B-C-------------------------
+   */
+  asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+    return this.toSequence().asyncMapLatest(callback);
+  }
+
+  /**
+   * **Execution**: Each incoming package **executes sequentially** and **resolves directly** without waiting.
+   *
+   * **Sample Use Case**: Payment operation, one can be processed if the previous one ends in success.
+   *
+   * **⚠️Careful**: Can create a bottleneck! The feeding speed should not exceed the digestion speed.
+   *
+   * - `✅ Never Drops Packages`
+   * - `✅ Respects Package Order`
+   * - `❌ Parallel Execution`
+   *
+   * @A ---I—————————>✓-------------------
+   * @B ---------I- - - - - - - - - - - I———>✓---------
+   * @C --------------I- - - - - - - - - - - - - - I——>✓-
+   * @R ----------------------------A--------B------C--
+   */
+  asyncMapQueue<K>(
+    callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
+  ): Sequence<K> {
+    return this.toSequence().asyncMapQueue(callback);
+  }
+
+  /**
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting.
+   * If a new package comes while another is in progress, the one in progress will be dropped.
+   *
+   * **Sample Use Case**: Auto completion with async operation. If value changes the old operation becomes invalid.
+   *
+   * - `❌ Never Drops Packages`
+   * - `✅ Respects Package Order`
+   * - `❌ Parallel Execution`
+   *
+   * @A ---I——Ix--------------------------------------
+   * @B ---------I——Ix--------------------------------
+   * @C ---------------I——>✓------------------------
+   * @R ----------------------C-------------------------
+   */
+  asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+    return this.toSequence().asyncMapDropOngoing(callback);
+  }
+
+  /**
+   * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting.
+   * If a package is in progress, the newcomers will be dropped.
+   *
+   * **Sample Use Case**: Refresh button. While in progress, the new requests gets ignored.
+   *
+   * - `❌ Never Drops Packages`
+   * - `✅ Respects Package Order`
+   * - `❌ Parallel Execution`
+   *
+   * @A ---I—————————>✓-------------------
+   * @B ---------x--------------------------------------
+   * @C ---------------x--------------------------------
+   * @R ---------------------------A--------------------
+   */
+  asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+    return this.toSequence().asyncMapDropIncoming(callback);
   }
 
   /** @internal */

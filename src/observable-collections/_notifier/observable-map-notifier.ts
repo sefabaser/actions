@@ -1,11 +1,11 @@
-import { Sequence } from '../../stream/sequence/sequence';
+import { SingleEvent } from '../../stream/single-event/single-event';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
 
   /** @internal */
-  protected _untilAddedListenersVar?: Map<KeyType, Set<(data: KeyType) => void>>;
-  private get _UntilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
+  protected _untilAddedListenersVar?: Map<KeyType, Set<(data: ValueType) => void>>;
+  private get _UntilAddedListeners(): Map<KeyType, Set<(data: ValueType) => void>> {
     if (!this._untilAddedListenersVar) {
       this._untilAddedListenersVar = new Map();
     }
@@ -27,7 +27,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
 
   constructor(
     map: Map<KeyType, ValueType>,
-    untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>,
+    untilAddedListeners?: Map<KeyType, Set<(data: ValueType) => void>>,
     untilRemovedListeners?: Map<KeyType, Set<() => void>>
   ) {
     this.map = map ?? new Map<KeyType, ValueType>();
@@ -51,15 +51,10 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     return this.map.get(key);
   }
 
-  waitUntilAdded(value: KeyType): Sequence<ValueType> {
-    return Sequence.create<ValueType>((resolve, executor) => {
-      let resolveAndDestroy = () => {
-        resolve(this.map.get(value)!);
-        executor.final();
-      };
-
+  waitUntilAdded(value: KeyType): SingleEvent<ValueType> {
+    return SingleEvent.create<ValueType>(resolve => {
       if (this.map.has(value)) {
-        resolveAndDestroy();
+        resolve(this.map.get(value)!);
       } else {
         let untilAddedListenerSet = this._UntilAddedListeners.get(value);
         if (!untilAddedListenerSet) {
@@ -67,23 +62,18 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
           this._UntilAddedListeners.set(value, untilAddedListenerSet);
         }
 
-        untilAddedListenerSet.add(resolveAndDestroy);
+        untilAddedListenerSet.add(resolve);
         return () => {
-          this._untilAddedListenersVar?.get(value)?.delete(resolveAndDestroy);
+          this._untilAddedListenersVar?.get(value)?.delete(resolve);
         };
       }
     });
   }
 
-  waitUntilRemoved(value: KeyType): Sequence<void> {
-    return Sequence.create((resolve, executor) => {
-      let resolveAndDestroy = () => {
-        resolve();
-        executor.final();
-      };
-
+  waitUntilRemoved(value: KeyType): SingleEvent<void> {
+    return SingleEvent.create((resolve, executor) => {
       if (!this.map.has(value)) {
-        resolveAndDestroy();
+        resolve();
       } else {
         let untilRemovedListenerSet = this._untilRemovedListeners.get(value);
         if (!untilRemovedListenerSet) {
@@ -91,9 +81,9 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
           this._untilRemovedListeners.set(value, untilRemovedListenerSet);
         }
 
-        untilRemovedListenerSet.add(resolveAndDestroy);
+        untilRemovedListenerSet.add(resolve);
         return () => {
-          this._untilRemovedListenersVar?.get(value)?.delete(resolveAndDestroy);
+          this._untilRemovedListenersVar?.get(value)?.delete(resolve);
         };
       }
     });

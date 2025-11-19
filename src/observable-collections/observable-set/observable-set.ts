@@ -1,4 +1,4 @@
-import { Sequence } from '../../stream/sequence/sequence';
+import { SingleEvent } from '../../stream/single-event/single-event';
 import { ObservableMap } from '../observable-map/observable-map';
 
 export class ObservableSet<KeyType extends number | string> {
@@ -31,11 +31,11 @@ export class ObservableSet<KeyType extends number | string> {
     return this;
   }
 
-  waitUntilAdded(value: KeyType): Sequence<void> {
+  waitUntilAdded(value: KeyType): SingleEvent<void> {
     return this._observableMap.waitUntilAdded(value);
   }
 
-  waitUntilRemoved(value: KeyType): Sequence<void> {
+  waitUntilRemoved(value: KeyType): SingleEvent<void> {
     return this._observableMap.waitUntilRemoved(value);
   }
 }

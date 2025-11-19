@@ -217,6 +217,130 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<K>(this._executor);
   }
 
+  filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let previousValue: T | undefined;
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      let passedTheFilter: boolean;
+      try {
+        passedTheFilter = callback(data, previousValue, context);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      if (passedTheFilter) {
+        resolve(data);
+        previousValue = data;
+      } else {
+        context.drop();
+      }
+    });
+    return new Sequence<T>(this._executor);
+  }
+
+  take(count: number): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let taken = 0;
+
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      taken++;
+
+      if (taken >= count) {
+        context.final();
+      }
+
+      if (taken <= count) {
+        resolve(data);
+      }
+    });
+
+    return new Sequence<T>(this._executor);
+  }
+
+  skip(count: number): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let skipped = 0;
+    let blocked = count > 0;
+
+    this._executor._enterPipeline<T, T>((data, _, resolve) => {
+      if (blocked) {
+        skipped++;
+        if (skipped > count) {
+          blocked = false;
+          resolve(data);
+        }
+      } else {
+        resolve(data);
+      }
+    });
+
+    return new Sequence<T>(this._executor);
+  }
+
+  wait(duration?: number): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let queue = new Queue<ExecutionOrderQueuer>();
+    this._executor._enterPipeline<T, T>(
+      (data, context, resolve) => {
+        let queuer: ExecutionOrderQueuer = { _context: context };
+        queue.add(queuer);
+
+        SingleEvent.create(innerResolve => {
+          let timeout = setTimeout(innerResolve, duration);
+          return () => clearTimeout(timeout);
+        })
+          .read(() => {
+            let item = queue.pop();
+            if (item !== queuer) {
+              throw new Error('Sequence: Internal Error. Wait queue is curropted.');
+            }
+            resolve(data);
+          })
+          .attach(context.attachable);
+      },
+      (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
+    );
+
+    return new Sequence<T>(this._executor);
+  }
+
+  /**
+   * Drops the previous package that is still waiting for the timeout.
+   */
+  debounce(duration?: number): Sequence<T> {
+    this._validateBeforeLinking();
+
+    let ongoingContext: ISequenceLinkContext | undefined;
+    this._executor._enterPipeline<T, T>(
+      (data, context, resolve) => {
+        ongoingContext?.drop();
+        ongoingContext = context;
+
+        SingleEvent.create(innerResolve => {
+          let timeout = setTimeout(innerResolve, duration);
+          return () => {
+            clearTimeout(timeout);
+          };
+        })
+          .read(() => resolve(data))
+          .attach(context.attachable);
+      },
+      (finalContext?: ISequenceLinkContext) => {
+        if (!finalContext) {
+          ongoingContext?.drop();
+          ongoingContext = undefined;
+        }
+      }
+    );
+
+    return new Sequence<T>(this._executor);
+  }
+
   /**
    * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.
    *
@@ -541,130 +665,6 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<K>(this._executor);
   }
 
-  filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
-    this._validateBeforeLinking();
-
-    let previousValue: T | undefined;
-    this._executor._enterPipeline<T, T>((data, context, resolve) => {
-      let passedTheFilter: boolean;
-      try {
-        passedTheFilter = callback(data, previousValue, context);
-      } catch (e) {
-        console.error('Sequence callback function error: ', e);
-        return;
-      }
-
-      if (passedTheFilter) {
-        resolve(data);
-        previousValue = data;
-      } else {
-        context.drop();
-      }
-    });
-    return new Sequence<T>(this._executor);
-  }
-
-  take(count: number): Sequence<T> {
-    this._validateBeforeLinking();
-
-    let taken = 0;
-
-    this._executor._enterPipeline<T, T>((data, context, resolve) => {
-      taken++;
-
-      if (taken >= count) {
-        context.final();
-      }
-
-      if (taken <= count) {
-        resolve(data);
-      }
-    });
-
-    return new Sequence<T>(this._executor);
-  }
-
-  wait(duration?: number): Sequence<T> {
-    this._validateBeforeLinking();
-
-    let queue = new Queue<ExecutionOrderQueuer>();
-    this._executor._enterPipeline<T, T>(
-      (data, context, resolve) => {
-        let queuer: ExecutionOrderQueuer = { _context: context };
-        queue.add(queuer);
-
-        SingleEvent.create(innerResolve => {
-          let timeout = setTimeout(innerResolve, duration);
-          return () => clearTimeout(timeout);
-        })
-          .read(() => {
-            let item = queue.pop();
-            if (item !== queuer) {
-              throw new Error('Sequence: Internal Error. Wait queue is curropted.');
-            }
-            resolve(data);
-          })
-          .attach(context.attachable);
-      },
-      (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
-    );
-
-    return new Sequence<T>(this._executor);
-  }
-
-  /**
-   * Drops the previous package that is still waiting for the timeout.
-   */
-  debounce(duration: number): Sequence<T> {
-    this._validateBeforeLinking();
-
-    let ongoingContext: ISequenceLinkContext | undefined;
-    this._executor._enterPipeline<T, T>(
-      (data, context, resolve) => {
-        ongoingContext?.drop();
-        ongoingContext = context;
-
-        SingleEvent.create(innerResolve => {
-          let timeout = setTimeout(innerResolve, duration);
-          return () => {
-            clearTimeout(timeout);
-          };
-        })
-          .read(() => resolve(data))
-          .attach(context.attachable);
-      },
-      (finalContext?: ISequenceLinkContext) => {
-        if (!finalContext) {
-          ongoingContext?.drop();
-          ongoingContext = undefined;
-        }
-      }
-    );
-
-    return new Sequence<T>(this._executor);
-  }
-
-  skip(count: number): Sequence<T> {
-    this._validateBeforeLinking();
-
-    let skipped = 0;
-    let blocked = count > 0;
-
-    this._executor._enterPipeline<T, T>((data, _, resolve) => {
-      if (blocked) {
-        skipped++;
-        if (skipped > count) {
-          blocked = false;
-          resolve(data);
-        }
-      } else {
-        resolve(data);
-      }
-    });
-
-    return new Sequence<T>(this._executor);
-  }
-
   /** @internal */
   _subscribeSingle(callback: (data: T) => void): Sequence<T> {
     this._validateBeforeLinking();
@@ -781,6 +781,7 @@ export class Sequence<T = void> implements IAttachment {
   /**
    * Acts like .toSingleEvent().chain(parent) but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
+   * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
    * @returns SingleEvent
    */
   singleChain(parent: Attachable): SingleEvent<T> {
@@ -798,6 +799,7 @@ export class Sequence<T = void> implements IAttachment {
   /**
    * Acts like .toSingleEvent().chainByID(id) but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
+   * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
    * @returns SingleEvent
    */
   singleChainByID(id: number): SingleEvent<T> {
@@ -815,6 +817,7 @@ export class Sequence<T = void> implements IAttachment {
   /**
    * Acts like .toSingleEvent().chainToRoot() but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
+   * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
    * @returns SingleEvent
    */
   singleChainToRoot(): SingleEvent<T> {

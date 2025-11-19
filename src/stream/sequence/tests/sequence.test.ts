@@ -1677,7 +1677,7 @@ describe('Sequence', () => {
 
       let heap: string[] = [];
       action
-        .orderedMap(data =>
+        .asyncMapOrdered(data =>
           Sequence.create<string>(resolve => {
             UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })

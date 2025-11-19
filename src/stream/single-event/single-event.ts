@@ -89,6 +89,23 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<K>(this._executor);
   }
 
+  wait(duration?: number): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      SingleEvent.create(innerResolve => {
+        let timeout = setTimeout(innerResolve, duration);
+        return () => {
+          clearTimeout(timeout);
+        };
+      })
+        .read(() => resolve(data))
+        .attach(context.attachable);
+    });
+
+    return new SingleEvent<T>(this._executor);
+  }
+
   /**
    * **Execution**: The incoming package **executes directly** and **directly resolves** after async operation responds.
    *
@@ -116,23 +133,6 @@ export class SingleEvent<T = void> implements IAttachment {
     });
 
     return new SingleEvent<K>(this._executor);
-  }
-
-  wait(duration?: number): SingleEvent<T> {
-    this._validateBeforeLinking();
-
-    this._executor._enterPipeline<T, T>((data, context, resolve) => {
-      SingleEvent.create(innerResolve => {
-        let timeout = setTimeout(innerResolve, duration);
-        return () => {
-          clearTimeout(timeout);
-        };
-      })
-        .read(() => resolve(data))
-        .attach(context.attachable);
-    });
-
-    return new SingleEvent<T>(this._executor);
   }
 
   /** @internal */

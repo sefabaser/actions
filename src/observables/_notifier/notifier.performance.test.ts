@@ -25,6 +25,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // trigger all change: 0.19009995460510254
     // 0.18709993362426758
     // read single changes: 0.1697998046875
+    // 0.15889999270439148
   }, 60000);
 
   test('action subscribe 10x', async () => {
@@ -127,7 +128,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       let subscription = action
         .take(1)
-        .read(() => {})
+        .map(() => {})
         .attachToRoot();
       action.trigger();
       subscription.destroy();
@@ -139,7 +140,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // queueMicrotask: 0.5446999073028564
     // trigger all change: 0.5025999546051025
     // read single changes: 0.5067000389099121
-    // 0.37199974060058594
+    // 0.3692000061273575
   }, 60000);
 
   test('take one by single event', async () => {
@@ -151,7 +152,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         .attachToRoot();
       action.trigger();
     });
-    // 0.3014998435974121
+    // 0.294500008225441
   }, 60000);
 
   test('action to sequence read', async () => {
@@ -173,7 +174,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // read single changes: 0.4247000217437744
     // removing bind: 0.40780019760131836
     // manual subscription: 0.32919979095458984
-    // 0.3203001022338867
+    // 0.3164000064134598
   }, 60000);
 
   test('action to single event read', async () => {
@@ -196,6 +197,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       action.trigger();
     });
     // Min:  0.20210027694702148
-    // 0.19529962539672852
+    // 0.18799999356269836
   }, 60000);
 });

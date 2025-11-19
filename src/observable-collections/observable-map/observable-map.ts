@@ -13,7 +13,7 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
         let listeners = this._untilAddedListenersVar.get(key);
         if (listeners) {
           for (let listener of listeners) {
-            CallbackHelper._triggerCallback(undefined, listener);
+            CallbackHelper._triggerCallback<ValueType>(item, listener);
           }
         }
         this._untilAddedListenersVar.delete(key);

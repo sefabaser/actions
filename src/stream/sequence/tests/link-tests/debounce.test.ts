@@ -52,6 +52,27 @@ describe('Sequence Debounce', () => {
       expect(heap).toEqual(['b']);
     });
 
+    test('no duration debounce drops previous pending values', () => {
+      let heap: string[] = [];
+      let resolve!: (data: string) => void;
+
+      Sequence.create<string>(r => {
+        resolve = r;
+      })
+        .debounce()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      resolve('a');
+      expect(heap).toEqual([]);
+
+      resolve('b');
+      expect(heap).toEqual([]);
+
+      vi.advanceTimersByTime(0);
+      expect(heap).toEqual(['b']);
+    });
+
     test('multiple rapid triggers only emit last value', () => {
       let heap: string[] = [];
       let resolve!: (data: string) => void;
