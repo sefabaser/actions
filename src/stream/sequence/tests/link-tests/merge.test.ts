@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ActionLibHardReset } from '../../../../helpers/hard-reset';
 import { Action } from '../../../../observables/action/action';
+import { SingleEvent } from '../../../single-event/single-event';
 import { Sequence } from '../../sequence';
 
 describe('Sequence Merge', () => {
@@ -12,7 +13,7 @@ describe('Sequence Merge', () => {
   });
 
   describe('Behavior', () => {
-    test('simple merge', async () => {
+    test('sequence merge', async () => {
       let heap: string[] = [];
 
       Sequence.merge(
@@ -28,11 +29,41 @@ describe('Sequence Merge', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
+    test('single event merge', async () => {
+      let heap: string[] = [];
+
+      Sequence.merge(
+        SingleEvent.create<string>(resolve => resolve('a')),
+        SingleEvent.create<string>(resolve => resolve('b')),
+        SingleEvent.create<string>(resolve => resolve('c'))
+      )
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      await UnitTestHelper.waitForAllOperations();
+
+      expect(heap).toEqual(['a', 'b', 'c']);
+    });
+
+    test('action merge', () => {
+      let action1 = new Action<string>();
+      let action2 = new Action<string>();
+
+      let heap: string[] = [];
+      Sequence.merge(action1, action2)
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      action1.trigger('a');
+      action2.trigger('b');
+      expect(heap).toEqual(['a', 'b']);
+    });
+
     test('merging instantly resolved sequences', async () => {
       let heap: string[] = [];
 
-      let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
-      let s2 = Sequence.create<string>(resolve => resolve('b')).take(1);
+      let s1 = Sequence.instant('a').take(1);
+      let s2 = Sequence.instant('b').take(1);
 
       let merged = Sequence.merge(s1, s2);
       let read = merged.read(data => heap.push(data)).attachToRoot();
@@ -71,20 +102,6 @@ describe('Sequence Merge', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
-    test('using action directly', () => {
-      let action1 = new Action<string>();
-      let action2 = new Action<string>();
-
-      let heap: string[] = [];
-      Sequence.merge(action1, action2)
-        .read(value => heap.push(value))
-        .attachToRoot();
-
-      action1.trigger('a');
-      action2.trigger('b');
-      expect(heap).toEqual(['a', 'b']);
-    });
-
     test('merge with delayed sequences', async () => {
       let heap: string[] = [];
       Sequence.merge(
@@ -97,6 +114,26 @@ describe('Sequence Merge', () => {
 
       await UnitTestHelper.waitForAllOperations();
       expect(heap).toEqual(['1', 'a', 'x', '2', 'b', 'y']);
+    });
+
+    test('merging mixed async operations', async () => {
+      let heap: unknown[] = [];
+
+      let sequence = Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['1', '2'], resolve));
+      let singleEvent = SingleEvent.instant('single');
+      let action = new Action<string>();
+
+      Sequence.merge(sequence, singleEvent, action)
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual(['single']);
+
+      await UnitTestHelper.waitForAllOperations();
+      expect(heap).toEqual(['single', '1', '2']);
+
+      action.trigger('action');
+      expect(heap).toEqual(['single', '1', '2', 'action']);
     });
   });
 

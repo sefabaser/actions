@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ActionLibHardReset } from '../../../../helpers/hard-reset';
 import { Action } from '../../../../observables/action/action';
+import { SingleEvent } from '../../../single-event/single-event';
 import { Sequence } from '../../sequence';
 
 describe('Sequence Combine', () => {
@@ -91,6 +92,36 @@ describe('Sequence Combine', () => {
           { a: 'b', b: 2 }
         ]);
       });
+
+      test('combining mixed async operations', async () => {
+        let heap: unknown[] = [];
+
+        let sequence = Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['1', '2'], resolve));
+        let singleEvent = SingleEvent.instant('single');
+        let action = new Action<string>();
+
+        Sequence.combine({
+          sequence,
+          singleEvent,
+          action
+        })
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+
+        await UnitTestHelper.waitForAllOperations();
+        expect(heap).toEqual([]);
+
+        action.trigger('action');
+        expect(heap).toEqual([
+          {
+            action: 'action',
+            sequence: '2',
+            singleEvent: 'single'
+          }
+        ]);
+      });
     });
 
     describe('Array Input', () => {
@@ -171,6 +202,26 @@ describe('Sequence Combine', () => {
           ['b', 1],
           ['b', 2]
         ]);
+      });
+
+      test('combining mixed async operations', async () => {
+        let heap: unknown[] = [];
+
+        let sequence = Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['1', '2'], resolve));
+        let singleEvent = SingleEvent.instant('single');
+        let action = new Action<string>();
+
+        Sequence.combine([sequence, singleEvent, action])
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+
+        await UnitTestHelper.waitForAllOperations();
+        expect(heap).toEqual([]);
+
+        action.trigger('action');
+        expect(heap).toEqual([['2', 'single', 'action']]);
       });
     });
   });
