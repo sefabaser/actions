@@ -779,7 +779,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Acts like .chain(parent) but returns a SingleEvent instead.
+   * Acts like .toSingleEvent().chain(parent) but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
    * @returns SingleEvent
    */
@@ -796,7 +796,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Acts like .chainByID(id) but returns a SingleEvent instead.
+   * Acts like .toSingleEvent().chainByID(id) but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
    * @returns SingleEvent
    */
@@ -813,7 +813,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Acts like .chainToRoot() but returns a SingleEvent instead.
+   * Acts like .toSingleEvent().chainToRoot() but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
    * @returns SingleEvent
    */

@@ -1563,30 +1563,7 @@ describe('Sequence', () => {
     });
   });
 
-  describe('Combinations', () => {
-    test('sequence and action', async () => {
-      let action = new Action<string>();
-
-      let heap: string[] = [];
-      action
-        .orderedMap(data =>
-          Sequence.create<string>(resolve => {
-            UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
-          })
-        )
-        .read(data => {
-          heap.push(data);
-        })
-        .attachToRoot();
-
-      UnitTestHelper.callEachDelayed(['1', '2', '3'], value => {
-        action.trigger(value);
-      });
-
-      await UnitTestHelper.waitForAllOperations();
-      expect(heap).toEqual(['1a', '2a', '3a']);
-    });
-
+  describe('Sample Operations', () => {
     test('wait until any of it completed', () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();
@@ -1641,6 +1618,81 @@ describe('Sequence', () => {
       expect(sequence.destroyed).toBeTruthy();
       expect(action1.listenerCount).toEqual(0);
       expect(action2.listenerCount).toEqual(0);
+    });
+
+    test('wait until next', () => {
+      let action = new Action<void>();
+
+      let triggerCount = 0;
+      let singleEvent = action
+        .toSingleEvent()
+        .read(() => triggerCount++)
+        .attachToRoot();
+
+      expect(triggerCount).toEqual(0);
+      expect(singleEvent.destroyed).toBeFalsy();
+
+      action.trigger();
+      expect(triggerCount).toEqual(1);
+      expect(singleEvent.destroyed).toBeTruthy();
+
+      action.trigger();
+      expect(triggerCount).toEqual(1);
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+
+    test('wait until', () => {
+      let action = new Action<string>();
+
+      let heap: unknown[] = [];
+      let singleEvent = action
+        .filter(value => value === 'yes')
+        .toSingleEvent()
+        .read(value => heap.push(value))
+        .attachToRoot();
+
+      expect(heap).toEqual([]);
+      expect(singleEvent.destroyed).toBeFalsy();
+
+      action.trigger('not');
+      expect(heap).toEqual([]);
+      expect(singleEvent.destroyed).toBeFalsy();
+
+      action.trigger('yes');
+      expect(heap).toEqual(['yes']);
+      expect(singleEvent.destroyed).toBeTruthy();
+
+      action.trigger('not');
+      action.trigger('yes');
+      action.trigger('not');
+      action.trigger('yes');
+      expect(heap).toEqual(['yes']);
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+  });
+
+  describe('Combinations', () => {
+    test('sequence and action', async () => {
+      let action = new Action<string>();
+
+      let heap: string[] = [];
+      action
+        .orderedMap(data =>
+          Sequence.create<string>(resolve => {
+            UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
+          })
+        )
+        .read(data => {
+          heap.push(data);
+        })
+        .attachToRoot();
+
+      UnitTestHelper.callEachDelayed(['1', '2', '3'], value => {
+        action.trigger(value);
+      });
+
+      await UnitTestHelper.waitForAllOperations();
+      expect(heap).toEqual(['1a', '2a', '3a']);
     });
 
     test('complex merge and combine destroy after all complete', async () => {
