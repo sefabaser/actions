@@ -178,7 +178,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
 
       let heap: string[] = [];
       let sequence = action1
-        .orderedMap(a1 => action2.map(a2 => a1 + a2))
+        .asyncMapOrdered(a1 => action2.map(a2 => a1 + a2))
         .asyncMapOrdered(a2 =>
           Sequence.create<string>(resolve => {
             UnitTestHelper.callEachDelayed(['a', 'b', 'c'], s1 => resolve(a2 + s1));
