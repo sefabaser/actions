@@ -1,4 +1,5 @@
 import { Attachable } from '../../attachable/attachable';
+import { SingleEventExecutor } from '../single-event/single-event-executor';
 
 type SequencePipelineDestructor = (finalContext?: ISequenceLinkContext) => void;
 type SequencePipelineIterator<A = unknown, B = unknown> = (
@@ -83,7 +84,7 @@ export class SequenceExecutor extends Attachable {
   _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   _asyncPipelineIndices?: Set<number>;
   _ongoingPackageCount = 0;
-  _chainedTo?: SequenceExecutor;
+  _chainedTo?: SequenceExecutor | SingleEventExecutor;
   _pendingValues?: unknown[];
   private _finalized?: boolean;
 
@@ -108,7 +109,7 @@ export class SequenceExecutor extends Attachable {
       }
 
       if (this._chainedTo) {
-        this._chainedTo.destroy();
+        this._chainedTo._final();
         this._chainedTo = undefined;
       }
     }

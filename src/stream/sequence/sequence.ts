@@ -4,6 +4,7 @@ import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AsyncOperation } from '../../common';
 import { Notifier } from '../../observables/_notifier/notifier';
 import { SingleEvent } from '../single-event/single-event';
+import { SingleEventExecutor } from '../single-event/single-event-executor';
 import { ISequenceCreatorContext, ISequenceLinkContext, SequenceExecutor } from './sequence-executor';
 
 type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
@@ -643,21 +644,15 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this._executor);
   }
 
-  /*
   takeOne(): SingleEvent<T> {
     this._validateBeforeLinking();
 
-    let singleEvent = SingleEvent.create<T>(singleEventResolve => {
-      this._executor._enterPipeline<T, T>((data, context, resolve) => {
-        singleEventResolve(data);
-        context.destroy();
-      });
-    });
+    let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor._chainedFrom = this._executor;
+    this._executor._chainedTo = singleEventExecutor;
 
-    this._executor._chainedTo = singleEvent;
-
-    return singleEvent;
-  }*/
+    return SingleEvent._createManual<T>(singleEventExecutor);
+  }
 
   skip(count: number): Sequence<T> {
     this._validateBeforeLinking();
@@ -731,7 +726,6 @@ export class Sequence<T = void> implements IAttachment {
     return this;
   }
 
-  // TODO: improve chaining performance
   chain(parent: Attachable): Sequence<T> {
     this._validateBeforeLinking();
 

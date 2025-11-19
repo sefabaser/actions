@@ -458,7 +458,6 @@ describe('Sequence', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -514,6 +513,41 @@ describe('Sequence', () => {
         expect(chain.destroyed).toBeTruthy();
         expect(chain.attachIsCalled).toBeTruthy();
         expect(triggered).toBeFalsy();
+      });
+
+      test('destroying sequence should finalize the chain', () => {
+        let operation = new Action<number>();
+
+        let heap: unknown[] = [];
+
+        let sequence = operation
+          .toSequence()
+          .read(value => heap.push(value))
+          .map(value => value + 10);
+        let chain = sequence
+          .chainToRoot()
+          .wait()
+          .read(value => heap.push(value))
+          .attachToRoot();
+
+        expect(heap).toEqual([]);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(chain.destroyed).toBeFalsy();
+
+        operation.trigger(1);
+        expect(heap).toEqual([1]);
+        expect(sequence.destroyed).toBeFalsy();
+        expect(chain.destroyed).toBeFalsy();
+
+        sequence.destroy();
+        expect(heap).toEqual([1]);
+        expect(sequence.destroyed).toBeTruthy();
+        expect(chain.destroyed).toBeFalsy();
+
+        vi.runAllTimers();
+        expect(heap).toEqual([1, 11]);
+        expect(sequence.destroyed).toBeTruthy();
+        expect(chain.destroyed).toBeTruthy();
       });
 
       test('multiple chain', () => {
@@ -913,24 +947,14 @@ describe('Sequence', () => {
 
       test('multiple chain', () => {
         let parent = new IDAttachable().attachToRoot();
-        let operation = new Action();
+        let operation = new Action<number>();
 
-        let triggerCount1 = 0;
-        let triggerCount2 = 0;
+        let heap: unknown[] = [];
 
         let firstEvent = operation.toSequence();
         let chain1 = firstEvent.chainByID(parent.id);
-        let chain2 = chain1
-          .read(() => {
-            triggerCount1++;
-          })
-          .chainByID(parent.id);
-
-        chain2
-          .read(() => {
-            triggerCount2++;
-          })
-          .attachToRoot();
+        let chain2 = chain1.read(data => heap.push(data)).chainByID(parent.id);
+        let final = chain2.read(data => heap.push(data)).attachToRoot();
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
@@ -939,29 +963,148 @@ describe('Sequence', () => {
         expect(chain1.attachIsCalled).toBeTruthy();
         expect(chain2.destroyed).toBeFalsy();
         expect(chain2.attachIsCalled).toBeTruthy();
-        expect(triggerCount1).toEqual(0);
-        expect(triggerCount2).toEqual(0);
+        expect(final.destroyed).toBeFalsy();
+        expect(final.attachIsCalled).toBeTruthy();
+        expect(heap).toEqual([]);
 
-        operation.trigger();
+        operation.trigger(1);
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeFalsy();
         expect(chain1.attachIsCalled).toBeTruthy();
         expect(chain2.destroyed).toBeFalsy();
         expect(chain2.attachIsCalled).toBeTruthy();
-        expect(triggerCount1).toEqual(1);
-        expect(triggerCount2).toEqual(1);
+        expect(final.destroyed).toBeFalsy();
+        expect(final.attachIsCalled).toBeTruthy();
+        expect(heap).toEqual([1, 1]);
 
-        operation.trigger();
+        operation.trigger(2);
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeFalsy();
         expect(chain1.attachIsCalled).toBeTruthy();
         expect(chain2.destroyed).toBeFalsy();
         expect(chain2.attachIsCalled).toBeTruthy();
-        expect(triggerCount1).toEqual(2);
-        expect(triggerCount2).toEqual(2);
+        expect(final.destroyed).toBeFalsy();
+        expect(final.attachIsCalled).toBeTruthy();
+        expect(heap).toEqual([1, 1, 2, 2]);
       });
+    });
+  });
+
+  describe('Take One', () => {
+    test('simple case', () => {
+      let heap: unknown[] = [];
+
+      let sequence = Sequence.instant(1, 2, 3);
+      let singleEvent = sequence
+        .takeOne()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([1]);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+
+    test('with async sequence', async () => {
+      let heap: unknown[] = [];
+      let resolve!: (data: number) => void;
+
+      let sequence = Sequence.create<number>(r => {
+        resolve = r;
+      });
+
+      let singleEvent = sequence
+        .takeOne()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([]);
+      expect(sequence.destroyed).toBeFalsy();
+      expect(singleEvent.destroyed).toBeFalsy();
+
+      resolve(99);
+
+      expect(heap).toEqual([99]);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+
+    test('multiple values in async sequence takes only first', async () => {
+      let heap: unknown[] = [];
+      let resolve!: (data: number) => void;
+
+      let sequence = Sequence.create<number>(r => {
+        resolve = r;
+      });
+
+      let singleEvent = sequence
+        .takeOne()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      UnitTestHelper.callEachDelayed([1, 2, 3], value => resolve(value));
+      await UnitTestHelper.waitForAllOperations();
+
+      expect(heap).toEqual([1]);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
+    });
+
+    test('destroying single event should destroy the sequence', () => {
+      let heap: unknown[] = [];
+
+      let sequence = Sequence.create(() => {});
+      let singleEvent = sequence.takeOne();
+      let chained = singleEvent.read(data => heap.push(data)).chainToRoot();
+
+      expect(heap).toEqual([]);
+      expect(sequence.destroyed).toBeFalsy();
+      expect(singleEvent.destroyed).toBeFalsy();
+      expect(chained.destroyed).toBeFalsy();
+
+      singleEvent.destroy();
+      expect(heap).toEqual([]);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
+      expect(chained.destroyed).toBeTruthy();
+    });
+
+    test('destroying sequence should destroy the single event', () => {
+      let heap: unknown[] = [];
+
+      let sequence = Sequence.create(() => {});
+      let singleEvent = sequence.takeOne();
+      let chained = singleEvent.read(data => heap.push(data)).chainToRoot();
+
+      expect(heap).toEqual([]);
+      expect(sequence.destroyed).toBeFalsy();
+      expect(singleEvent.destroyed).toBeFalsy();
+      expect(chained.destroyed).toBeFalsy();
+
+      sequence.destroy();
+      expect(heap).toEqual([]);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
+      expect(chained.destroyed).toBeTruthy();
+    });
+
+    test('chaining after takeOne', () => {
+      let heap: unknown[] = [];
+
+      let sequence = Sequence.instant(1);
+      let singleEvent = sequence.takeOne();
+      let chained = singleEvent
+        .map(data => data + 1)
+        .chainToRoot()
+        .read(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([2]);
+      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
+      expect(chained.destroyed).toBeTruthy();
     });
   });
 

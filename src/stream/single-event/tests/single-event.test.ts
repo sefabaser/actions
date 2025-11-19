@@ -176,24 +176,15 @@ describe('SingleEvent', () => {
       });
 
       test('multiple chain', () => {
-        let operation = new Action();
+        let parent = new IDAttachable().attachToRoot();
+        let operation = new Action<number>();
 
-        let triggerCount1 = 0;
-        let triggerCount2 = 0;
+        let heap: unknown[] = [];
 
         let firstEvent = operation.toSingleEvent();
-        let chain1 = firstEvent.chainToRoot();
-        let chain2 = chain1
-          .read(() => {
-            triggerCount1++;
-          })
-          .chainToRoot();
-
-        chain2
-          .read(() => {
-            triggerCount2++;
-          })
-          .attachToRoot();
+        let chain1 = firstEvent.chainByID(parent.id);
+        let chain2 = chain1.read(data => heap.push(data)).chainByID(parent.id);
+        let final = chain2.read(data => heap.push(data)).attachToRoot();
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
@@ -202,28 +193,31 @@ describe('SingleEvent', () => {
         expect(chain1.attachIsCalled).toBeTruthy();
         expect(chain2.destroyed).toBeFalsy();
         expect(chain2.attachIsCalled).toBeTruthy();
-        expect(triggerCount1).toEqual(0);
-        expect(triggerCount2).toEqual(0);
+        expect(final.destroyed).toBeFalsy();
+        expect(final.attachIsCalled).toBeTruthy();
+        expect(heap).toEqual([]);
 
-        operation.trigger();
+        operation.trigger(1);
         expect(firstEvent.destroyed).toBeTruthy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeTruthy();
         expect(chain1.attachIsCalled).toBeTruthy();
         expect(chain2.destroyed).toBeTruthy();
         expect(chain2.attachIsCalled).toBeTruthy();
-        expect(triggerCount1).toEqual(1);
-        expect(triggerCount2).toEqual(1);
+        expect(final.destroyed).toBeTruthy();
+        expect(final.attachIsCalled).toBeTruthy();
+        expect(heap).toEqual([1, 1]);
 
-        operation.trigger();
+        operation.trigger(2);
         expect(firstEvent.destroyed).toBeTruthy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeTruthy();
         expect(chain1.attachIsCalled).toBeTruthy();
         expect(chain2.destroyed).toBeTruthy();
         expect(chain2.attachIsCalled).toBeTruthy();
-        expect(triggerCount1).toEqual(1);
-        expect(triggerCount2).toEqual(1);
+        expect(final.destroyed).toBeTruthy();
+        expect(final.attachIsCalled).toBeTruthy();
+        expect(heap).toEqual([1, 1]);
       });
     });
 

@@ -32,6 +32,11 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<S>(singleEventExecutor);
   }
 
+  /** @internal */
+  static _createManual<S = void>(executor: SingleEventExecutor) {
+    return new SingleEvent<S>(executor);
+  }
+
   get destroyed(): boolean {
     return this._executor.destroyed;
   }
@@ -181,7 +186,6 @@ export class SingleEvent<T = void> implements IAttachment {
     return this;
   }
 
-  // TODO: improve chaining performance
   chain(parent: Attachable): SingleEvent<T> {
     this._validateBeforeLinking();
 

@@ -1,4 +1,5 @@
 import { Attachable } from '../../attachable/attachable';
+import { SequenceExecutor } from '../sequence/sequence-executor';
 
 type SingleEventPipelineIterator<A = unknown, B = unknown> = (
   _data: A,
@@ -45,6 +46,7 @@ export class SingleEventExecutor extends Attachable {
   _resolved?: boolean;
   _currentData: unknown;
   _chainedTo?: SingleEventExecutor;
+  _chainedFrom?: SequenceExecutor | SingleEventExecutor;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private _pipelineIndex = 0;
   private _ongoingContext?: SingleEventContext;
@@ -71,8 +73,14 @@ export class SingleEventExecutor extends Attachable {
       }
 
       if (this._chainedTo) {
-        this._chainedTo.destroy();
+        this._chainedTo._final();
         this._chainedTo = undefined;
+      }
+
+      if (this._chainedFrom) {
+        this._chainedFrom._chainedTo = undefined;
+        this._chainedFrom.destroy();
+        this._chainedFrom = undefined;
       }
     }
   }
@@ -99,25 +107,49 @@ export class SingleEventExecutor extends Attachable {
     }
   }
 
+  _final() {
+    if (!this._resolved) {
+      this.destroy();
+    }
+  }
+
   attach(parent: Attachable): this {
     if (this._resolved) {
       this._iteratePackage(this._currentData);
     }
-    return super.attach(parent);
+
+    super.attach(parent);
+
+    if (this._chainedFrom) {
+      this._chainedFrom.attach(parent);
+    }
+    return this;
   }
 
   attachByID(id: number): this {
     if (this._resolved) {
       this._iteratePackage(this._currentData);
     }
-    return super.attachByID(id);
+
+    super.attachByID(id);
+
+    if (this._chainedFrom) {
+      this._chainedFrom.attachByID(id);
+    }
+    return this;
   }
 
   attachToRoot(): this {
     if (this._resolved) {
       this._iteratePackage(this._currentData);
     }
-    return super.attachToRoot();
+
+    super.attachToRoot();
+
+    if (this._chainedFrom) {
+      this._chainedFrom.attachToRoot();
+    }
+    return this;
   }
 
   private _iteratePackage(data: unknown): void {
