@@ -52,10 +52,10 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   }
 
   waitUntilAdded(value: KeyType): SingleEvent<ValueType> {
-    return SingleEvent.create<ValueType>(resolve => {
-      if (this.map.has(value)) {
-        resolve(this.map.get(value)!);
-      } else {
+    if (this.map.has(value)) {
+      return SingleEvent.instant(this.map.get(value)!);
+    } else {
+      return SingleEvent.create<ValueType>(resolve => {
         let untilAddedListenerSet = this._UntilAddedListeners.get(value);
         if (!untilAddedListenerSet) {
           untilAddedListenerSet = new Set();
@@ -66,15 +66,15 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
         return () => {
           this._untilAddedListenersVar?.get(value)?.delete(resolve);
         };
-      }
-    });
+      });
+    }
   }
 
   waitUntilRemoved(value: KeyType): SingleEvent<void> {
-    return SingleEvent.create(resolve => {
-      if (!this.map.has(value)) {
-        resolve();
-      } else {
+    if (!this.map.has(value)) {
+      return SingleEvent.instant();
+    } else {
+      return SingleEvent.create(resolve => {
         let untilRemovedListenerSet = this._untilRemovedListeners.get(value);
         if (!untilRemovedListenerSet) {
           untilRemovedListenerSet = new Set();
@@ -85,7 +85,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
         return () => {
           this._untilRemovedListenersVar?.get(value)?.delete(resolve);
         };
-      }
-    });
+      });
+    }
   }
 }
