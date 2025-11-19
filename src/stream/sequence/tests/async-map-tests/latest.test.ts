@@ -306,6 +306,44 @@ describe('Latest Async Map', () => {
           expect(results).toEqual(new Set(['aI', 'xI', 'yI', 'kI', 'tI']));
         });
       });
+
+      describe('map returns value directly', () => {
+        test('simple case', () => {
+          let heap: unknown[] = [];
+
+          Sequence.create<string>(resolve => resolve('a'))
+            .asyncMapLatest(data => data + 'I')
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          expect(heap).toEqual(['aI']);
+        });
+
+        test('mixed case', async () => {
+          let heap: unknown[] = [];
+
+          Sequence.instant<number>(1, 2, 3, 4, 5, 6)
+            .asyncMapLatest(data => {
+              let mod = data % 3;
+              if (mod === 1) {
+                return data + 'S';
+              } else if (mod === 2) {
+                return SingleEvent.instant(data + 'I');
+              } else {
+                return SingleEvent.create<string>(resolve => {
+                  UnitTestHelper.callDelayed(() => resolve(data + 'D'));
+                });
+              }
+            })
+            .read(data => heap.push(data))
+            .attachToRoot();
+
+          expect(heap).toEqual(['1S', '2I', '4S', '5I']);
+
+          await UnitTestHelper.waitForAllOperations();
+          expect(heap).toEqual(['1S', '2I', '4S', '5I', '6D']);
+        });
+      });
     });
 
     describe('specific to this map', () => {

@@ -116,11 +116,11 @@ export class SingleEvent<T = void> implements IAttachment {
    * @A ---I—————————>✓-------------------
    * @R ----------------------------A-------------------
    */
-  asyncMap<K>(callback: (data: T, context: ISingleEventContext) => AsyncOperation<K>): SingleEvent<K> {
+  asyncMap<K>(callback: (data: T, context: ISingleEventContext) => AsyncOperation<K> | K): SingleEvent<K> {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, K>((data, context, resolve) => {
-      let executionReturn: AsyncOperation<K>;
+      let executionReturn: any;
 
       try {
         executionReturn = callback(data, context);
@@ -129,7 +129,11 @@ export class SingleEvent<T = void> implements IAttachment {
         return;
       }
 
-      executionReturn._subscribeSingle(resolve).attach(context.attachable);
+      if (executionReturn._subscribeSingle) {
+        (executionReturn as AsyncOperation<K>)._subscribeSingle(resolve).attach(context.attachable);
+      } else {
+        resolve(executionReturn as K);
+      }
     });
 
     return new SingleEvent<K>(this._executor);

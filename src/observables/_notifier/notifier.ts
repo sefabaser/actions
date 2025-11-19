@@ -132,7 +132,7 @@ export class Notifier<T> {
    * @C --------------I——>✓-------------------------
    * @R -------------------B-C-----A-------------------
    */
-  asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     return this.toSequence().asyncMapDirect(callback);
   }
 
@@ -152,7 +152,7 @@ export class Notifier<T> {
    * @C --------------I——I- - - - - >✓----------------
    * @R ----------------------------ABC----------------
    */
-  asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     return this.toSequence().asyncMapOrdered(callback);
   }
 
@@ -171,7 +171,7 @@ export class Notifier<T> {
    * @C --------------I——>✓-------------------------
    * @R -------------------B-C-------------------------
    */
-  asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     return this.toSequence().asyncMapLatest(callback);
   }
 
@@ -192,7 +192,7 @@ export class Notifier<T> {
    * @R ----------------------------A--------B------C--
    */
   asyncMapQueue<K>(
-    callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
+    callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K> | K
   ): Sequence<K> {
     return this.toSequence().asyncMapQueue(callback);
   }
@@ -212,7 +212,7 @@ export class Notifier<T> {
    * @C ---------------I——>✓------------------------
    * @R ----------------------C-------------------------
    */
-  asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     return this.toSequence().asyncMapDropOngoing(callback);
   }
 
@@ -231,7 +231,7 @@ export class Notifier<T> {
    * @C ---------------x--------------------------------
    * @R ---------------------------A--------------------
    */
-  asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     return this.toSequence().asyncMapDropIncoming(callback);
   }
 

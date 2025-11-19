@@ -175,6 +175,19 @@ describe('SingleEvent Async Map', () => {
         expect(heap).toEqual(['aI']);
       });
     });
+
+    describe('map returns value directly', () => {
+      test('simple case', () => {
+        let heap: unknown[] = [];
+
+        SingleEvent.create<string>(resolve => resolve('a'))
+          .asyncMap(data => data + 'I')
+          .read(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual(['aI']);
+      });
+    });
   });
 
   describe('Destruction', () => {

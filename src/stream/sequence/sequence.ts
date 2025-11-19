@@ -355,14 +355,14 @@ export class Sequence<T = void> implements IAttachment {
    * @C --------------I——>✓-------------------------
    * @R -------------------B-C-----A-------------------
    */
-  asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDirect<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     this._validateBeforeLinking();
 
     let ongoingContexts = new Set<ISequenceLinkContext>();
 
     this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
-        let executionReturn: AsyncOperation<K>;
+        let executionReturn: any;
 
         ongoingContexts.add(context);
         try {
@@ -372,12 +372,17 @@ export class Sequence<T = void> implements IAttachment {
           return;
         }
 
-        executionReturn
-          ._subscribeSingle(resolvedData => {
-            ongoingContexts.delete(context);
-            resolve(resolvedData);
-          })
-          .attach(context.attachable);
+        if (executionReturn._subscribeSingle) {
+          (executionReturn as AsyncOperation<K>)
+            ._subscribeSingle(resolvedData => {
+              ongoingContexts.delete(context);
+              resolve(resolvedData);
+            })
+            .attach(context.attachable);
+        } else {
+          ongoingContexts.delete(context);
+          resolve(executionReturn as K);
+        }
       },
       (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
@@ -407,13 +412,13 @@ export class Sequence<T = void> implements IAttachment {
    * @C --------------I——I- - - - - >✓----------------
    * @R ----------------------------ABC----------------
    */
-  asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapOrdered<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
-        let executionReturn: AsyncOperation<K>;
+        let executionReturn: any;
 
         let queuer: ExecutionOrderQueuer = { _context: context };
         queue.add(queuer);
@@ -425,22 +430,26 @@ export class Sequence<T = void> implements IAttachment {
           return;
         }
 
-        executionReturn
-          ._subscribeSingle(resolvedData => {
-            queuer._callback = () => resolve(resolvedData);
+        let afterResolve = (resolvedData: K) => {
+          queuer._callback = () => resolve(resolvedData);
 
-            if (queue.peek() === queuer) {
-              queue.pop();
-              resolve(resolvedData);
+          if (queue.peek() === queuer) {
+            queue.pop();
+            resolve(resolvedData);
 
-              while (queue.peek()?._callback) {
-                queue.pop()?._callback!();
-              }
-            } else {
-              queuer._callback = () => resolve(resolvedData);
+            while (queue.peek()?._callback) {
+              queue.pop()?._callback!();
             }
-          })
-          .attach(context.attachable);
+          } else {
+            queuer._callback = () => resolve(resolvedData);
+          }
+        };
+
+        if (executionReturn._subscribeSingle) {
+          (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
+        } else {
+          afterResolve(executionReturn as K);
+        }
       },
       (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
     );
@@ -463,13 +472,13 @@ export class Sequence<T = void> implements IAttachment {
    * @C --------------I——>✓-------------------------
    * @R -------------------B-C-------------------------
    */
-  asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapLatest<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     this._validateBeforeLinking();
 
     let queue = new Queue<ExecutionOrderQueuer>();
     this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
-        let executionReturn: AsyncOperation<K>;
+        let executionReturn: any;
 
         let queuer: ExecutionOrderQueuer = { _context: context };
         queue.add(queuer);
@@ -481,21 +490,25 @@ export class Sequence<T = void> implements IAttachment {
           return;
         }
 
-        executionReturn
-          ._subscribeSingle(resolvedData => {
-            while (queue.notEmpty) {
-              let firstInTheLine = queue.pop();
+        let afterResolve = (resolvedData: K) => {
+          while (queue.notEmpty) {
+            let firstInTheLine = queue.pop();
 
-              if (firstInTheLine && firstInTheLine._context !== context) {
-                firstInTheLine._context.drop();
-              } else {
-                break;
-              }
+            if (firstInTheLine && firstInTheLine._context !== context) {
+              firstInTheLine._context.drop();
+            } else {
+              break;
             }
+          }
 
-            resolve(resolvedData);
-          })
-          .attach(context.attachable);
+          resolve(resolvedData);
+        };
+
+        if (executionReturn._subscribeSingle) {
+          (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
+        } else {
+          afterResolve(executionReturn as K);
+        }
       },
       (finalContext?: ISequenceLinkContext) => this._destroyPackagesUntilCurrent(queue, finalContext)
     );
@@ -520,7 +533,7 @@ export class Sequence<T = void> implements IAttachment {
    * @R ----------------------------A--------B------C--
    */
   asyncMapQueue<K>(
-    callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K>
+    callback: (data: T, previousResult: K | undefined, context: ISequenceLinkContext) => AsyncOperation<K> | K
   ): Sequence<K> {
     this._validateBeforeLinking();
 
@@ -530,7 +543,7 @@ export class Sequence<T = void> implements IAttachment {
     this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
         let execute = () => {
-          let executionReturn: AsyncOperation<K>;
+          let executionReturn: any;
           try {
             executionReturn = callback(data, previousResult, context);
           } catch (e) {
@@ -538,14 +551,18 @@ export class Sequence<T = void> implements IAttachment {
             return;
           }
 
-          executionReturn
-            ._subscribeSingle(resolvedData => {
-              queue.pop();
-              previousResult = resolvedData;
-              resolve(resolvedData);
-              queue.peek()?._callback!();
-            })
-            .attach(context.attachable);
+          let afterResolve = (resolvedData: K) => {
+            queue.pop();
+            previousResult = resolvedData;
+            resolve(resolvedData);
+            queue.peek()?._callback!();
+          };
+
+          if (executionReturn._subscribeSingle) {
+            (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
+          } else {
+            afterResolve(executionReturn as K);
+          }
         };
 
         let queueWasEmpty = queue.empty;
@@ -577,13 +594,13 @@ export class Sequence<T = void> implements IAttachment {
    * @C ---------------I——>✓------------------------
    * @R ----------------------C-------------------------
    */
-  asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDropOngoing<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
     this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
-        let executionReturn: AsyncOperation<K>;
+        let executionReturn: any;
 
         ongoingContext?.drop();
         ongoingContext = context;
@@ -594,12 +611,16 @@ export class Sequence<T = void> implements IAttachment {
           return;
         }
 
-        executionReturn
-          ._subscribeSingle(resolvedData => {
-            ongoingContext = undefined;
-            resolve(resolvedData);
-          })
-          .attach(context.attachable);
+        let afterResolve = (resolvedData: K) => {
+          ongoingContext = undefined;
+          resolve(resolvedData);
+        };
+
+        if (executionReturn._subscribeSingle) {
+          (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
+        } else {
+          afterResolve(executionReturn as K);
+        }
       },
       (finalContext?: ISequenceLinkContext) => {
         if (!finalContext) {
@@ -627,13 +648,13 @@ export class Sequence<T = void> implements IAttachment {
    * @C ---------------x--------------------------------
    * @R ---------------------------A--------------------
    */
-  asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K>): Sequence<K> {
+  asyncMapDropIncoming<K>(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<K> | K): Sequence<K> {
     this._validateBeforeLinking();
 
     let ongoingContext: ISequenceLinkContext | undefined;
     this._executor._enterPipeline<T, K>(
       (data, context, resolve) => {
-        let executionReturn: AsyncOperation<K>;
+        let executionReturn: any;
 
         if (ongoingContext) {
           context.drop();
@@ -646,12 +667,16 @@ export class Sequence<T = void> implements IAttachment {
             return;
           }
 
-          executionReturn
-            ._subscribeSingle(resolvedData => {
-              ongoingContext = undefined;
-              resolve(resolvedData);
-            })
-            .attach(context.attachable);
+          let afterResolve = (resolvedData: K) => {
+            ongoingContext = undefined;
+            resolve(resolvedData);
+          };
+
+          if (executionReturn._subscribeSingle) {
+            (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
+          } else {
+            afterResolve(executionReturn as K);
+          }
         }
       },
       (finalContext?: ISequenceLinkContext) => {
