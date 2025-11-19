@@ -85,6 +85,7 @@ export class SequenceExecutor extends Attachable {
   _asyncPipelineIndices?: Set<number>;
   _ongoingPackageCount = 0;
   _chainedTo?: SequenceExecutor | SingleEventExecutor;
+  _destroyAfterFirstPackage?: boolean;
   _pendingValues?: unknown[];
   private _finalized?: boolean;
 
@@ -199,6 +200,9 @@ export class SequenceExecutor extends Attachable {
       } else {
         if (this._chainedTo) {
           this._chainedTo._trigger(sequencePackage._data);
+          if (this._destroyAfterFirstPackage) {
+            this.destroy();
+          }
         }
 
         sequencePackage._destroyAttachment();

@@ -14,10 +14,10 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('take one', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let sequence = Sequence.instant().takeOne().attachToRoot();
+      let sequence = Sequence.instant().toSingleEvent().attachToRoot();
       sequence.destroy();
     });
-    // 0.21639999747276306
+    // 0.20660001039505005
   }, 60000);
 
   test('manual take one', async () => {
@@ -29,6 +29,15 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       }).attachToRoot();
       sequence.destroy();
     });
-    // 0.2721000015735626
+    // 0.26270000636577606
+  }, 60000);
+
+  test('with chaining', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let sequence = Sequence.instant().toSingleEvent().chainToRoot();
+      sequence.destroy();
+    });
+
+    // 0.3075000047683716
   }, 60000);
 });

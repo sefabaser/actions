@@ -47,6 +47,7 @@ export class SingleEventExecutor extends Attachable {
   _currentData: unknown;
   _chainedTo?: SingleEventExecutor;
   _chainedFrom?: SequenceExecutor | SingleEventExecutor;
+  _attachChainedFromAsWell?: boolean;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private _pipelineIndex = 0;
   private _ongoingContext?: SingleEventContext;
@@ -120,7 +121,7 @@ export class SingleEventExecutor extends Attachable {
 
     super.attach(parent);
 
-    if (this._chainedFrom) {
+    if (this._attachChainedFromAsWell && this._chainedFrom) {
       this._chainedFrom.attach(parent);
     }
     return this;
@@ -133,7 +134,7 @@ export class SingleEventExecutor extends Attachable {
 
     super.attachByID(id);
 
-    if (this._chainedFrom) {
+    if (this._attachChainedFromAsWell && this._chainedFrom) {
       this._chainedFrom.attachByID(id);
     }
     return this;
@@ -146,7 +147,7 @@ export class SingleEventExecutor extends Attachable {
 
     super.attachToRoot();
 
-    if (this._chainedFrom) {
+    if (this._attachChainedFromAsWell && this._chainedFrom) {
       this._chainedFrom.attachToRoot();
     }
     return this;

@@ -644,16 +644,6 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this._executor);
   }
 
-  takeOne(): SingleEvent<T> {
-    this._validateBeforeLinking();
-
-    let singleEventExecutor = new SingleEventExecutor();
-    singleEventExecutor._chainedFrom = this._executor;
-    this._executor._chainedTo = singleEventExecutor;
-
-    return SingleEvent._createManual<T>(singleEventExecutor);
-  }
-
   skip(count: number): Sequence<T> {
     this._validateBeforeLinking();
 
@@ -726,6 +716,18 @@ export class Sequence<T = void> implements IAttachment {
     return this;
   }
 
+  toSingleEvent(): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor._chainedFrom = this._executor;
+    singleEventExecutor._attachChainedFromAsWell = true;
+    this._executor._chainedTo = singleEventExecutor;
+    this._executor._destroyAfterFirstPackage = true;
+
+    return SingleEvent._createManual<T>(singleEventExecutor);
+  }
+
   chain(parent: Attachable): Sequence<T> {
     this._validateBeforeLinking();
 
@@ -754,6 +756,42 @@ export class Sequence<T = void> implements IAttachment {
     this._executor.attachToRoot();
 
     return new Sequence(chainExecutor);
+  }
+
+  singleChain(parent: Attachable): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor._chainedFrom = this._executor;
+    this._executor._chainedTo = singleEventExecutor;
+    this._executor._destroyAfterFirstPackage = true;
+    this._executor.attach(parent);
+
+    return SingleEvent._createManual(singleEventExecutor);
+  }
+
+  singleChainByID(id: number): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor._chainedFrom = this._executor;
+    this._executor._chainedTo = singleEventExecutor;
+    this._executor._destroyAfterFirstPackage = true;
+    this._executor.attachByID(id);
+
+    return SingleEvent._createManual(singleEventExecutor);
+  }
+
+  singleChainToRoot(): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor._chainedFrom = this._executor;
+    this._executor._chainedTo = singleEventExecutor;
+    this._executor._destroyAfterFirstPackage = true;
+    this._executor.attachToRoot();
+
+    return SingleEvent._createManual(singleEventExecutor);
   }
 
   private _destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: ISequenceLinkContext): void {

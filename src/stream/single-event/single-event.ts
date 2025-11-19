@@ -118,7 +118,7 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<K>(this._executor);
   }
 
-  wait(duration: number): SingleEvent<T> {
+  wait(duration?: number): SingleEvent<T> {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, context, resolve) => {
