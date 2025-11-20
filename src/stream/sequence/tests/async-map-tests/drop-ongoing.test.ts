@@ -343,6 +343,26 @@ describe('Drop Ongoing Async Map', () => {
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1S', '2I', '4S', '5I', '6D']);
         });
+
+        test('primitive data types', async () => {
+          let finalized = false;
+
+          await new Promise<void>(resolve =>
+            Sequence.instant()
+              .asyncMapDropOngoing(() => 1)
+              .asyncMapDropOngoing(() => '')
+              .asyncMapDropOngoing(() => false)
+              .asyncMapDropOngoing(() => ({}))
+              .asyncMapDropOngoing(() => undefined)
+              .read(() => {
+                finalized = true;
+                resolve();
+              })
+              .attachToRoot()
+          );
+
+          expect(finalized).toBeTruthy();
+        });
       });
     });
 

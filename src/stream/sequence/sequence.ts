@@ -372,7 +372,7 @@ export class Sequence<T = void> implements IAttachment {
           return;
         }
 
-        if (executionReturn._subscribeSingle) {
+        if (executionReturn?._subscribeSingle) {
           (executionReturn as AsyncOperation<K>)
             ._subscribeSingle(resolvedData => {
               ongoingContexts.delete(context);
@@ -445,7 +445,7 @@ export class Sequence<T = void> implements IAttachment {
           }
         };
 
-        if (executionReturn._subscribeSingle) {
+        if (executionReturn?._subscribeSingle) {
           (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
         } else {
           afterResolve(executionReturn as K);
@@ -504,7 +504,7 @@ export class Sequence<T = void> implements IAttachment {
           resolve(resolvedData);
         };
 
-        if (executionReturn._subscribeSingle) {
+        if (executionReturn?._subscribeSingle) {
           (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
         } else {
           afterResolve(executionReturn as K);
@@ -558,7 +558,7 @@ export class Sequence<T = void> implements IAttachment {
             queue.peek()?._callback!();
           };
 
-          if (executionReturn._subscribeSingle) {
+          if (executionReturn?._subscribeSingle) {
             (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
           } else {
             afterResolve(executionReturn as K);
@@ -616,7 +616,7 @@ export class Sequence<T = void> implements IAttachment {
           resolve(resolvedData);
         };
 
-        if (executionReturn._subscribeSingle) {
+        if (executionReturn?._subscribeSingle) {
           (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
         } else {
           afterResolve(executionReturn as K);
@@ -672,7 +672,7 @@ export class Sequence<T = void> implements IAttachment {
             resolve(resolvedData);
           };
 
-          if (executionReturn._subscribeSingle) {
+          if (executionReturn?._subscribeSingle) {
             (executionReturn as AsyncOperation<K>)._subscribeSingle(afterResolve).attach(context.attachable);
           } else {
             afterResolve(executionReturn as K);

@@ -187,6 +187,26 @@ describe('SingleEvent Async Map', () => {
 
         expect(heap).toEqual(['aI']);
       });
+
+      test('primitive data types', async () => {
+        let finalized = false;
+
+        await new Promise<void>(resolve =>
+          SingleEvent.instant()
+            .asyncMap(() => 1)
+            .asyncMap(() => '')
+            .asyncMap(() => false)
+            .asyncMap(() => ({}))
+            .asyncMap(() => undefined)
+            .read(() => {
+              finalized = true;
+              resolve();
+            })
+            .attachToRoot()
+        );
+
+        expect(finalized).toBeTruthy();
+      });
     });
   });
 

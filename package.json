@@ -2,7 +2,7 @@
   "name": "actions-lib",
   "version": "2.0.0",
   "description": "Typescript Helpers Library",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts"
@@ -45,6 +45,5 @@
     "tsup": "8.5.1",
     "typescript": "5.3.3",
     "vitest": "3.2.4"
-  },
-  "types": "dist/index.d.ts"
+  }
 }

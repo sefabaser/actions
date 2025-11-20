@@ -129,7 +129,7 @@ export class SingleEvent<T = void> implements IAttachment {
         return;
       }
 
-      if (executionReturn._subscribeSingle) {
+      if (executionReturn?._subscribeSingle) {
         (executionReturn as AsyncOperation<K>)._subscribeSingle(resolve).attach(context.attachable);
       } else {
         resolve(executionReturn as K);

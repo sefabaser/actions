@@ -343,6 +343,26 @@ describe('Queue Async Map', () => {
           await UnitTestHelper.waitForAllOperations();
           expect(heap).toEqual(['1S', '2I', '3D', '4S', '5I', '6D']);
         });
+
+        test('primitive data types', async () => {
+          let finalized = false;
+
+          await new Promise<void>(resolve =>
+            Sequence.instant()
+              .asyncMapQueue(() => 1)
+              .asyncMapQueue(() => '')
+              .asyncMapQueue(() => false)
+              .asyncMapQueue(() => ({}))
+              .asyncMapQueue(() => undefined)
+              .read(() => {
+                finalized = true;
+                resolve();
+              })
+              .attachToRoot()
+          );
+
+          expect(finalized).toBeTruthy();
+        });
       });
     });
 
