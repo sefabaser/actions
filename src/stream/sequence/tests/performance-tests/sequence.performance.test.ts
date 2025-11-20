@@ -1,9 +1,16 @@
 import { ArrayHelper, UnitTestHelper } from 'helpers-lib';
-import { describe, test } from 'vitest';
+import { beforeEach, describe, test } from 'vitest';
 
-import { Sequence } from '../../../../../dist/index';
+import type { Sequence as SequenceType } from '../../../../index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  let Sequence: typeof SequenceType;
+
+  beforeEach(async () => {
+    let imports = await import('../../../../../dist/index');
+    Sequence = imports.Sequence as any;
+  });
+
   test('build test', async () => {
     let sequence = Sequence.instant()
       .read(() => console.log('okay'))

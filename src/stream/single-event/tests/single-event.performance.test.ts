@@ -1,9 +1,18 @@
 import { UnitTestHelper } from 'helpers-lib';
-import { describe, test } from 'vitest';
+import { beforeEach, describe, test } from 'vitest';
 
-import { SingleEvent, Variable } from '../../../../dist/index';
+import type { SingleEvent as SingleEventType, Variable as VariableType } from '../../../index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  let SingleEvent: typeof SingleEventType;
+  let Variable: typeof VariableType;
+
+  beforeEach(async () => {
+    let imports = await import('../../../../dist/index');
+    SingleEvent = imports.SingleEvent as any;
+    Variable = imports.Variable as any;
+  });
+
   test('build test', async () => {
     let sequence = SingleEvent.instant()
       .read(() => console.log('okay'))

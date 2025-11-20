@@ -1,10 +1,19 @@
 import { UnitTestHelper } from 'helpers-lib';
-import { describe, test } from 'vitest';
+import { beforeEach, describe, test } from 'vitest';
 
-import { IDAttachable } from '../attachable/id-attachable';
-import { Attachable } from './attachable';
+import type { Attachable as AttachableType } from './attachable';
+import type { IDAttachable as IDAttachableType } from './id-attachable';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  let Attachable: typeof AttachableType;
+  let IDAttachable: typeof IDAttachableType;
+
+  beforeEach(async () => {
+    let imports = await import('../../dist/index');
+    Attachable = imports.Attachable as any;
+    IDAttachable = imports.IDAttachable as any;
+  });
+
   test('Attachable create and destroy', async () => {
     await UnitTestHelper.testPerformance(() => {
       let object = new Attachable().attachToRoot();

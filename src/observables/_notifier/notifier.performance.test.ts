@@ -1,9 +1,18 @@
 import { UnitTestHelper } from 'helpers-lib';
-import { describe, test } from 'vitest';
+import { beforeEach, describe, test } from 'vitest';
 
-import { Action, Variable } from '../../../dist/index';
+import type { Action as ActionType, Variable as VariableType } from '../../index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
+  let Action: typeof ActionType;
+  let Variable: typeof VariableType;
+
+  beforeEach(async () => {
+    let imports = await import('../../../dist/index');
+    Action = imports.Action as any;
+    Variable = imports.Variable as any;
+  });
+
   test('build test', async () => {
     let action = new Action<void>();
     let subscription = action.subscribe(() => console.log('okay')).attachToRoot();
