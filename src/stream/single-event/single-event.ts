@@ -47,7 +47,12 @@ export class SingleEvent<T = void> implements IAttachment {
 
   private _linked?: boolean;
 
-  private constructor(private _executor: SingleEventExecutor) {}
+  /** @internal */
+  _executor: SingleEventExecutor;
+
+  private constructor(executor: SingleEventExecutor) {
+    this._executor = executor;
+  }
 
   destroy(): void {
     this._executor.destroy();

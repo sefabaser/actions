@@ -1,10 +1,10 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Action } from '../../../../observables/action/action';
-import { ActionLib } from '../../../../utilities/action-lib';
-import { SingleEvent } from '../../../single-event/single-event';
-import { Sequence } from '../../sequence';
+import { Action } from '../../observables/action/action';
+import { Sequence } from '../../stream/sequence/sequence';
+import { SingleEvent } from '../../stream/single-event/single-event';
+import { ActionLib } from '../action-lib';
 
 describe('Sequence Merge', () => {
   beforeEach(() => {
