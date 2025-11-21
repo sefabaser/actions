@@ -19,7 +19,7 @@ describe('Sequence Combine', () => {
         let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
         let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: sequence1, b: sequence2 })
+        ActionLib.combine({ a: sequence1, b: sequence2 })
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -37,7 +37,7 @@ describe('Sequence Combine', () => {
         });
 
         let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: sequence1, b: sequence2 })
+        ActionLib.combine({ a: sequence1, b: sequence2 })
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -49,7 +49,7 @@ describe('Sequence Combine', () => {
         let action2 = new Action<number>();
 
         let heap: { a: string; b: number }[] = [];
-        Sequence.combine({ a: action1, b: action2 })
+        ActionLib.combine({ a: action1, b: action2 })
           .tap(value => heap.push(value))
           .attachToRoot();
 
@@ -64,7 +64,7 @@ describe('Sequence Combine', () => {
         let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
-        let combined = Sequence.combine({ a: s1, b: s2 })
+        let combined = ActionLib.combine({ a: s1, b: s2 })
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -78,7 +78,7 @@ describe('Sequence Combine', () => {
 
       test('combine with delayed sequences', async () => {
         let heap: { a: string; b: number }[] = [];
-        Sequence.combine({
+        ActionLib.combine({
           a: Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
           b: Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
         })
@@ -100,7 +100,7 @@ describe('Sequence Combine', () => {
         let singleEvent = SingleEvent.instant('single');
         let action = new Action<string>();
 
-        Sequence.combine({
+        ActionLib.combine({
           sequence,
           singleEvent,
           action
@@ -130,7 +130,7 @@ describe('Sequence Combine', () => {
         let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
         let heap: unknown[] = [];
-        Sequence.combine([sequence1, sequence2])
+        ActionLib.combine([sequence1, sequence2])
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -148,7 +148,7 @@ describe('Sequence Combine', () => {
         });
 
         let heap: unknown[] = [];
-        Sequence.combine([sequence1, sequence2])
+        ActionLib.combine([sequence1, sequence2])
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -160,7 +160,7 @@ describe('Sequence Combine', () => {
         let action2 = new Action<number>();
 
         let heap: unknown[] = [];
-        Sequence.combine([action1, action2])
+        ActionLib.combine([action1, action2])
           .tap(value => heap.push(value))
           .attachToRoot();
 
@@ -175,7 +175,7 @@ describe('Sequence Combine', () => {
         let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
-        let combined = Sequence.combine([s1, s2])
+        let combined = ActionLib.combine([s1, s2])
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -189,7 +189,7 @@ describe('Sequence Combine', () => {
 
       test('combine with delayed sequences', async () => {
         let heap: unknown[] = [];
-        Sequence.combine([
+        ActionLib.combine([
           Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
           Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
         ])
@@ -211,7 +211,7 @@ describe('Sequence Combine', () => {
         let singleEvent = SingleEvent.instant('single');
         let action = new Action<string>();
 
-        Sequence.combine([sequence, singleEvent, action])
+        ActionLib.combine([sequence, singleEvent, action])
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -230,7 +230,7 @@ describe('Sequence Combine', () => {
     test('merge destroy -> children destroy', async () => {
       let sequence1 = Sequence.create<string>(() => {});
       let sequence = Sequence.create<string>(() => {});
-      let combined = Sequence.combine({ a: sequence1, b: sequence }).attachToRoot();
+      let combined = ActionLib.combine({ a: sequence1, b: sequence }).attachToRoot();
 
       expect(sequence1.destroyed).toBeFalsy();
       expect(sequence.destroyed).toBeFalsy();
@@ -242,7 +242,7 @@ describe('Sequence Combine', () => {
     test('children destroy -> merge destroy', async () => {
       let sequence1 = Sequence.create<string>(() => {});
       let sequence = Sequence.create<string>(() => {});
-      let combined = Sequence.combine({ a: sequence1, b: sequence }).attachToRoot();
+      let combined = ActionLib.combine({ a: sequence1, b: sequence }).attachToRoot();
 
       expect(combined.destroyed).toBeFalsy();
       sequence1.destroy();
@@ -258,7 +258,7 @@ describe('Sequence Combine', () => {
       expect(() => {
         let sequence1 = Sequence.create<string>(() => {});
         let sequence = Sequence.create<string>(() => {});
-        Sequence.combine({ a: sequence1, b: sequence }).attachToRoot();
+        ActionLib.combine({ a: sequence1, b: sequence }).attachToRoot();
 
         vi.runAllTimers();
       }).not.toThrow('Attachable: The object is not attached to anything!');
@@ -266,14 +266,14 @@ describe('Sequence Combine', () => {
 
     test('combining same sequence should throw error', () => {
       let sequence = Sequence.create(() => {});
-      expect(() => Sequence.combine({ a: sequence, b: sequence }).attachToRoot()).toThrow(
+      expect(() => ActionLib.combine({ a: sequence, b: sequence }).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
     });
 
     test('combining same notifier should throw error', () => {
       let action = new Action<string>();
-      expect(() => Sequence.combine({ a: action, b: action }).attachToRoot()).toThrow(
+      expect(() => ActionLib.combine({ a: action, b: action }).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
     });
@@ -291,7 +291,7 @@ describe('Sequence Combine', () => {
         .tap(() => {});
 
       let heap: unknown[] = [];
-      Sequence.combine({
+      ActionLib.combine({
         s: sequence
       })
         .tap(value => heap.push(value))

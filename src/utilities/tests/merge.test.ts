@@ -16,7 +16,7 @@ describe('Sequence Merge', () => {
     test('sequence merge', async () => {
       let heap: string[] = [];
 
-      Sequence.merge(
+      ActionLib.merge(
         Sequence.create<string>(resolve => resolve('a')),
         Sequence.create<string>(resolve => resolve('b')),
         Sequence.create<string>(resolve => resolve('c'))
@@ -32,7 +32,7 @@ describe('Sequence Merge', () => {
     test('single event merge', async () => {
       let heap: string[] = [];
 
-      Sequence.merge(
+      ActionLib.merge(
         SingleEvent.create<string>(resolve => resolve('a')),
         SingleEvent.create<string>(resolve => resolve('b')),
         SingleEvent.create<string>(resolve => resolve('c'))
@@ -50,7 +50,7 @@ describe('Sequence Merge', () => {
       let action2 = new Action<string>();
 
       let heap: string[] = [];
-      Sequence.merge(action1, action2)
+      ActionLib.merge(action1, action2)
         .tap(value => heap.push(value))
         .attachToRoot();
 
@@ -65,7 +65,7 @@ describe('Sequence Merge', () => {
       let s1 = Sequence.instant('a').take(1);
       let s2 = Sequence.instant('b').take(1);
 
-      let merged = Sequence.merge(s1, s2);
+      let merged = ActionLib.merge(s1, s2);
       let read = merged.tap(data => heap.push(data)).attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -80,7 +80,7 @@ describe('Sequence Merge', () => {
     test('instantly resolved and finalized sequences', async () => {
       let heap: string[] = [];
 
-      Sequence.merge(
+      ActionLib.merge(
         Sequence.create<string>((resolve, context) => {
           resolve('a');
           context.final();
@@ -104,7 +104,7 @@ describe('Sequence Merge', () => {
 
     test('merge with delayed sequences', async () => {
       let heap: string[] = [];
-      Sequence.merge(
+      ActionLib.merge(
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['1', '2'], resolve)),
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['x', 'y'], resolve))
@@ -123,7 +123,7 @@ describe('Sequence Merge', () => {
       let singleEvent = SingleEvent.instant('single');
       let action = new Action<string>();
 
-      Sequence.merge(sequence, singleEvent, action)
+      ActionLib.merge(sequence, singleEvent, action)
         .tap(data => heap.push(data))
         .attachToRoot();
 
@@ -141,7 +141,7 @@ describe('Sequence Merge', () => {
     test('merge destroy -> children destroy', async () => {
       let sequence1 = Sequence.create(() => {});
       let sequence2 = Sequence.create(() => {});
-      let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
+      let merged = ActionLib.merge(sequence1, sequence2).attachToRoot();
 
       expect(sequence1.destroyed).toBeFalsy();
       expect(sequence2.destroyed).toBeFalsy();
@@ -157,7 +157,7 @@ describe('Sequence Merge', () => {
     test('children destroy -> merge destroy', async () => {
       let sequence1 = Sequence.create(() => {});
       let sequence2 = Sequence.create(() => {});
-      let merged = Sequence.merge(sequence1, sequence2).attachToRoot();
+      let merged = ActionLib.merge(sequence1, sequence2).attachToRoot();
 
       expect(merged.destroyed).toBeFalsy();
       sequence1.destroy();
@@ -173,7 +173,7 @@ describe('Sequence Merge', () => {
       expect(() => {
         let sequence1 = Sequence.create(() => {});
         let sequence = Sequence.create(() => {});
-        Sequence.merge(sequence1, sequence).attachToRoot();
+        ActionLib.merge(sequence1, sequence).attachToRoot();
 
         vi.runAllTimers();
       }).not.toThrow('Attachable: The object is not attached to anything!');
@@ -181,14 +181,14 @@ describe('Sequence Merge', () => {
 
     test('merging same sequence should throw error', () => {
       let sequence = Sequence.create(() => {});
-      expect(() => Sequence.merge(sequence, sequence).attachToRoot()).toThrow(
+      expect(() => ActionLib.merge(sequence, sequence).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
     });
 
     test('merging same notifier should throw error', () => {
       let action = new Action<string>();
-      expect(() => Sequence.merge(action, action).attachToRoot()).toThrow(
+      expect(() => ActionLib.merge(action, action).attachToRoot()).toThrow(
         'Each given sequence to merge or combine has to be diferent.'
       );
     });
@@ -206,7 +206,7 @@ describe('Sequence Merge', () => {
         .tap(() => {});
 
       let heap: unknown[] = [];
-      Sequence.merge(sequence)
+      ActionLib.merge(sequence)
         .tap(value => heap.push(value))
         .attachToRoot();
 

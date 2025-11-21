@@ -17,7 +17,7 @@ describe('Sequence', () => {
       let action2 = new Action<string>();
 
       let heap: string[] = [];
-      let sequence = Sequence.merge(action1, action2)
+      let sequence = ActionLib.merge(action1, action2)
         .take(1)
         .tap(data => heap.push(data))
         .attachToRoot();
@@ -44,7 +44,7 @@ describe('Sequence', () => {
 
       let callCount = 0;
 
-      let sequence = Sequence.combine({ a: action1, b: action2 })
+      let sequence = ActionLib.combine({ a: action1, b: action2 })
         .take(1)
         .tap(() => callCount++)
         .attachToRoot();
@@ -154,7 +154,7 @@ describe('Sequence', () => {
         UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
       }).asyncMapOrdered(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -168,7 +168,7 @@ describe('Sequence', () => {
       );
 
       let heap: unknown[] = [];
-      let combined = Sequence.combine({
+      let combined = ActionLib.combine({
         m: merged,
         s3: sequence3,
         s4: sequence4
@@ -232,7 +232,7 @@ describe('Sequence', () => {
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -254,7 +254,7 @@ describe('Sequence', () => {
       );
 
       let heap: unknown[] = [];
-      Sequence.combine({
+      ActionLib.combine({
         m: merged,
         s3: sequence3,
         s4: sequence4
@@ -303,7 +303,7 @@ describe('Sequence', () => {
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, context) => {
           resolve(value + 'm');
           context.final();
@@ -316,7 +316,7 @@ describe('Sequence', () => {
       }).map(value => value + 's3');
 
       let heap: unknown[] = [];
-      let combined = Sequence.combine({
+      let combined = ActionLib.combine({
         s3: sequence3,
         m: merged
       })
