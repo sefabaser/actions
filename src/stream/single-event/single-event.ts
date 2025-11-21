@@ -53,8 +53,7 @@ export class SingleEvent<T = void> implements IAttachment {
     this._executor.destroy();
   }
 
-  // TODO: rename "tap"
-  read(callback: (data: T, context: ISingleEventContext) => void): SingleEvent<T> {
+  tap(callback: (data: T, context: ISingleEventContext) => void): SingleEvent<T> {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, context, resolve) => {
@@ -100,7 +99,7 @@ export class SingleEvent<T = void> implements IAttachment {
           clearTimeout(timeout);
         };
       })
-        .read(() => resolve(data))
+        .tap(() => resolve(data))
         .attach(context.attachable);
     });
 

@@ -23,7 +23,7 @@ describe('Sequence Take', () => {
         resolve('b');
       })
         .take(3)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -41,7 +41,7 @@ describe('Sequence Take', () => {
         resolve = r;
       })
         .take(5)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -63,7 +63,7 @@ describe('Sequence Take', () => {
         resolve('b');
       })
         .take(5)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -76,7 +76,7 @@ describe('Sequence Take', () => {
       let heap: string[] = [];
       Sequence.create<string>(resolve => resolve('a'))
         .take(1)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a']);
@@ -90,7 +90,7 @@ describe('Sequence Take', () => {
         resolve('c');
       })
         .take(2)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b']);
@@ -128,9 +128,9 @@ describe('Sequence Take', () => {
         resolve();
         return () => heap.push('destroyed');
       })
-        .read(() => heap.push('read1'))
+        .tap(() => heap.push('read1'))
         .take(1)
-        .read(() => heap.push('read2'))
+        .tap(() => heap.push('read2'))
         .attachToRoot();
 
       expect(heap).toEqual(['read1', 'read2', 'destroyed']);
@@ -189,7 +189,7 @@ describe('Sequence Take', () => {
             actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
           })
         )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);

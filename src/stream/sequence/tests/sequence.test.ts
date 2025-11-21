@@ -50,9 +50,9 @@ describe('Sequence', () => {
       let sequence = Sequence.create<string>(resolve => resolve('a'));
       expect(() =>
         sequence
-          .read(() => {})
+          .tap(() => {})
           .attachToRoot()
-          .read(() => {})
+          .tap(() => {})
       ).toThrow('Sequence: After attaching, you cannot add another operation.');
       await UnitTestHelper.waitForAllOperations();
     });
@@ -69,7 +69,7 @@ describe('Sequence', () => {
       let heap: unknown[] = [];
 
       let sequence = Sequence.instant()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([undefined]);
@@ -80,7 +80,7 @@ describe('Sequence', () => {
       let heap: string[] = [];
 
       let sequence = Sequence.instant<string>('a', 'b', 'c')
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b', 'c']);
@@ -96,7 +96,7 @@ describe('Sequence', () => {
         resolve(1);
         context.final();
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       expect(heap).toEqual([1]);
@@ -111,7 +111,7 @@ describe('Sequence', () => {
         context.final();
         resolve('2');
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       expect(heap).toEqual(['1']);
@@ -141,7 +141,7 @@ describe('Sequence', () => {
             action2.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
           })
         )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -190,7 +190,7 @@ describe('Sequence', () => {
             action2.subscribe(() => resolve(data)).attach(context.attachable);
           })
         )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -238,7 +238,7 @@ describe('Sequence', () => {
             actionlast.subscribe(() => resolve(data)).attach(context.attachable);
           })
         )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -287,7 +287,7 @@ describe('Sequence', () => {
       let sequence = Sequence.create(resolve => {
         resolve();
       })
-        .read((_, context) => {
+        .tap((_, context) => {
           context.destroy();
         })
         .attachToRoot();
@@ -329,7 +329,7 @@ describe('Sequence', () => {
         resolve = r;
         context = c;
       })
-        .read(() => triggerCount++)
+        .tap(() => triggerCount++)
         .attachToRoot();
 
       expect(() => resolve()).not.toThrowError();
@@ -356,8 +356,8 @@ describe('Sequence', () => {
     test('not attaching the chain to a target should throw error', () => {
       expect(() => {
         Sequence.create(resolve => resolve())
-          .read(() => {})
-          .read(() => {});
+          .tap(() => {})
+          .tap(() => {});
 
         vi.runAllTimers();
       }).toThrow('Attachable: The object is not attached to anything!');
@@ -366,7 +366,7 @@ describe('Sequence', () => {
     test('attaching to a target should not throw error', () => {
       expect(() => {
         Sequence.create(resolve => resolve())
-          .read(() => {})
+          .tap(() => {})
           .attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
@@ -376,7 +376,7 @@ describe('Sequence', () => {
     test('attaching to root should not throw error', () => {
       expect(() => {
         Sequence.create(resolve => resolve())
-          .read(() => {})
+          .tap(() => {})
           .attachToRoot();
 
         vi.runAllTimers();
@@ -386,8 +386,8 @@ describe('Sequence', () => {
     test('attaching the chain to a target should not throw error', () => {
       expect(() => {
         Sequence.create(resolve => resolve())
-          .read(() => {})
-          .read(() => {})
+          .tap(() => {})
+          .tap(() => {})
           .attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
@@ -397,8 +397,8 @@ describe('Sequence', () => {
     test('attaching the chain to root should not throw error', () => {
       expect(() => {
         Sequence.create(resolve => resolve())
-          .read(() => {})
-          .read(() => {})
+          .tap(() => {})
+          .tap(() => {})
           .attachToRoot();
 
         vi.runAllTimers();
@@ -453,7 +453,7 @@ describe('Sequence', () => {
 
         let triggerCount = 0;
         chain
-          .read(() => {
+          .tap(() => {
             triggerCount++;
           })
           .attachToRoot();
@@ -488,7 +488,7 @@ describe('Sequence', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attach(chainParent);
@@ -522,12 +522,12 @@ describe('Sequence', () => {
 
         let sequence = operation
           .toSequence()
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .map(value => value + 10);
         let chain = sequence
           .chainToRoot()
           .wait()
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -559,13 +559,13 @@ describe('Sequence', () => {
         let firstEvent = operation.toSequence();
         let chain1 = firstEvent.chainToRoot();
         let chain2 = chain1
-          .read(() => {
+          .tap(() => {
             triggerCount1++;
           })
           .chainToRoot();
 
         chain2
-          .read(() => {
+          .tap(() => {
             triggerCount2++;
           })
           .attachToRoot();
@@ -647,7 +647,7 @@ describe('Sequence', () => {
 
         let triggerCount = 0;
         chain
-          .read(() => {
+          .tap(() => {
             triggerCount++;
           })
           .attachToRoot();
@@ -684,7 +684,7 @@ describe('Sequence', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attach(chainParent);
@@ -720,7 +720,7 @@ describe('Sequence', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -757,13 +757,13 @@ describe('Sequence', () => {
         let firstEvent = operation.toSequence();
         let chain1 = firstEvent.chain(parent);
         let chain2 = chain1
-          .read(() => {
+          .tap(() => {
             triggerCount1++;
           })
           .chain(parent);
 
         chain2
-          .read(() => {
+          .tap(() => {
             triggerCount2++;
           })
           .attachToRoot();
@@ -845,7 +845,7 @@ describe('Sequence', () => {
 
         let triggerCount = 0;
         chain
-          .read(() => {
+          .tap(() => {
             triggerCount++;
           })
           .attachToRoot();
@@ -882,7 +882,7 @@ describe('Sequence', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attach(chainParent);
@@ -918,7 +918,7 @@ describe('Sequence', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -953,8 +953,8 @@ describe('Sequence', () => {
 
         let firstEvent = operation.toSequence();
         let chain1 = firstEvent.chainByID(parent.id);
-        let chain2 = chain1.read(data => heap.push(data)).chainByID(parent.id);
-        let final = chain2.read(data => heap.push(data)).attachToRoot();
+        let chain2 = chain1.tap(data => heap.push(data)).chainByID(parent.id);
+        let final = chain2.tap(data => heap.push(data)).attachToRoot();
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
@@ -999,7 +999,7 @@ describe('Sequence', () => {
       let sequence = Sequence.instant(1, 2, 3);
       let singleEvent = sequence
         .toSingleEvent()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([1]);
@@ -1017,7 +1017,7 @@ describe('Sequence', () => {
 
       let singleEvent = sequence
         .toSingleEvent()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -1041,7 +1041,7 @@ describe('Sequence', () => {
 
       let singleEvent = sequence
         .toSingleEvent()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       UnitTestHelper.callEachDelayed([1, 2, 3], value => resolve(value));
@@ -1057,7 +1057,7 @@ describe('Sequence', () => {
 
       let sequence = Sequence.create(() => {});
       let singleEvent = sequence.toSingleEvent();
-      let chained = singleEvent.read(data => heap.push(data)).chainToRoot();
+      let chained = singleEvent.tap(data => heap.push(data)).chainToRoot();
 
       expect(heap).toEqual([]);
       expect(sequence.destroyed).toBeFalsy();
@@ -1076,7 +1076,7 @@ describe('Sequence', () => {
 
       let sequence = Sequence.create(() => {});
       let singleEvent = sequence.toSingleEvent();
-      let chained = singleEvent.read(data => heap.push(data)).chainToRoot();
+      let chained = singleEvent.tap(data => heap.push(data)).chainToRoot();
 
       expect(heap).toEqual([]);
       expect(sequence.destroyed).toBeFalsy();
@@ -1098,7 +1098,7 @@ describe('Sequence', () => {
       let chained = singleEvent
         .map(data => data + 1)
         .chainToRoot()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([2]);
@@ -1116,7 +1116,7 @@ describe('Sequence', () => {
       let singleEvent = sequence
         .toSingleEvent()
         .wait()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -1139,7 +1139,7 @@ describe('Sequence', () => {
         let sequence = Sequence.instant(1, 2, 3);
         let singleEvent = sequence
           .singleChainToRoot()
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([1]);
@@ -1155,7 +1155,7 @@ describe('Sequence', () => {
           .map(x => x * 10)
           .filter(x => x > 20)
           .singleChainToRoot()
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([30]);
@@ -1170,7 +1170,7 @@ describe('Sequence', () => {
         let singleEvent = sequence
           .singleChainToRoot()
           .map(x => x * 100)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([500]);
@@ -1188,7 +1188,7 @@ describe('Sequence', () => {
 
         let singleEvent = sequence
           .singleChainToRoot()
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -1212,7 +1212,7 @@ describe('Sequence', () => {
 
         let singleEvent = sequence
           .singleChainToRoot()
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         UnitTestHelper.callEachDelayed([10, 20, 30], value => resolve(value));
@@ -1228,7 +1228,7 @@ describe('Sequence', () => {
 
         let sequence = Sequence.create(() => {});
         let singleEvent = sequence.singleChainToRoot();
-        let chained = singleEvent.read(data => heap.push(data)).attachToRoot();
+        let chained = singleEvent.tap(data => heap.push(data)).attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
         expect(singleEvent.destroyed).toBeFalsy();
@@ -1245,7 +1245,7 @@ describe('Sequence', () => {
 
         let sequence = Sequence.create(() => {});
         let singleEvent = sequence.singleChainToRoot();
-        let chained = singleEvent.read(data => heap.push(data)).attachToRoot();
+        let chained = singleEvent.tap(data => heap.push(data)).attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
         expect(singleEvent.destroyed).toBeFalsy();
@@ -1266,7 +1266,7 @@ describe('Sequence', () => {
         let sequence = Sequence.instant(7, 8, 9);
         let singleEvent = sequence
           .singleChain(parent)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([7]);
@@ -1283,7 +1283,7 @@ describe('Sequence', () => {
           .map(x => x + 10)
           .singleChain(parent)
           .map(x => x * 2)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([22]); // (1 + 10) * 2
@@ -1297,7 +1297,7 @@ describe('Sequence', () => {
 
         let sequence = Sequence.create(() => {});
         let singleEvent = sequence.singleChain(parent);
-        let chained = singleEvent.read(data => heap.push(data)).attachToRoot();
+        let chained = singleEvent.tap(data => heap.push(data)).attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
         expect(singleEvent.destroyed).toBeFalsy();
@@ -1320,7 +1320,7 @@ describe('Sequence', () => {
 
         let singleEvent = sequence
           .singleChain(parent)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -1348,12 +1348,12 @@ describe('Sequence', () => {
 
         let singleEvent1 = sequence1
           .singleChain(parent)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         let singleEvent2 = sequence2
           .singleChain(parent)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         resolve1(100);
@@ -1375,7 +1375,7 @@ describe('Sequence', () => {
         let sequence = Sequence.instant(15, 16, 17);
         let singleEvent = sequence
           .singleChainByID(parent.id)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([15]);
@@ -1392,7 +1392,7 @@ describe('Sequence', () => {
           .map(x => x * 3)
           .singleChainByID(parent.id)
           .map(x => x + 5)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([11]); // (2 * 3) + 5
@@ -1406,7 +1406,7 @@ describe('Sequence', () => {
 
         let sequence = Sequence.create(() => {});
         let singleEvent = sequence.singleChainByID(parent.id);
-        let chained = singleEvent.read(data => heap.push(data)).attachToRoot();
+        let chained = singleEvent.tap(data => heap.push(data)).attachToRoot();
 
         expect(sequence.destroyed).toBeFalsy();
         expect(singleEvent.destroyed).toBeFalsy();
@@ -1429,7 +1429,7 @@ describe('Sequence', () => {
 
         let singleEvent = sequence
           .singleChainByID(parent.id)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -1450,7 +1450,7 @@ describe('Sequence', () => {
         let singleEvent2 = singleEvent1.map(x => x * 2).chainByID(parent.id);
         let final = singleEvent2
           .map(x => x + 1)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([11]); // (5 * 2) + 1
@@ -1463,7 +1463,7 @@ describe('Sequence', () => {
       test('invalid id throws or handles gracefully', () => {
         let sequence = Sequence.instant(1);
         let singleEvent = sequence.singleChainByID(99999);
-        let chained = singleEvent.read(() => {}).attachToRoot();
+        let chained = singleEvent.tap(() => {}).attachToRoot();
 
         // Should not crash, sequence should be destroyed
         expect(sequence.destroyed).toBeTruthy();
@@ -1485,7 +1485,7 @@ describe('Sequence', () => {
 
         let final = sequence
           .map(x => x * 10)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         operation.trigger(5);
@@ -1506,7 +1506,7 @@ describe('Sequence', () => {
         let singleEvent = sequence
           .filter(x => x > 10)
           .singleChainToRoot()
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -1538,7 +1538,7 @@ describe('Sequence', () => {
         let sequence = operation
           .toSequence()
           .singleChainByID(parent.id)
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         operation.trigger(1);
@@ -1557,8 +1557,8 @@ describe('Sequence', () => {
     test('Each sequence can be linkable once', () => {
       expect(() => {
         let sequence = Sequence.create<string>(resolve => resolve('a'));
-        sequence.read(() => {}).attachToRoot();
-        sequence.read(() => {});
+        sequence.tap(() => {}).attachToRoot();
+        sequence.tap(() => {});
       }).toThrow('A sequence can only be linked once.');
     });
   });
@@ -1571,7 +1571,7 @@ describe('Sequence', () => {
       let heap: string[] = [];
       let sequence = Sequence.merge(action1, action2)
         .take(1)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -1598,7 +1598,7 @@ describe('Sequence', () => {
 
       let sequence = Sequence.combine({ a: action1, b: action2 })
         .take(1)
-        .read(() => callCount++)
+        .tap(() => callCount++)
         .attachToRoot();
 
       expect(sequence.destroyed).toBeFalsy();
@@ -1626,7 +1626,7 @@ describe('Sequence', () => {
       let triggerCount = 0;
       let singleEvent = action
         .toSingleEvent()
-        .read(() => triggerCount++)
+        .tap(() => triggerCount++)
         .attachToRoot();
 
       expect(triggerCount).toEqual(0);
@@ -1648,7 +1648,7 @@ describe('Sequence', () => {
       let singleEvent = action
         .filter(value => value === 'yes')
         .toSingleEvent()
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -1682,7 +1682,7 @@ describe('Sequence', () => {
             UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(data + value));
           })
         )
-        .read(data => {
+        .tap(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -1725,7 +1725,7 @@ describe('Sequence', () => {
         s3: sequence3,
         s4: sequence4
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -1811,7 +1811,7 @@ describe('Sequence', () => {
         s3: sequence3,
         s4: sequence4
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -1872,7 +1872,7 @@ describe('Sequence', () => {
         s3: sequence3,
         m: merged
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       combined.destroy();

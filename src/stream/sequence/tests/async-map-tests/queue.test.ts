@@ -22,7 +22,7 @@ describe('Queue Async Map', () => {
         resolve('a');
       })
         .asyncMapQueue(data => dummySequence(data))
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('b');
@@ -37,7 +37,7 @@ describe('Queue Async Map', () => {
         resolve('c');
       })
         .asyncMapQueue(data => dummySequence(data))
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b', 'c']);
@@ -53,7 +53,7 @@ describe('Queue Async Map', () => {
         resolve('b');
       })
         .asyncMapQueue(data => dummySequence(data))
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -74,7 +74,7 @@ describe('Queue Async Map', () => {
 
           Sequence.create<string>(resolve => resolve('a'))
             .asyncMapQueue(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           expect(heap).toEqual(['aI']);
@@ -89,7 +89,7 @@ describe('Queue Async Map', () => {
                 UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
               })
             )
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           await UnitTestHelper.waitForAllOperations();
@@ -141,7 +141,7 @@ describe('Queue Async Map', () => {
                 innerCount++;
               })
             )
-            .read(data => results.add(data))
+            .tap(data => results.add(data))
             .attachToRoot();
 
           resolve('x');
@@ -160,7 +160,7 @@ describe('Queue Async Map', () => {
 
           Sequence.create<string>(resolve => resolve('a'))
             .asyncMapQueue(data => SingleEvent.create<string>(resolveInner => resolveInner(data + 'I')))
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           expect(heap).toEqual(['aI']);
@@ -175,7 +175,7 @@ describe('Queue Async Map', () => {
                 UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
               })
             )
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           await UnitTestHelper.waitForAllOperations();
@@ -227,7 +227,7 @@ describe('Queue Async Map', () => {
                 innerCount++;
               })
             )
-            .read(data => results.add(data))
+            .tap(data => results.add(data))
             .attachToRoot();
 
           resolve('x');
@@ -246,7 +246,7 @@ describe('Queue Async Map', () => {
 
           Sequence.create<string>(resolve => resolve('a'))
             .asyncMapQueue(data => new Variable<string>(data + 'I'))
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           expect(heap).toEqual(['aI']);
@@ -261,7 +261,7 @@ describe('Queue Async Map', () => {
               UnitTestHelper.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
               return action;
             })
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           await UnitTestHelper.waitForAllOperations();
@@ -294,7 +294,7 @@ describe('Queue Async Map', () => {
 
               return response;
             })
-            .read(data => results.add(data))
+            .tap(data => results.add(data))
             .attachToRoot();
 
           resolve('x');
@@ -313,7 +313,7 @@ describe('Queue Async Map', () => {
 
           Sequence.create<string>(resolve => resolve('a'))
             .asyncMapQueue(data => data + 'I')
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           expect(heap).toEqual(['aI']);
@@ -335,7 +335,7 @@ describe('Queue Async Map', () => {
                 });
               }
             })
-            .read(data => heap.push(data))
+            .tap(data => heap.push(data))
             .attachToRoot();
 
           expect(heap).toEqual(['1S', '2I']);
@@ -354,7 +354,7 @@ describe('Queue Async Map', () => {
               .asyncMapQueue(() => false)
               .asyncMapQueue(() => ({}))
               .asyncMapQueue(() => undefined)
-              .read(() => {
+              .tap(() => {
                 finalized = true;
                 resolve();
               })
@@ -387,7 +387,7 @@ describe('Queue Async Map', () => {
               return action3.map(() => value);
             }
           })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         action2.trigger();
@@ -423,7 +423,7 @@ describe('Queue Async Map', () => {
               return action3.map(() => value);
             }
           })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         action2.trigger();
@@ -461,7 +461,7 @@ describe('Queue Async Map', () => {
               return action3.map(() => value);
             }
           })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         action2.trigger();
@@ -501,7 +501,7 @@ describe('Queue Async Map', () => {
             }
             return endpointOperation();
           })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -536,7 +536,7 @@ describe('Queue Async Map', () => {
             }
             return endpointOperation();
           })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -680,7 +680,7 @@ describe('Queue Async Map', () => {
               UnitTestHelper.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
             )
           )
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -700,7 +700,7 @@ describe('Queue Async Map', () => {
               UnitTestHelper.callEachDelayed([value + 'a'], delayedValue => resolve(delayedValue))
             )
           )
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -736,7 +736,7 @@ describe('Queue Async Map', () => {
 
             return actionlast.map(() => value);
           })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         // 3w, 2w, 1 --> _ --> _
@@ -866,7 +866,7 @@ describe('Queue Async Map', () => {
             action.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
           })
         )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);

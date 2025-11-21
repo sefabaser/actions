@@ -20,7 +20,7 @@ describe('Sequence Combine', () => {
 
         let heap: { a: string; b: number }[] = [];
         Sequence.combine({ a: sequence1, b: sequence2 })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
@@ -38,7 +38,7 @@ describe('Sequence Combine', () => {
 
         let heap: { a: string; b: number }[] = [];
         Sequence.combine({ a: sequence1, b: sequence2 })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
@@ -50,7 +50,7 @@ describe('Sequence Combine', () => {
 
         let heap: { a: string; b: number }[] = [];
         Sequence.combine({ a: action1, b: action2 })
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         action1.trigger('a');
@@ -65,7 +65,7 @@ describe('Sequence Combine', () => {
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
         let combined = Sequence.combine({ a: s1, b: s2 })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -82,7 +82,7 @@ describe('Sequence Combine', () => {
           a: Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
           b: Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
         })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -105,7 +105,7 @@ describe('Sequence Combine', () => {
           singleEvent,
           action
         })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -131,7 +131,7 @@ describe('Sequence Combine', () => {
 
         let heap: unknown[] = [];
         Sequence.combine([sequence1, sequence2])
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([['a', 1]]);
@@ -149,7 +149,7 @@ describe('Sequence Combine', () => {
 
         let heap: unknown[] = [];
         Sequence.combine([sequence1, sequence2])
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([['a', 1]]);
@@ -161,7 +161,7 @@ describe('Sequence Combine', () => {
 
         let heap: unknown[] = [];
         Sequence.combine([action1, action2])
-          .read(value => heap.push(value))
+          .tap(value => heap.push(value))
           .attachToRoot();
 
         action1.trigger('a');
@@ -176,7 +176,7 @@ describe('Sequence Combine', () => {
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
         let combined = Sequence.combine([s1, s2])
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -193,7 +193,7 @@ describe('Sequence Combine', () => {
           Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
           Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
         ])
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -212,7 +212,7 @@ describe('Sequence Combine', () => {
         let action = new Action<string>();
 
         Sequence.combine([sequence, singleEvent, action])
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([]);
@@ -288,13 +288,13 @@ describe('Sequence Combine', () => {
             UnitTestHelper.callEachDelayed([1], () => resolve());
           })
         )
-        .read(() => {});
+        .tap(() => {});
 
       let heap: unknown[] = [];
       Sequence.combine({
         s: sequence
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();

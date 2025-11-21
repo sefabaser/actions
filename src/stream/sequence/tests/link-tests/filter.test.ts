@@ -68,7 +68,7 @@ describe('Sequence Filter', () => {
         resolve('b');
       })
         .filter(data => data !== 'b' && data !== 'y')
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -86,7 +86,7 @@ describe('Sequence Filter', () => {
         resolve('b');
       })
         .filter(data => data !== 'b' && data !== 'y' && data !== 't')
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -132,7 +132,7 @@ describe('Sequence Filter', () => {
         resolve('a');
       })
         .filter((data, previousData) => data !== previousData)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');

@@ -40,8 +40,8 @@ describe('SingleEvent', () => {
 
     test('attach cannot be called before the end of the chain', () => {
       let singleEvent = SingleEvent.create<string>(() => {});
-      singleEvent.read(() => {}).attachToRoot();
-      expect(() => singleEvent.read(() => {})).toThrow('Single Event: A single event can only be linked once.');
+      singleEvent.tap(() => {}).attachToRoot();
+      expect(() => singleEvent.tap(() => {})).toThrow('Single Event: A single event can only be linked once.');
     });
   });
 
@@ -55,7 +55,7 @@ describe('SingleEvent', () => {
       let heap: unknown[] = [];
 
       SingleEvent.instant()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([undefined]);
@@ -65,7 +65,7 @@ describe('SingleEvent', () => {
       let heap: string[] = [];
 
       SingleEvent.instant<string>('a')
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a']);
@@ -119,7 +119,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -148,7 +148,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attach(chainParent);
@@ -183,8 +183,8 @@ describe('SingleEvent', () => {
 
         let firstEvent = operation.toSingleEvent();
         let chain1 = firstEvent.chainByID(parent.id);
-        let chain2 = chain1.read(data => heap.push(data)).chainByID(parent.id);
-        let final = chain2.read(data => heap.push(data)).attachToRoot();
+        let chain2 = chain1.tap(data => heap.push(data)).chainByID(parent.id);
+        let final = chain2.tap(data => heap.push(data)).attachToRoot();
 
         vi.runAllTimers();
         expect(firstEvent.destroyed).toBeFalsy();
@@ -266,7 +266,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -296,7 +296,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attach(chainParent);
@@ -332,7 +332,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -362,13 +362,13 @@ describe('SingleEvent', () => {
         let firstEvent = operation.toSingleEvent();
         let chain1 = firstEvent.chain(parent);
         let chain2 = chain1
-          .read(() => {
+          .tap(() => {
             triggerCount1++;
           })
           .chain(parent);
 
         chain2
-          .read(() => {
+          .tap(() => {
             triggerCount2++;
           })
           .attachToRoot();
@@ -450,7 +450,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -480,7 +480,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attach(chainParent);
@@ -516,7 +516,7 @@ describe('SingleEvent', () => {
 
         let triggered = false;
         chain
-          .read(() => {
+          .tap(() => {
             triggered = true;
           })
           .attachToRoot();
@@ -546,13 +546,13 @@ describe('SingleEvent', () => {
         let firstEvent = operation.toSingleEvent();
         let chain1 = firstEvent.chainByID(parent.id);
         let chain2 = chain1
-          .read(() => {
+          .tap(() => {
             triggerCount1++;
           })
           .chainByID(parent.id);
 
         chain2
-          .read(() => {
+          .tap(() => {
             triggerCount2++;
           })
           .attachToRoot();
@@ -599,7 +599,7 @@ describe('SingleEvent', () => {
 
     test('destroying single event directly', () => {
       let singleEvent = SingleEvent.create<void>(() => {})
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(singleEvent.destroyed).toBeFalsy();
@@ -622,7 +622,7 @@ describe('SingleEvent', () => {
       let sequence = SingleEvent.create<void>(resolve => {
         resolve();
       })
-        .read((_, context) => {
+        .tap((_, context) => {
           context.destroy();
         })
         .attachToRoot();
@@ -635,7 +635,7 @@ describe('SingleEvent', () => {
       let parent = new Attachable().attachToRoot();
 
       let singleEvent = SingleEvent.create<void>(() => {})
-        .read(() => {})
+        .tap(() => {})
         .attach(parent);
 
       expect(singleEvent.destroyed).toBeFalsy();
@@ -650,7 +650,7 @@ describe('SingleEvent', () => {
           triggered = true;
         };
       })
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(triggered).toBeFalsy();
@@ -670,7 +670,7 @@ describe('SingleEvent', () => {
 
     test('after attaching a resolved event should destroy by itself', () => {
       let singleEvent = SingleEvent.create<void>(resolve => resolve())
-        .read(() => {})
+        .tap(() => {})
         .attach(new Attachable().attachToRoot());
 
       expect(singleEvent.destroyed).toBeTruthy();
@@ -681,7 +681,7 @@ describe('SingleEvent', () => {
       let singleEvent = SingleEvent.create<void>(r => {
         resolve = r;
       })
-        .read(() => {})
+        .tap(() => {})
         .attach(new Attachable().attachToRoot());
 
       expect(singleEvent.destroyed).toBeFalsy();
@@ -706,8 +706,8 @@ describe('SingleEvent', () => {
     test('not attaching the chain to a target should throw error', () => {
       expect(() => {
         SingleEvent.create<void>(resolve => resolve())
-          .read(() => {})
-          .read(() => {});
+          .tap(() => {})
+          .tap(() => {});
 
         vi.runAllTimers();
       }).toThrow('Attachable: The object is not attached to anything!');
@@ -716,7 +716,7 @@ describe('SingleEvent', () => {
     test('attaching to a target should not throw error', () => {
       expect(() => {
         SingleEvent.create<void>(resolve => resolve())
-          .read(() => {})
+          .tap(() => {})
           .attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
@@ -726,7 +726,7 @@ describe('SingleEvent', () => {
     test('attaching to root should not throw error', () => {
       expect(() => {
         SingleEvent.create<void>(resolve => resolve())
-          .read(() => {})
+          .tap(() => {})
           .attachToRoot();
 
         vi.runAllTimers();
@@ -736,8 +736,8 @@ describe('SingleEvent', () => {
     test('attaching the chain to a target should not throw error', () => {
       expect(() => {
         SingleEvent.create<void>(resolve => resolve())
-          .read(() => {})
-          .read(() => {})
+          .tap(() => {})
+          .tap(() => {})
           .attach(new Attachable().attachToRoot());
 
         vi.runAllTimers();
@@ -747,8 +747,8 @@ describe('SingleEvent', () => {
     test('attaching the chain to root should not throw error', () => {
       expect(() => {
         SingleEvent.create<void>(resolve => resolve())
-          .read(() => {})
-          .read(() => {})
+          .tap(() => {})
+          .tap(() => {})
           .attachToRoot();
 
         vi.runAllTimers();
@@ -762,10 +762,10 @@ describe('SingleEvent', () => {
       let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       SingleEvent.create<string>(resolve => resolve('a'))
-        .read(() => {
+        .tap(() => {
           throw new Error('Test error');
         })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -781,7 +781,7 @@ describe('SingleEvent', () => {
         .map(() => {
           throw new Error('Test error');
         })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -797,7 +797,7 @@ describe('SingleEvent', () => {
         .asyncMap(() => {
           throw new Error('Test error');
         })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -823,8 +823,8 @@ describe('SingleEvent', () => {
     test('Each single event can be linkable once', () => {
       expect(() => {
         let singleEvent = SingleEvent.create<string>(resolve => resolve('a'));
-        singleEvent.read(() => {}).attachToRoot();
-        singleEvent.read(() => {});
+        singleEvent.tap(() => {}).attachToRoot();
+        singleEvent.tap(() => {});
       }).toThrow('Single Event: A single event can only be linked once.');
     });
   });

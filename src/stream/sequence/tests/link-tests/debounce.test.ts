@@ -18,7 +18,7 @@ describe('Sequence Debounce', () => {
 
       Sequence.create<string>(resolve => resolve('a'))
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -35,7 +35,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -60,7 +60,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -81,7 +81,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -103,7 +103,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -127,7 +127,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -154,7 +154,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(10)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('string');
@@ -180,7 +180,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(0)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -203,7 +203,7 @@ describe('Sequence Debounce', () => {
         resolve('b');
       })
         .debounce(30)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -230,7 +230,7 @@ describe('Sequence Debounce', () => {
       })
         .debounce(50)
         .map(data => data.length)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -250,7 +250,7 @@ describe('Sequence Debounce', () => {
       })
         .debounce(50)
         .filter(data => data.length > 2)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -274,7 +274,7 @@ describe('Sequence Debounce', () => {
       })
         .debounce(30)
         .debounce(20)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -297,7 +297,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -319,7 +319,7 @@ describe('Sequence Debounce', () => {
         finalizeContext = () => context.final();
       })
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');
@@ -344,7 +344,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attach(attachable);
 
       resolve('a');
@@ -365,7 +365,7 @@ describe('Sequence Debounce', () => {
 
       Sequence.create<string>(() => {})
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(200);
@@ -380,7 +380,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       for (let i = 0; i < 100; i++) {
@@ -400,7 +400,7 @@ describe('Sequence Debounce', () => {
         resolve = r;
       })
         .debounce(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('first');
@@ -426,7 +426,7 @@ describe('Sequence Debounce', () => {
       })
         .debounce(50)
         .take(2)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('a');

@@ -39,7 +39,7 @@ describe('ObservableMap', () => {
     let called = false;
     set
       .waitUntilAdded(1)
-      .read(() => {
+      .tap(() => {
         called = true;
       })
       .attachToRoot();
@@ -51,7 +51,7 @@ describe('ObservableMap', () => {
     let called = false;
     set
       .waitUntilAdded(1)
-      .read(() => {
+      .tap(() => {
         called = true;
       })
       .attachToRoot();
@@ -64,7 +64,7 @@ describe('ObservableMap', () => {
     let called = false;
     set
       .waitUntilRemoved(1)
-      .read(() => {
+      .tap(() => {
         called = true;
       })
       .attachToRoot();
@@ -78,7 +78,7 @@ describe('ObservableMap', () => {
     set.delete(1);
     set
       .waitUntilRemoved(1)
-      .read(() => {
+      .tap(() => {
         called = true;
       })
       .attachToRoot();

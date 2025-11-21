@@ -18,7 +18,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('a'))
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -32,7 +32,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('test'))
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -49,7 +49,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<unknown>(resolve => resolve('string'))
         .wait(10)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(10);
@@ -64,22 +64,22 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('text'))
         .wait(10)
-        .read(data => stringHeap.push(data))
+        .tap(data => stringHeap.push(data))
         .attachToRoot();
 
       SingleEvent.create<number>(resolve => resolve(123))
         .wait(20)
-        .read(data => numberHeap.push(data))
+        .tap(data => numberHeap.push(data))
         .attachToRoot();
 
       SingleEvent.create<unknown>(resolve => resolve({ key: 'value' }))
         .wait(30)
-        .read(data => objectHeap.push(data))
+        .tap(data => objectHeap.push(data))
         .attachToRoot();
 
       SingleEvent.create<unknown>(resolve => resolve([1, 2, 3]))
         .wait(40)
-        .read(data => arrayHeap.push(data))
+        .tap(data => arrayHeap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(10);
@@ -100,7 +100,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('immediate'))
         .wait(0)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -116,7 +116,7 @@ describe('SingleEvent Wait', () => {
         UnitTestHelper.callEachDelayed(['async'], data => resolve(data));
       })
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -135,7 +135,7 @@ describe('SingleEvent Wait', () => {
       SingleEvent.create<string>(resolve => resolve('hello'))
         .wait(50)
         .map(data => data.length)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(50);
@@ -148,7 +148,7 @@ describe('SingleEvent Wait', () => {
       SingleEvent.create<string>(resolve => resolve('test'))
         .map(data => data.length)
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -163,7 +163,7 @@ describe('SingleEvent Wait', () => {
       SingleEvent.create<string>(resolve => resolve('data'))
         .wait(30)
         .wait(20)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -182,7 +182,7 @@ describe('SingleEvent Wait', () => {
         .map(data => data.toUpperCase())
         .wait(40)
         .map(data => data.length)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -198,7 +198,7 @@ describe('SingleEvent Wait', () => {
 
       let singleEvent = SingleEvent.create<string>(resolve => resolve('a'))
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -216,7 +216,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('a'))
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attach(attachable);
 
       vi.advanceTimersByTime(50);
@@ -229,7 +229,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('a'))
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attach(attachable);
 
       expect(heap).toEqual([]);
@@ -266,7 +266,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(() => {})
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(200);
@@ -278,7 +278,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.instant('immediate')
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -292,17 +292,17 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<string>(resolve => resolve('first'))
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       SingleEvent.create<string>(resolve => resolve('second'))
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       SingleEvent.create<string>(resolve => resolve('third'))
         .wait(150)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -325,7 +325,7 @@ describe('SingleEvent Wait', () => {
         resolve = r;
       })
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('first');
@@ -342,7 +342,7 @@ describe('SingleEvent Wait', () => {
 
       SingleEvent.create<undefined>(resolve => resolve(undefined))
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(50);
@@ -370,7 +370,7 @@ describe('SingleEvent Wait', () => {
         }
       })
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(50);

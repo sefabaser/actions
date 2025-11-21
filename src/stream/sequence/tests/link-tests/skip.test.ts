@@ -23,7 +23,7 @@ describe('Sequence Skip', () => {
         resolve('b');
       })
         .skip(2)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -41,7 +41,7 @@ describe('Sequence Skip', () => {
         resolve = r;
       })
         .skip(3)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -63,7 +63,7 @@ describe('Sequence Skip', () => {
         resolve('b');
       })
         .skip(5)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -76,7 +76,7 @@ describe('Sequence Skip', () => {
       let heap: string[] = [];
       Sequence.create<string>(resolve => resolve('a'))
         .skip(0)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a']);
@@ -90,7 +90,7 @@ describe('Sequence Skip', () => {
         resolve('c');
       })
         .skip(1)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['b', 'c']);
@@ -104,7 +104,7 @@ describe('Sequence Skip', () => {
         resolve('c');
       })
         .skip(0)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b', 'c']);
@@ -146,9 +146,9 @@ describe('Sequence Skip', () => {
         resolve();
         return () => heap.push('destroyed');
       })
-        .read(() => heap.push('read1'))
+        .tap(() => heap.push('read1'))
         .skip(1)
-        .read(() => heap.push('read2'))
+        .tap(() => heap.push('read2'))
         .attachToRoot();
 
       expect(heap).toEqual(['read1', 'read1', 'read2']);
@@ -210,7 +210,7 @@ describe('Sequence Skip', () => {
             actionlast.subscribe(actionValue => resolve(data + actionValue)).attach(context.attachable);
           })
         )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);

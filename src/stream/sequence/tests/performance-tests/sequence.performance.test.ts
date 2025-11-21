@@ -7,31 +7,17 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let Sequence: typeof SequenceType;
 
   beforeEach(async () => {
+    // @ts-ignore
     let imports = await import('../../../../../dist/index');
     Sequence = imports.Sequence as any;
   });
 
   test('build test', async () => {
     let sequence = Sequence.instant()
-      .read(() => console.log('okay'))
+      .tap(() => console.log('okay'))
       .attachToRoot();
     sequence.destroy();
   });
-
-  /*
-  test('take one', async () => {
-    // await UnitTestHelper.testPerformance(() => {
-    let sequence = Sequence.instant('a', 'b', 'c')
-      .takeOne()
-      .read(() => {
-        console.log('ok');
-      })
-      .attachToRoot();
-    sequence.destroy();
-    // });
-    // 0.47679996490478516
-    // manual destroy: 0.28600025177001953
-  }, 60000);*/
 
   test('sequence single read', async () => {
     await UnitTestHelper.testPerformance(() => {
@@ -40,7 +26,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         resolve = r as any;
       });
 
-      sequence.read(() => {}).attachToRoot();
+      sequence.tap(() => {}).attachToRoot();
       resolve();
       sequence.destroy();
     });
@@ -109,9 +95,9 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
         ArrayHelper.createIntegerArray(10).reduce((acc, i) => {
           acc[i] = Sequence.create<string>(resolve => resolve('a'));
           return acc;
-        }, {})
+        }, {} as any)
       )
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       combination.destroy();
       // Min:  13.876399993896484
@@ -128,7 +114,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       let combination = Sequence.combine(
         ArrayHelper.createEmptyArray(10).map(() => Sequence.create<string>(resolve => resolve('a')))
       )
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       combination.destroy();
       // Min:  12.509200096130371

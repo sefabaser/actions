@@ -8,6 +8,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let Variable: typeof VariableType;
 
   beforeEach(async () => {
+    // @ts-ignore
     let imports = await import('../../../../dist/index');
     SingleEvent = imports.SingleEvent as any;
     Variable = imports.Variable as any;
@@ -15,7 +16,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('build test', async () => {
     let sequence = SingleEvent.instant()
-      .read(() => console.log('okay'))
+      .tap(() => console.log('okay'))
       .attachToRoot();
     sequence.destroy();
   });
@@ -23,7 +24,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
       let singleEvent = SingleEvent.instant()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       singleEvent.destroy();
@@ -35,7 +36,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('chaining instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
       let singleEvent = SingleEvent.instant()
-        .read(() => {})
+        .tap(() => {})
         .chainToRoot();
 
       singleEvent.destroy();
@@ -49,7 +50,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       let singleEvent = SingleEvent.create(resolve => {
         SingleEvent.instant()
-          .read(() => resolve())
+          .tap(() => resolve())
           .attachToRoot();
       });
 
@@ -61,46 +62,46 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('instant triggered multiple reads', async () => {
     await UnitTestHelper.testPerformance(() => {
       let singleEvent = SingleEvent.instant()
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attachToRoot();
       singleEvent.destroy();
     });
@@ -114,7 +115,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       let singleEvent = SingleEvent.create(r => {
         resolve = r as any;
       })
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       resolve();
@@ -165,16 +166,16 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('single event 10x read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let singleEvent = SingleEvent.create(resolve => resolve())
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attachToRoot();
       singleEvent.destroy();
     });
@@ -258,7 +259,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       return new Promise<void>(resolve => {
         let singleEvent = SingleEvent.instant()
-          .read(() => resolve())
+          .tap(() => resolve())
           .attachToRoot();
 
         singleEvent.destroy();

@@ -18,7 +18,7 @@ describe('UntilAllDestroyed', () => {
 
       let triggered = false;
       ActionLib.untilAllDestroyed([obj1, obj2, obj3])
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -41,7 +41,7 @@ describe('UntilAllDestroyed', () => {
       let obj3 = new Attachable().attachToRoot();
 
       ActionLib.untilAllDestroyed([obj1, obj2, obj3])
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -72,7 +72,7 @@ describe('UntilAllDestroyed', () => {
         let obj3 = new IDAttachable().attachToRoot();
 
         ActionLib.untilAllDestroyed([obj1, obj2, obj3])
-          .read(() => {})
+          .tap(() => {})
           .attachToRoot();
       });
       // 3.5130999088287354 -> 4.707000017166138

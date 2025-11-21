@@ -21,7 +21,7 @@ describe('Sequence Merge', () => {
         Sequence.create<string>(resolve => resolve('b')),
         Sequence.create<string>(resolve => resolve('c'))
       )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -37,7 +37,7 @@ describe('Sequence Merge', () => {
         SingleEvent.create<string>(resolve => resolve('b')),
         SingleEvent.create<string>(resolve => resolve('c'))
       )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -51,7 +51,7 @@ describe('Sequence Merge', () => {
 
       let heap: string[] = [];
       Sequence.merge(action1, action2)
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       action1.trigger('a');
@@ -66,7 +66,7 @@ describe('Sequence Merge', () => {
       let s2 = Sequence.instant('b').take(1);
 
       let merged = Sequence.merge(s1, s2);
-      let read = merged.read(data => heap.push(data)).attachToRoot();
+      let read = merged.tap(data => heap.push(data)).attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
 
@@ -94,7 +94,7 @@ describe('Sequence Merge', () => {
           context.final();
         })
       )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -109,7 +109,7 @@ describe('Sequence Merge', () => {
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
         Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['x', 'y'], resolve))
       )
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -124,7 +124,7 @@ describe('Sequence Merge', () => {
       let action = new Action<string>();
 
       Sequence.merge(sequence, singleEvent, action)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['single']);
@@ -203,11 +203,11 @@ describe('Sequence Merge', () => {
             UnitTestHelper.callEachDelayed([1], () => resolve());
           })
         )
-        .read(() => {});
+        .tap(() => {});
 
       let heap: unknown[] = [];
       Sequence.merge(sequence)
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();

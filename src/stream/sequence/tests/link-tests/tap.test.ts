@@ -5,7 +5,7 @@ import { Attachable } from '../../../../attachable/attachable';
 import { ActionLib } from '../../../../utilities/action-lib';
 import { Sequence } from '../../sequence';
 
-describe('Sequence Read', () => {
+describe('Sequence Tap', () => {
   beforeEach(() => {
     ActionLib.hardReset();
     UnitTestHelper.reset();
@@ -20,7 +20,7 @@ describe('Sequence Read', () => {
         resolve = r;
         resolve('a');
       })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('b');
@@ -34,7 +34,7 @@ describe('Sequence Read', () => {
         resolve('b');
         resolve('c');
       })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a', 'b', 'c']);
@@ -49,7 +49,7 @@ describe('Sequence Read', () => {
         r('b');
         resolve = r;
       })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       resolve('x');
@@ -63,17 +63,17 @@ describe('Sequence Read', () => {
   });
 
   describe('Behavior', () => {
-    test('sync read chain', () => {
+    test('sync tap chain', () => {
       let heap: string[] = [];
 
       Sequence.create(resolve => resolve())
-        .read(() => {
+        .tap(() => {
           heap.push('a');
         })
-        .read(() => {
+        .tap(() => {
           heap.push('b');
         })
-        .read(() => {
+        .tap(() => {
           heap.push('c');
         })
         .attachToRoot();
@@ -88,13 +88,13 @@ describe('Sequence Read', () => {
         resolve();
         context.final();
       })
-        .read(() => {
+        .tap(() => {
           heap.push('a');
         })
-        .read(() => {
+        .tap(() => {
           heap.push('b');
         })
-        .read(() => {
+        .tap(() => {
           heap.push('c');
         })
         .attachToRoot();
@@ -102,7 +102,7 @@ describe('Sequence Read', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
-    test('mixed read chain', async () => {
+    test('mixed tap chain', async () => {
       let heap: string[] = [];
 
       let resolve!: (data: string) => void;
@@ -111,13 +111,13 @@ describe('Sequence Read', () => {
         r('b');
         resolve = r;
       })
-        .read(data => {
+        .tap(data => {
           heap.push('1' + data);
         })
-        .read(data => {
+        .tap(data => {
           heap.push('2' + data);
         })
-        .read(data => {
+        .tap(data => {
           heap.push('3' + data);
         })
         .attachToRoot();
@@ -150,14 +150,14 @@ describe('Sequence Read', () => {
       ]);
     });
 
-    test('read should not change the data', () => {
+    test('tap should not change the data', () => {
       let heap: string[] = [];
       Sequence.create<string>(resolve => resolve('a'))
-        .read(data => {
+        .tap(data => {
           heap.push('1' + data);
           return 2;
         })
-        .read(data => {
+        .tap(data => {
           heap.push('2' + data);
         })
         .attachToRoot();
@@ -168,7 +168,7 @@ describe('Sequence Read', () => {
     test('resolve undefined should still trigger next link', () => {
       let heap: unknown[] = [];
       Sequence.create(resolve => resolve())
-        .read(data => {
+        .tap(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -180,9 +180,9 @@ describe('Sequence Read', () => {
   describe('Destruction', () => {
     test('destroying sequence', () => {
       let sequence = Sequence.create(resolve => resolve())
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(sequence.destroyed).toBeFalsy();
@@ -194,9 +194,9 @@ describe('Sequence Read', () => {
       let parent = new Attachable().attachToRoot();
 
       let sequence = Sequence.create(resolve => resolve())
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attach(parent);
 
       expect(sequence.destroyed).toBeFalsy();
@@ -212,9 +212,9 @@ describe('Sequence Read', () => {
           triggered = true;
         };
       })
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(triggered).toBeFalsy();

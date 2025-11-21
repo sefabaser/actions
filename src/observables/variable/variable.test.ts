@@ -91,7 +91,7 @@ describe(`Variable`, () => {
 
       variable
         .skip(1)
-        .read(value => {
+        .tap(value => {
           triggeredWith = value;
         })
         .attachToRoot();

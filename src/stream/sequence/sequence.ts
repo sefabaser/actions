@@ -184,8 +184,7 @@ export class Sequence<T = void> implements IAttachment {
     this._executor.destroy();
   }
 
-  // TODO: rename "tap"
-  read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
+  tap(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, context, resolve) => {
@@ -297,7 +296,7 @@ export class Sequence<T = void> implements IAttachment {
           let timeout = setTimeout(innerResolve, duration);
           return () => clearTimeout(timeout);
         })
-          .read(() => {
+          .tap(() => {
             let item = queue.pop();
             if (item !== queuer) {
               throw new Error('Sequence: Internal Error. Wait queue is curropted.');
@@ -330,7 +329,7 @@ export class Sequence<T = void> implements IAttachment {
             clearTimeout(timeout);
           };
         })
-          .read(() => resolve(data))
+          .tap(() => resolve(data))
           .attach(context.attachable);
       },
       (finalContext?: ISequenceLinkContext) => {

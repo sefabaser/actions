@@ -60,7 +60,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     test('destroying sequence in the middle of the chain', async () => {
       let sequence = Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b', 'c'], value => resolve(value)))
         .take(2)
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(sequence).toBeDefined();
@@ -113,7 +113,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         .asyncMapOrdered(() => action2)
         .map(data => data)
         .map(data => data)
-        .read(data => {
+        .tap(data => {
           triggeredWith = data;
         })
         .attachToRoot();
@@ -399,7 +399,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         s3: sequence3,
         m: merged
       })
-        .read(value => heap.push(value))
+        .tap(value => heap.push(value))
         .attachToRoot();
 
       expect(heap).toEqual([

@@ -1,13 +1,14 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, test } from 'vitest';
 
-import type { Action as ActionType, Variable as VariableType } from '../../index';
+import type { Action as ActionType, IAttachment, Variable as VariableType } from '../../index';
 
 describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let Action: typeof ActionType;
   let Variable: typeof VariableType;
 
   beforeEach(async () => {
+    // @ts-ignore
     let imports = await import('../../../dist/index');
     Action = imports.Action as any;
     Variable = imports.Variable as any;
@@ -123,7 +124,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('manual take next', async () => {
     let action = new Action<void>();
     await UnitTestHelper.testPerformance(() => {
-      let subscription = action.subscribe(() => subscription.destroy()).attachToRoot();
+      let subscription: IAttachment = action.subscribe(() => subscription.destroy()).attachToRoot();
       action.trigger();
     });
     // no attachable: 0.24489998817443848
@@ -157,7 +158,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       action
         .toSingleEvent()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       action.trigger();
     });
@@ -169,7 +170,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = action
         .toSequence()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       action.trigger();
       sequence.destroy();
@@ -191,7 +192,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = action
         .toSingleEvent()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       action.trigger();
       sequence.destroy();

@@ -7,6 +7,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let Sequence: typeof SequenceType;
 
   beforeEach(async () => {
+    // @ts-ignore
     let imports = await import('../../../../../dist/index');
     Sequence = imports.Sequence as any;
   });
@@ -50,9 +51,9 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence instant with chain with read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
-        .read(() => {})
+        .tap(() => {})
         .chainToRoot()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       sequence.destroy();
     });
@@ -63,9 +64,9 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence manual with chain with read', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.create(resolve => resolve())
-        .read(() => {})
+        .tap(() => {})
         .chainToRoot()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       sequence.destroy();
     });
@@ -76,7 +77,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence instant', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       sequence.destroy();
     });
@@ -87,7 +88,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('chainingsequence instant', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
-        .read(() => {})
+        .tap(() => {})
         .chainToRoot();
       sequence.destroy();
     });

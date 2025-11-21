@@ -8,6 +8,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let SingleEvent: typeof SingleEventType;
 
   beforeEach(async () => {
+    // @ts-ignore
     let imports = await import('../dist/index');
     Sequence = imports.Sequence as any;
     SingleEvent = imports.SingleEvent as any;
@@ -15,7 +16,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('lib test', async () => {
     let sequence = Sequence.instant()
-      .read(() => {
+      .tap(() => {
         console.log('a');
       })
       .attachToRoot();
@@ -26,7 +27,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('instant single event', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = SingleEvent.instant()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       sequence.destroy();
@@ -37,7 +38,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   test('sequence instant', async () => {
     await UnitTestHelper.testPerformance(() => {
       let sequence = Sequence.instant()
-        .read(() => {})
+        .tap(() => {})
         .attachToRoot();
       sequence.destroy();
     });

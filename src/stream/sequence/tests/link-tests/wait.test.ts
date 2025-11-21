@@ -18,7 +18,7 @@ describe('Sequence Wait', () => {
 
       Sequence.create<string>(resolve => resolve('a'))
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -36,7 +36,7 @@ describe('Sequence Wait', () => {
         resolve('c');
       })
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -55,7 +55,7 @@ describe('Sequence Wait', () => {
         resolve([1, 2, 3]);
       })
         .wait(10)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(40);
@@ -72,7 +72,7 @@ describe('Sequence Wait', () => {
         resolve('b');
       })
         .wait(30)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -95,7 +95,7 @@ describe('Sequence Wait', () => {
         resolve('2');
       })
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       setTimeout(() => resolve('3'), 10);
@@ -112,7 +112,7 @@ describe('Sequence Wait', () => {
       Sequence.create<string>(resolve => resolve('a'))
         .wait(50)
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(99);
@@ -132,7 +132,7 @@ describe('Sequence Wait', () => {
       })
         .map(value => value * 2)
         .wait(30)
-        .read(data => heap.push(data.toString()))
+        .tap(data => heap.push(data.toString()))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -151,7 +151,7 @@ describe('Sequence Wait', () => {
       })
         .wait(20)
         .map(value => value * 3)
-        .read(data => heap.push(data.toString()))
+        .tap(data => heap.push(data.toString()))
         .attachToRoot();
 
       vi.advanceTimersByTime(60);
@@ -166,7 +166,7 @@ describe('Sequence Wait', () => {
         resolve('b');
       })
         .wait()
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       vi.advanceTimersByTime(0);
@@ -186,7 +186,7 @@ describe('Sequence Wait', () => {
         resolve('c');
       })
         .wait(100)
-        .read(data => {
+        .tap(data => {
           readExecuted = true;
           heap.push(data);
         })
@@ -211,7 +211,7 @@ describe('Sequence Wait', () => {
         resolve('b');
       })
         .wait(100)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attach(attachable);
 
       expect(heap).toEqual([]);
@@ -235,7 +235,7 @@ describe('Sequence Wait', () => {
         resolve('d');
       })
         .wait(50)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -254,7 +254,7 @@ describe('Sequence Wait', () => {
         context.final();
       })
         .wait(50)
-        .read((data, context) => {
+        .tap((data, context) => {
           if (data === 'b') {
             context.final();
           }
@@ -278,7 +278,7 @@ describe('Sequence Wait', () => {
         resolve('a');
       })
         .wait(50)
-        .read((data, context) => {
+        .tap((data, context) => {
           if (data === 'b') {
             context.final();
           }

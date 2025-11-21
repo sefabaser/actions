@@ -63,7 +63,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier
         .waitUntilAdded(1)
-        .read(value => {
+        .tap(value => {
           triggeredWith = value;
         })
         .attachToRoot();
@@ -77,7 +77,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier
         .waitUntilAdded(1)
-        .read(value => {
+        .tap(value => {
           triggeredWith = value;
         })
         .attachToRoot();
@@ -106,7 +106,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier
         .waitUntilAdded(1)
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -125,14 +125,14 @@ describe('ObservableMapNotifier', () => {
 
       notifier
         .waitUntilAdded(1)
-        .read(() => {
+        .tap(() => {
           triggered1 = true;
         })
         .attachToRoot();
 
       notifier
         .waitUntilAdded(1)
-        .read(() => {
+        .tap(() => {
           triggered2 = true;
         })
         .attachToRoot();
@@ -154,7 +154,7 @@ describe('ObservableMapNotifier', () => {
 
       notifier
         .waitUntilAdded(1)
-        .read(() => {
+        .tap(() => {
           throw new Error('Test error');
         })
         .attachToRoot();
@@ -163,7 +163,7 @@ describe('ObservableMapNotifier', () => {
 
       notifier
         .waitUntilAdded(2)
-        .read(() => {
+        .tap(() => {
           subscription2Called = true;
         })
         .attachToRoot();
@@ -189,7 +189,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier
         .waitUntilRemoved(1)
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -204,7 +204,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier
         .waitUntilRemoved(1)
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -236,7 +236,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier
         .waitUntilRemoved(1)
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();
@@ -256,14 +256,14 @@ describe('ObservableMapNotifier', () => {
 
       notifier
         .waitUntilRemoved(1)
-        .read(() => {
+        .tap(() => {
           triggered1 = true;
         })
         .attachToRoot();
 
       notifier
         .waitUntilRemoved(1)
-        .read(() => {
+        .tap(() => {
           triggered2 = true;
         })
         .attachToRoot();
@@ -283,7 +283,7 @@ describe('ObservableMapNotifier', () => {
 
       notifier
         .waitUntilRemoved(1)
-        .read(() => {
+        .tap(() => {
           throw new Error('Test error');
         })
         .attachToRoot();
@@ -294,7 +294,7 @@ describe('ObservableMapNotifier', () => {
 
       notifier
         .waitUntilRemoved(2)
-        .read(() => {
+        .tap(() => {
           subscription2Called = true;
         })
         .attachToRoot();
@@ -345,7 +345,7 @@ describe('ObservableMapNotifier', () => {
 
       let subscription = notifier2
         .waitUntilAdded(1)
-        .read(() => {
+        .tap(() => {
           triggered = true;
         })
         .attachToRoot();

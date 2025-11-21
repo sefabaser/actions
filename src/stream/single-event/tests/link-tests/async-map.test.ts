@@ -22,7 +22,7 @@ describe('SingleEvent Async Map', () => {
 
       SingleEvent.create<string>(resolve => resolve('a'))
         .asyncMap(data => dummySingleEvent(data))
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a']);
@@ -35,7 +35,7 @@ describe('SingleEvent Async Map', () => {
         UnitTestHelper.callEachDelayed(['a'], data => resolve(data));
       })
         .asyncMap(data => dummySingleEvent(data))
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -51,7 +51,7 @@ describe('SingleEvent Async Map', () => {
 
         SingleEvent.create<string>(resolve => resolve('a'))
           .asyncMap(data => Sequence.create<string>(resolveInner => resolveInner(data + 'I')))
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['aI']);
@@ -66,7 +66,7 @@ describe('SingleEvent Async Map', () => {
               UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
             })
           )
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -89,7 +89,7 @@ describe('SingleEvent Async Map', () => {
             heap.push(data);
             return dummySequence('final');
           })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['a', 1, undefined, 'final']);
@@ -102,7 +102,7 @@ describe('SingleEvent Async Map', () => {
 
         SingleEvent.create<string>(resolve => resolve('a'))
           .asyncMap(data => SingleEvent.create<string>(resolveInner => resolveInner(data + 'I')))
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['aI']);
@@ -117,7 +117,7 @@ describe('SingleEvent Async Map', () => {
               UnitTestHelper.callEachDelayed([data + 'I'], delayedData => resolveInner(delayedData));
             })
           )
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -140,7 +140,7 @@ describe('SingleEvent Async Map', () => {
             heap.push(data);
             return dummySingleEvent('final');
           })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['a', 1, undefined, 'final']);
@@ -153,7 +153,7 @@ describe('SingleEvent Async Map', () => {
 
         SingleEvent.create<string>(resolve => resolve('a'))
           .asyncMap(data => new Variable<string>(data + 'I'))
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['aI']);
@@ -168,7 +168,7 @@ describe('SingleEvent Async Map', () => {
             UnitTestHelper.callEachDelayed([data + 'I'], delayedData => action.trigger(delayedData));
             return action;
           })
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         await UnitTestHelper.waitForAllOperations();
@@ -182,7 +182,7 @@ describe('SingleEvent Async Map', () => {
 
         SingleEvent.create<string>(resolve => resolve('a'))
           .asyncMap(data => data + 'I')
-          .read(data => heap.push(data))
+          .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual(['aI']);
@@ -198,7 +198,7 @@ describe('SingleEvent Async Map', () => {
             .asyncMap(() => false)
             .asyncMap(() => ({}))
             .asyncMap(() => undefined)
-            .read(() => {
+            .tap(() => {
               finalized = true;
               resolve();
             })

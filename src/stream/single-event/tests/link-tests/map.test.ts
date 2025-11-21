@@ -135,7 +135,7 @@ describe('SingleEvent Map', () => {
 
       SingleEvent.create<void>(resolve => resolve())
         .map(() => fakeStream)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([fakeStream]);
@@ -147,7 +147,7 @@ describe('SingleEvent Map', () => {
 
       SingleEvent.create<void>(resolve => resolve())
         .map(() => fakeStream)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([fakeStream]);

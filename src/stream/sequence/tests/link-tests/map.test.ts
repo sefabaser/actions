@@ -137,7 +137,7 @@ describe('Sequence Map', () => {
 
       Sequence.create(resolve => resolve())
         .map(() => fakeStream)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([fakeStream]);
@@ -149,7 +149,7 @@ describe('Sequence Map', () => {
 
       Sequence.create(resolve => resolve())
         .map(() => fakeStream)
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([fakeStream]);

@@ -298,8 +298,8 @@ describe('Notifier', () => {
       let triggered = false;
       notifier
         .toSequence()
-        .read(() => {})
-        .read(() => (triggered = true))
+        .tap(() => {})
+        .tap(() => (triggered = true))
         .attachToRoot();
 
       notifier._triggerAll();
@@ -328,8 +328,8 @@ describe('Notifier', () => {
       let triggered = false;
       notifier
         .toSingleEvent()
-        .read(() => {})
-        .read(() => (triggered = true))
+        .tap(() => {})
+        .tap(() => (triggered = true))
         .attachToRoot();
 
       notifier._triggerAll();

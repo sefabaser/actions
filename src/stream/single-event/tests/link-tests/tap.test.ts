@@ -5,7 +5,7 @@ import { Attachable } from '../../../../attachable/attachable';
 import { ActionLib } from '../../../../utilities/action-lib';
 import { SingleEvent } from '../../single-event';
 
-describe('SingleEvent Read', () => {
+describe('SingleEvent Tap', () => {
   beforeEach(() => {
     ActionLib.hardReset();
     UnitTestHelper.reset();
@@ -16,7 +16,7 @@ describe('SingleEvent Read', () => {
       let heap: string[] = [];
 
       SingleEvent.create<string>(resolve => resolve('a'))
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual(['a']);
@@ -28,7 +28,7 @@ describe('SingleEvent Read', () => {
       SingleEvent.create<string>(resolve => {
         UnitTestHelper.callEachDelayed(['a'], data => resolve(data));
       })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       await UnitTestHelper.waitForAllOperations();
@@ -38,17 +38,17 @@ describe('SingleEvent Read', () => {
   });
 
   describe('Behavior', () => {
-    test('sync read chain', () => {
+    test('sync tap chain', () => {
       let heap: string[] = [];
 
       SingleEvent.create<void>(resolve => resolve())
-        .read(() => {
+        .tap(() => {
           heap.push('a');
         })
-        .read(() => {
+        .tap(() => {
           heap.push('b');
         })
-        .read(() => {
+        .tap(() => {
           heap.push('c');
         })
         .attachToRoot();
@@ -56,19 +56,19 @@ describe('SingleEvent Read', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
-    test('async read chain', async () => {
+    test('async tap chain', async () => {
       let heap: string[] = [];
 
       SingleEvent.create<string>(resolve => {
         UnitTestHelper.callEachDelayed(['test'], data => resolve(data));
       })
-        .read(data => {
+        .tap(data => {
           heap.push('1' + data);
         })
-        .read(data => {
+        .tap(data => {
           heap.push('2' + data);
         })
-        .read(data => {
+        .tap(data => {
           heap.push('3' + data);
         })
         .attachToRoot();
@@ -78,14 +78,14 @@ describe('SingleEvent Read', () => {
       expect(heap).toEqual(['1test', '2test', '3test']);
     });
 
-    test('read should not change the data', () => {
+    test('tap should not change the data', () => {
       let heap: string[] = [];
       SingleEvent.create<string>(resolve => resolve('a'))
-        .read(data => {
+        .tap(data => {
           heap.push('1' + data);
           return 2;
         })
-        .read(data => {
+        .tap(data => {
           heap.push('2' + data);
         })
         .attachToRoot();
@@ -96,7 +96,7 @@ describe('SingleEvent Read', () => {
     test('resolve undefined should still trigger next link', () => {
       let heap: unknown[] = [];
       SingleEvent.create<void>(resolve => resolve())
-        .read(data => {
+        .tap(data => {
           heap.push(data);
         })
         .attachToRoot();
@@ -111,7 +111,7 @@ describe('SingleEvent Read', () => {
       let singleEvent = SingleEvent.create<string>(r => {
         resolve = r;
       })
-        .read(data => heap.push(data))
+        .tap(data => heap.push(data))
         .attachToRoot();
 
       expect(heap).toEqual([]);
@@ -126,9 +126,9 @@ describe('SingleEvent Read', () => {
   describe('Destruction', () => {
     test('destroying single event', () => {
       let singleEvent = SingleEvent.create<void>(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(singleEvent.destroyed).toBeFalsy();
@@ -140,9 +140,9 @@ describe('SingleEvent Read', () => {
       let parent = new Attachable().attachToRoot();
 
       let singleEvent = SingleEvent.create<void>(() => {})
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attach(parent);
 
       expect(singleEvent.destroyed).toBeFalsy();
@@ -157,9 +157,9 @@ describe('SingleEvent Read', () => {
           triggered = true;
         };
       })
-        .read(() => {})
-        .read(() => {})
-        .read(() => {})
+        .tap(() => {})
+        .tap(() => {})
+        .tap(() => {})
         .attachToRoot();
 
       expect(triggered).toBeFalsy();
