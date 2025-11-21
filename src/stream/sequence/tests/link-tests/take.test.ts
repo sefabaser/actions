@@ -2,13 +2,13 @@ import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Attachable } from '../../../../attachable/attachable';
-import { ActionLibHardReset } from '../../../../helpers/hard-reset';
 import { Action } from '../../../../observables/action/action';
+import { ActionLib } from '../../../../utilities/action-lib';
 import { Sequence } from '../../sequence';
 
 describe('Sequence Take', () => {
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 

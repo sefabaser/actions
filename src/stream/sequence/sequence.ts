@@ -82,6 +82,8 @@ export class Sequence<T = void> implements IAttachment {
     return combinedSequence;
   }
 
+  // TODO: singleCombine
+
   private static _shallowCopy<S extends object>(obj: S): S {
     return Object.keys(obj).reduce((acc, key) => {
       acc[key] = (obj as any)[key];
@@ -182,6 +184,7 @@ export class Sequence<T = void> implements IAttachment {
     this._executor.destroy();
   }
 
+  // TODO: rename "tap"
   read(callback: (data: T, context: ISequenceLinkContext) => void): Sequence<T> {
     this._validateBeforeLinking();
 
@@ -340,6 +343,8 @@ export class Sequence<T = void> implements IAttachment {
 
     return new Sequence<T>(this._executor);
   }
+
+  // TODO: asyncTap
 
   /**
    * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.

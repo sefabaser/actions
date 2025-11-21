@@ -2,13 +2,13 @@ import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Attachable } from '../../../../attachable/attachable';
-import { ActionLibHardReset } from '../../../../helpers/hard-reset';
 import { Variable } from '../../../../observables/variable/variable';
+import { ActionLib } from '../../../../utilities/action-lib';
 import { SingleEvent } from '../../single-event';
 
 describe('SingleEvent Map', () => {
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 

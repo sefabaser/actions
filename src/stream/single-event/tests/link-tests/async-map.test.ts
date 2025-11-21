@@ -1,9 +1,9 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { ActionLibHardReset } from '../../../../helpers/hard-reset';
 import { Action } from '../../../../observables/action/action';
 import { Variable } from '../../../../observables/variable/variable';
+import { ActionLib } from '../../../../utilities/action-lib';
 import { Sequence } from '../../../sequence/sequence';
 import { SingleEvent } from '../../single-event';
 
@@ -12,7 +12,7 @@ describe('SingleEvent Async Map', () => {
   let dummySingleEvent = <T>(value: T) => SingleEvent.create<T>(resolve => resolve(value));
 
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 

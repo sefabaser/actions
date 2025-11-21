@@ -53,6 +53,7 @@ export class SingleEvent<T = void> implements IAttachment {
     this._executor.destroy();
   }
 
+  // TODO: rename "tap"
   read(callback: (data: T, context: ISingleEventContext) => void): SingleEvent<T> {
     this._validateBeforeLinking();
 
@@ -105,6 +106,8 @@ export class SingleEvent<T = void> implements IAttachment {
 
     return new SingleEvent<T>(this._executor);
   }
+
+  // TODO: asyncTap
 
   /**
    * **Execution**: The incoming package **executes directly** and **directly resolves** after async operation responds.

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { ActionLibHardReset } from '../../helpers/hard-reset';
+import { ActionLib } from '../../utilities/action-lib';
 import { IDAttachable } from '../id-attachable';
 import { AttachmentTargetStore } from './attachment-target.store';
 
 describe('AttachmentTargetStore', () => {
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
   });
 
   describe('registerAttachmentTarget', () => {
@@ -149,7 +149,7 @@ describe('AttachmentTargetStore', () => {
       new TestClass1().attachToRoot();
       new TestClass2().attachToRoot();
 
-      ActionLibHardReset.hardReset();
+      ActionLib.hardReset();
 
       class TestClass3 extends IDAttachable {}
       let instance = new TestClass3().attachToRoot();

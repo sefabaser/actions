@@ -1,14 +1,13 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Attachable } from '../attachable/attachable';
-import { IDAttachable } from '../attachable/id-attachable';
-import { ActionLibHardReset } from '../helpers/hard-reset';
-import { ActionLibUtilities } from './action-lib-utilities';
+import { Attachable } from '../../attachable/attachable';
+import { IDAttachable } from '../../attachable/id-attachable';
+import { ActionLib } from '../action-lib';
 
 describe('UntilAllDestroyed', () => {
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
   });
 
   describe('untilAllDestroyed', () => {
@@ -18,7 +17,7 @@ describe('UntilAllDestroyed', () => {
       let obj3 = new Attachable().attachToRoot();
 
       let triggered = false;
-      ActionLibUtilities.untilAllDestroyed([obj1, obj2, obj3])
+      ActionLib.untilAllDestroyed([obj1, obj2, obj3])
         .read(() => {
           triggered = true;
         })
@@ -41,7 +40,7 @@ describe('UntilAllDestroyed', () => {
       let obj2 = new Attachable().attachToRoot();
       let obj3 = new Attachable().attachToRoot();
 
-      ActionLibUtilities.untilAllDestroyed([obj1, obj2, obj3])
+      ActionLib.untilAllDestroyed([obj1, obj2, obj3])
         .read(() => {
           triggered = true;
         })
@@ -56,7 +55,7 @@ describe('UntilAllDestroyed', () => {
     test('all destroy subscriptions should be destroyed when sequence is destroyed', () => {
       let obj = new Attachable().attachToRoot();
 
-      let sequence = ActionLibUtilities.untilAllDestroyed([obj]).attachToRoot();
+      let sequence = ActionLib.untilAllDestroyed([obj]).attachToRoot();
       expect(obj['_attachments']?.size).toEqual(1);
       expect(sequence['_executor']['_attachments']?.size).toEqual(1);
       sequence.destroy();
@@ -72,7 +71,7 @@ describe('UntilAllDestroyed', () => {
         let obj2 = new IDAttachable().attachToRoot();
         let obj3 = new IDAttachable().attachToRoot();
 
-        ActionLibUtilities.untilAllDestroyed([obj1, obj2, obj3])
+        ActionLib.untilAllDestroyed([obj1, obj2, obj3])
           .read(() => {})
           .attachToRoot();
       });

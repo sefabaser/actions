@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../../attachable/attachable';
 import { IDAttachable } from '../../../attachable/id-attachable';
-import { ActionLibHardReset } from '../../../helpers/hard-reset';
 import { Action } from '../../../observables/action/action';
+import { ActionLib } from '../../../utilities/action-lib';
 import { Sequence } from '../sequence';
 import { ISequenceCreatorContext } from '../sequence-executor';
 
 describe('Sequence', () => {
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 

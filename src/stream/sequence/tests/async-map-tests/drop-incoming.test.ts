@@ -1,14 +1,14 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { Action, ActionLibHardReset, Notifier, Sequence, SingleEvent, Variable } from '../../../..';
+import { Action, ActionLib, Notifier, Sequence, SingleEvent, Variable } from '../../../..';
 
 describe('Drop Incoming Async Map', () => {
   let dummySequence = <T>(value: T) => Sequence.create<T>(resolve => resolve(value));
   let dummySingleEvent = <T>(value: T) => SingleEvent.create<T>(resolve => resolve(value));
 
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 

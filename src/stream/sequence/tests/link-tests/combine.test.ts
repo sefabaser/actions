@@ -1,14 +1,14 @@
 import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ActionLibHardReset } from '../../../../helpers/hard-reset';
 import { Action } from '../../../../observables/action/action';
+import { ActionLib } from '../../../../utilities/action-lib';
 import { SingleEvent } from '../../../single-event/single-event';
 import { Sequence } from '../../sequence';
 
 describe('Sequence Combine', () => {
   beforeEach(() => {
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 

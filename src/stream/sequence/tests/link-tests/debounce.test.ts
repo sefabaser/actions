@@ -2,13 +2,13 @@ import { UnitTestHelper } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../../../attachable/attachable';
-import { ActionLibHardReset } from '../../../../helpers/hard-reset';
+import { ActionLib } from '../../../../utilities/action-lib';
 import { Sequence } from '../../sequence';
 
 describe('Sequence Debounce', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    ActionLibHardReset.hardReset();
+    ActionLib.hardReset();
     UnitTestHelper.reset();
   });
 
