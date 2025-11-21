@@ -646,7 +646,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Attaches the sequence and returns a new sequence that continues from this sequence.
+   * Attaches the sequence and returns a new sequence that continues from this.
    * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
    * @returns Sequence
    */
@@ -661,7 +661,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Attaches the sequence and returns a new sequence that continues from this sequence.
+   * Attaches the sequence and returns a new sequence that continues from this.
    * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
    * @returns Sequence
    */
@@ -676,7 +676,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Attaches the sequence and returns a new sequence that continues from this sequence.
+   * Attaches the sequence and returns a new sequence that continues from this.
    * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
    * @returns Sequence
    */

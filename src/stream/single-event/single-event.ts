@@ -197,6 +197,11 @@ export class SingleEvent<T = void> implements IAttachment {
     return this;
   }
 
+  /**
+   * Attaches the single event and returns a new single event that continues from this.
+   * Handy for function that returns a SingleEvent that might not be used. SingleEvent up to chain operates regardless.
+   * @returns SingleEvent
+   */
   chain(parent: Attachable): SingleEvent<T> {
     this._validateBeforeLinking();
 
@@ -207,6 +212,11 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent(chainExecutor);
   }
 
+  /**
+   * Attaches the single event and returns a new single event that continues from this.
+   * Handy for function that returns a SingleEvent that might not be used. SingleEvent up to chain operates regardless.
+   * @returns SingleEvent
+   */
   chainByID(id: number): SingleEvent<T> {
     this._validateBeforeLinking();
 
@@ -217,6 +227,11 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent(chainExecutor);
   }
 
+  /**
+   * Attaches the single event and returns a new single event that continues from this.
+   * Handy for function that returns a SingleEvent that might not be used. SingleEvent up to chain operates regardless.
+   * @returns SingleEvent
+   */
   chainToRoot(): SingleEvent<T> {
     this._validateBeforeLinking();
 
