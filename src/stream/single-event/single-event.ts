@@ -111,7 +111,32 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<T>(this._executor);
   }
 
-  // TODO: asyncTap
+  /**
+   * If an async operation is being returned, it waits until it resolves before continuing the execution.
+   * It allows reading the value but returned value does not change the value of the execution.
+   */
+  asyncTap(callback: (data: T, context: ISingleEventContext) => unknown): SingleEvent<T> {
+    this._validateBeforeLinking();
+
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      let executionReturn: any;
+
+      try {
+        executionReturn = callback(data, context);
+      } catch (e) {
+        console.error('SingleEvent callback function error: ', e);
+        return;
+      }
+
+      if (executionReturn?._subscribeSingle) {
+        (executionReturn as AsyncOperation<T>)._subscribeSingle(() => resolve(data)).attach(context.attachable);
+      } else {
+        resolve(data);
+      }
+    });
+
+    return new SingleEvent<T>(this._executor);
+  }
 
   /**
    * **Execution**: The incoming package **executes directly** and **directly resolves** after async operation responds.

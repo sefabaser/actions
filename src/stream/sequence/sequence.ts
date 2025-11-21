@@ -226,7 +226,32 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<T>(this._executor);
   }
 
-  // TODO: asyncTap
+  /**
+   * If an async operation is being returned, it waits until it resolves before continuing the execution.
+   * It allows reading the value but returned value does not change the value of the execution.
+   */
+  asyncTap(callback: (data: T, context: ISequenceLinkContext) => unknown): Sequence<T> {
+    this._validateBeforeLinking();
+
+    this._executor._enterPipeline<T, T>((data, context, resolve) => {
+      let executionReturn: any;
+
+      try {
+        executionReturn = callback(data, context);
+      } catch (e) {
+        console.error('Sequence callback function error: ', e);
+        return;
+      }
+
+      if (executionReturn?._subscribeSingle) {
+        (executionReturn as AsyncOperation<T>)._subscribeSingle(() => resolve(data)).attach(context.attachable);
+      } else {
+        resolve(data);
+      }
+    });
+
+    return new Sequence<T>(this._executor);
+  }
 
   /**
    * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.
