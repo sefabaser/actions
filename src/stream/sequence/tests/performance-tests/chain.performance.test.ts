@@ -7,7 +7,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let Sequence: typeof SequenceType;
 
   beforeEach(async () => {
-    // @ts-ignore
     let imports = await import('../../../../../dist/index');
     Sequence = imports.Sequence as any;
   });

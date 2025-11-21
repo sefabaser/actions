@@ -9,8 +9,13 @@ import { Reducer } from '../observables/reducer/reducer';
 import { Sequence } from '../stream/sequence/sequence';
 import { SingleEvent } from '../stream/single-event/single-event';
 
-// TODO: Include SingleEvent and write tests
-type ExtractStreamType<T> = T extends Sequence<infer U> ? U : T extends Notifier<infer U> ? U : never;
+type ExtractStreamType<T> = T extends Sequence<infer U>
+  ? U
+  : T extends SingleEvent<infer U>
+    ? U
+    : T extends Notifier<infer U>
+      ? U
+      : never;
 
 export class ActionLib {
   static merge<S>(...streams: AsyncOperation<S>[]): Sequence<S> {
@@ -40,6 +45,33 @@ export class ActionLib {
     streamsObject: S
   ): Sequence<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
   static combine<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(input: S): Sequence<any> {
+    return this._combineStreams(input, 2);
+  }
+
+  static combineSingle<const S extends readonly AsyncOperation<any>[]>(
+    streams: S
+  ): SingleEvent<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combineSingle<S extends Record<string, AsyncOperation<any>>>(
+    streamsObject: S
+  ): SingleEvent<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
+  static combineSingle<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(
+    input: S
+  ): SingleEvent<any> {
+    return this._combineStreams(input, 1);
+  }
+
+  private static _combineStreams<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(
+    input: S,
+    type: 1
+  ): SingleEvent<any>;
+  private static _combineStreams<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(
+    input: S,
+    type: 2
+  ): Sequence<any>;
+  private static _combineStreams<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(
+    input: S,
+    type: 1 | 2
+  ): SingleEvent<any> | Sequence<any> {
     let isArray = Comparator.isArray(input);
     let streams = Object.values(input);
     let activeStreams = this._validateAndConvertToSet(streams);
@@ -49,7 +81,8 @@ export class ActionLib {
     let unresolvedKeys = new Set(keys);
 
     let subscriptions: IAttachment[] = [];
-    let combinedSequence = Sequence.create<{ [K in keyof S]: S[K] extends Sequence<infer U> ? U : never }>(resolve => {
+    let creator = type === 1 ? SingleEvent.create : Sequence.create;
+    let combination = creator(resolve => {
       for (let i = 0; i < keys.length; i++) {
         let key = keys[i];
         let stream = (input as any)[key];
@@ -76,11 +109,9 @@ export class ActionLib {
       };
     });
 
-    this._waitUntilAllSequencesDestroyed(activeStreams, () => combinedSequence._executor._final());
-    return combinedSequence;
+    this._waitUntilAllSequencesDestroyed(activeStreams, () => combination._executor._final());
+    return combination;
   }
-
-  // TODO: singleCombine
 
   private static _shallowCopy<S extends object>(obj: S): S {
     return Object.keys(obj).reduce((acc, key) => {

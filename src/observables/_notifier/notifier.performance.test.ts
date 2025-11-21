@@ -8,7 +8,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let Variable: typeof VariableType;
 
   beforeEach(async () => {
-    // @ts-ignore
     let imports = await import('../../../dist/index');
     Action = imports.Action as any;
     Variable = imports.Variable as any;

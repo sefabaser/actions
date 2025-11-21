@@ -6,7 +6,7 @@ import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';
 import { ActionLib } from '../action-lib';
 
-describe('Sequence Merge', () => {
+describe('Merge', () => {
   beforeEach(() => {
     ActionLib.hardReset();
     UnitTestHelper.reset();

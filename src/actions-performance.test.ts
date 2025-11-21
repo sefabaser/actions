@@ -8,7 +8,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let SingleEvent: typeof SingleEventType;
 
   beforeEach(async () => {
-    // @ts-ignore
     let imports = await import('../dist/index');
     Sequence = imports.Sequence as any;
     SingleEvent = imports.SingleEvent as any;

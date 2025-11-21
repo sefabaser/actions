@@ -9,7 +9,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
   let IDAttachable: typeof IDAttachableType;
 
   beforeEach(async () => {
-    // @ts-ignore
     let imports = await import('../../dist/index');
     Attachable = imports.Attachable as any;
     IDAttachable = imports.IDAttachable as any;
