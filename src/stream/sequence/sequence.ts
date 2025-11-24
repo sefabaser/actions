@@ -102,6 +102,12 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<K>(this._executor);
   }
 
+  mapToVoid(): Sequence {
+    this._validateBeforeLinking();
+    this._executor._enterPipeline<T, void>((_, __, resolve) => resolve());
+    return new Sequence(this._executor);
+  }
+
   filter(callback: (data: T, previousValue: T | undefined, context: ISequenceLinkContext) => boolean): Sequence<T> {
     this._validateBeforeLinking();
 
