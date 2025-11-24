@@ -17,8 +17,7 @@ describe('Sequence', () => {
       let action2 = new Action<string>();
 
       let heap: string[] = [];
-      let sequence = ActionLib.merge(action1, action2)
-        .take(1)
+      let sequence = ActionLib.any(action1, action2)
         .tap(data => heap.push(data))
         .attachToRoot();
 
@@ -44,8 +43,7 @@ describe('Sequence', () => {
 
       let callCount = 0;
 
-      let sequence = ActionLib.combine({ a: action1, b: action2 })
-        .take(1)
+      let sequence = ActionLib.all({ a: action1, b: action2 })
         .tap(() => callCount++)
         .attachToRoot();
 

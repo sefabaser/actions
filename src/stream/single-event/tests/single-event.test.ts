@@ -24,16 +24,6 @@ describe('SingleEvent', () => {
       expect(SingleEvent.create<string>(resolve => resolve('a')).attachToRoot()).toBeDefined();
     });
 
-    test('multiple resolve should throw error', () => {
-      let resolve!: () => void;
-      SingleEvent.create<void>(r => {
-        resolve = r;
-      }).attachToRoot();
-
-      expect(() => resolve()).not.toThrow('Single Event: It can only resolve once.');
-      expect(() => resolve()).toThrow('Single Event: It can only resolve once.');
-    });
-
     test('plain single event async trigger', () => {
       expect(
         SingleEvent.create<string>(resolve => UnitTestHelper.callEachDelayed(['1'], value => resolve(value))).attachToRoot()

@@ -19,23 +19,39 @@ type ExtractStreamType<T> = T extends Sequence<infer U>
 
 export class ActionLib {
   static merge<S>(...streams: AsyncOperation<S>[]): Sequence<S> {
+    return this._merge(streams, 2);
+  }
+
+  static any<S>(...streams: AsyncOperation<S>[]): SingleEvent<S> {
+    return this._merge(streams, 1);
+  }
+
+  private static _merge<S>(streams: AsyncOperation<S>[], type: 1): SingleEvent<S>;
+  private static _merge<S>(streams: AsyncOperation<S>[], type: 2): Sequence<S>;
+  private static _merge<S>(streams: AsyncOperation<S>[], type: 1 | 2): SingleEvent<S> | Sequence<S> {
     let activeSequences = this._validateAndConvertToSet(streams);
 
+    let subscriptionsParent = new Attachable().attachToRoot();
     let subscriptions: IAttachment[] = [];
-    let mergedSequence = Sequence.create<S>(resolve => {
+
+    let creator = type === 1 ? SingleEvent.create : Sequence.create;
+    let merge = creator<S>(resolve => {
       for (let i = 0; i < streams.length; i++) {
-        let subscription = streams[i].subscribe(resolve).attachToRoot(); // Each handled manually
+        let subscription = streams[i]
+          .subscribe(response => {
+            resolve(response);
+            if (type === 1) {
+              subscriptionsParent.destroy();
+            }
+          })
+          .attach(subscriptionsParent);
         subscriptions.push(subscription);
       }
-      return () => {
-        for (let i = 0; i < streams.length; i++) {
-          subscriptions[i].destroy();
-        }
-      };
+      return () => subscriptionsParent.destroy();
     });
 
-    this._waitUntilAllSequencesDestroyed(activeSequences, () => mergedSequence._executor._final());
-    return mergedSequence;
+    this._waitUntilAllSequencesDestroyed(activeSequences, () => merge._executor._final());
+    return merge;
   }
 
   static combine<const S extends readonly AsyncOperation<any>[]>(
@@ -48,15 +64,13 @@ export class ActionLib {
     return this._combineStreams(input, 2);
   }
 
-  static combineSingle<const S extends readonly AsyncOperation<any>[]>(
+  static all<const S extends readonly AsyncOperation<any>[]>(
     streams: S
   ): SingleEvent<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
-  static combineSingle<S extends Record<string, AsyncOperation<any>>>(
+  static all<S extends Record<string, AsyncOperation<any>>>(
     streamsObject: S
   ): SingleEvent<{ [K in keyof S]: ExtractStreamType<S[K]> }>;
-  static combineSingle<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(
-    input: S
-  ): SingleEvent<any> {
+  static all<S extends Record<string, AsyncOperation<any>> | readonly AsyncOperation<any>[]>(input: S): SingleEvent<any> {
     return this._combineStreams(input, 1);
   }
 
@@ -80,7 +94,9 @@ export class ActionLib {
     let keys = Object.keys(input);
     let unresolvedKeys = new Set(keys);
 
+    let subscriptionsParent = new Attachable().attachToRoot();
     let subscriptions: IAttachment[] = [];
+
     let creator = type === 1 ? SingleEvent.create : Sequence.create;
     let combination = creator(resolve => {
       for (let i = 0; i < keys.length; i++) {
@@ -91,22 +107,20 @@ export class ActionLib {
             latestValues[key] = data;
             if (unresolvedKeys.size === 0) {
               resolve(isArray ? [...latestValues] : this._shallowCopy(latestValues));
+              type === 1 && subscriptionsParent.destroy();
             } else {
               unresolvedKeys.delete(key);
               if (unresolvedKeys.size === 0) {
                 resolve(isArray ? [...latestValues] : this._shallowCopy(latestValues));
+                type === 1 && subscriptionsParent.destroy();
               }
             }
           })
-          .attachToRoot(); // Each handled manually
+          .attach(subscriptionsParent); // Each handled manually
         subscriptions.push(subscription);
       }
 
-      return () => {
-        for (let i = 0; i < streams.length; i++) {
-          subscriptions[i].destroy();
-        }
-      };
+      return () => subscriptionsParent.destroy();
     });
 
     this._waitUntilAllSequencesDestroyed(activeStreams, () => combination._executor._final());
@@ -130,7 +144,7 @@ export class ActionLib {
         }
       }
 
-      throw new Error('Each given sequence to merge or combine has to be diferent.');
+      throw new Error('Each given async operation to merge or combine has to be diferent.');
     }
     return streamsSet;
   }

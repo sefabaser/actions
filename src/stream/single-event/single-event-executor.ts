@@ -87,11 +87,7 @@ export class SingleEventExecutor extends Attachable {
   }
 
   _trigger(data: unknown): void {
-    if (this._resolved) {
-      throw new Error('Single Event: It can only resolve once.');
-    }
-
-    if (!this._destroyed) {
+    if (!this._resolved && !this._destroyed) {
       this._resolved = true;
       this._currentData = data;
 

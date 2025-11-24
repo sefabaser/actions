@@ -42,7 +42,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('combine single new object', async () => {
     await UnitTestHelper.testPerformance(() => {
-      let combination = ActionLib.combineSingle(
+      let combination = ActionLib.all(
         ArrayHelper.createIntegerArray(10).reduce((acc, i) => {
           acc[i] = Sequence.create<string>(resolve => resolve('a'));
           return acc;

@@ -267,14 +267,14 @@ describe('Combine as Sequence', () => {
     test('combining same sequence should throw error', () => {
       let sequence = Sequence.create(() => {});
       expect(() => ActionLib.combine({ a: sequence, b: sequence }).attachToRoot()).toThrow(
-        'Each given sequence to merge or combine has to be diferent.'
+        'Each given async operation to merge or combine has to be diferent.'
       );
     });
 
     test('combining same notifier should throw error', () => {
       let action = new Action<string>();
       expect(() => ActionLib.combine({ a: action, b: action }).attachToRoot()).toThrow(
-        'Each given sequence to merge or combine has to be diferent.'
+        'Each given async operation to merge or combine has to be diferent.'
       );
     });
 

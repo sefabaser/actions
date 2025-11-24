@@ -6,7 +6,7 @@ import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';
 import { ActionLib } from '../action-lib';
 
-describe('Merge', () => {
+describe('Merge as Sequence', () => {
   beforeEach(() => {
     ActionLib.hardReset();
     UnitTestHelper.reset();
@@ -24,8 +24,6 @@ describe('Merge', () => {
         .tap(data => heap.push(data))
         .attachToRoot();
 
-      await UnitTestHelper.waitForAllOperations();
-
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
@@ -39,8 +37,6 @@ describe('Merge', () => {
       )
         .tap(data => heap.push(data))
         .attachToRoot();
-
-      await UnitTestHelper.waitForAllOperations();
 
       expect(heap).toEqual(['a', 'b', 'c']);
     });
@@ -68,8 +64,6 @@ describe('Merge', () => {
       let merged = ActionLib.merge(s1, s2);
       let read = merged.tap(data => heap.push(data)).attachToRoot();
 
-      await UnitTestHelper.waitForAllOperations();
-
       expect(heap).toEqual(['a', 'b']);
       expect(s1.destroyed).toBeTruthy();
       expect(s2.destroyed).toBeTruthy();
@@ -96,8 +90,6 @@ describe('Merge', () => {
       )
         .tap(data => heap.push(data))
         .attachToRoot();
-
-      await UnitTestHelper.waitForAllOperations();
 
       expect(heap).toEqual(['a', 'b', 'c']);
     });
@@ -182,14 +174,14 @@ describe('Merge', () => {
     test('merging same sequence should throw error', () => {
       let sequence = Sequence.create(() => {});
       expect(() => ActionLib.merge(sequence, sequence).attachToRoot()).toThrow(
-        'Each given sequence to merge or combine has to be diferent.'
+        'Each given async operation to merge or combine has to be diferent.'
       );
     });
 
     test('merging same notifier should throw error', () => {
       let action = new Action<string>();
       expect(() => ActionLib.merge(action, action).attachToRoot()).toThrow(
-        'Each given sequence to merge or combine has to be diferent.'
+        'Each given async operation to merge or combine has to be diferent.'
       );
     });
 

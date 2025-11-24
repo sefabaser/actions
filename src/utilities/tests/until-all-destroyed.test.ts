@@ -63,22 +63,22 @@ describe('UntilAllDestroyed', () => {
       expect(sequence['_executor']['_attachments']).toEqual(undefined);
     });
   });
+});
 
-  describe.skipIf(!process.env.MANUAL)('performance', () => {
-    test('performance', async () => {
-      await UnitTestHelper.testPerformance(() => {
-        let obj1 = new IDAttachable().attachToRoot();
-        let obj2 = new IDAttachable().attachToRoot();
-        let obj3 = new IDAttachable().attachToRoot();
+describe.skipIf(!process.env.MANUAL)('performance', () => {
+  test('performance', async () => {
+    await UnitTestHelper.testPerformance(() => {
+      let obj1 = new IDAttachable().attachToRoot();
+      let obj2 = new IDAttachable().attachToRoot();
+      let obj3 = new IDAttachable().attachToRoot();
 
-        ActionLib.untilAllDestroyed([obj1, obj2, obj3])
-          .tap(() => {})
-          .attachToRoot();
-      });
-      // 3.5130999088287354 -> 4.707000017166138
-      // 2.5468997955322266
-      // 2.376999855041504
-      // 2.187300205230713
-    }, 60000);
-  });
+      ActionLib.untilAllDestroyed([obj1, obj2, obj3])
+        .tap(() => {})
+        .attachToRoot();
+    });
+    // 3.5130999088287354 -> 4.707000017166138
+    // 2.5468997955322266
+    // 2.376999855041504
+    // 2.187300205230713
+  }, 60000);
 });

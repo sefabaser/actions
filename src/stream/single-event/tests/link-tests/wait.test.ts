@@ -329,11 +329,11 @@ describe('SingleEvent Wait', () => {
         .attachToRoot();
 
       resolve('first');
-
       vi.advanceTimersByTime(50);
       expect(heap).toEqual(['first']);
 
-      expect(() => resolve('second')).toThrow('Single Event: It can only resolve once.');
+      resolve('second');
+      vi.advanceTimersByTime(50);
       expect(heap).toEqual(['first']);
     });
 
