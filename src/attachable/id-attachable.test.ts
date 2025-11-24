@@ -1,3 +1,4 @@
+import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ActionLib, IDAttachable } from '..';
@@ -19,16 +20,14 @@ describe('IDAttachable', () => {
       expect(sample1.id !== sample2.id).toBeTruthy();
     });
 
-    test('not attaching to anything should throw error', () => {
-      let operation = async (): Promise<void> => {
-        new IDAttachable();
-      };
+    test('not attaching to anything should throw error', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
-        vi.runAllTimers();
-      }).toThrow('Attachable: The object is not attached to anything!');
+      new IDAttachable();
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Attachable: The object is not attached to anything!');
+      errorCapturer.destroy();
     });
 
     test('attachment is not necessary if attachable is destroyed right after creation', () => {
@@ -118,30 +117,30 @@ describe('IDAttachable', () => {
       expect(child?.destroyed).toBeTruthy();
     });
 
-    test('attach to self should throw error', () => {
-      vi.useFakeTimers();
+    test('attach to self should throw error', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
       let sample = new IDAttachable();
+      sample.attach(sample);
 
-      expect(() => {
-        sample.attach(sample);
-        vi.runAllTimers();
-      }).toThrow('Circular attachment detected!');
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
 
-    test('circular attachment should throw error', () => {
-      vi.useFakeTimers();
+    test('circular attachment should throw error', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
       class Sample extends IDAttachable {}
 
       let sample1 = new Sample();
       let sample2 = new Sample();
+      sample2.attach(sample1);
+      sample1.attach(sample2);
 
-      expect(() => {
-        sample2.attach(sample1);
-        sample1.attach(sample2);
-        vi.runAllTimers();
-      }).toThrow('Circular attachment detected!');
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
   });
 

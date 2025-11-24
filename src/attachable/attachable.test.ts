@@ -1,3 +1,4 @@
+import { UnitTestHelper, Wait } from 'helpers-lib';
 import { describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from './attachable';
@@ -46,27 +47,23 @@ describe('Attachable', () => {
   });
 
   describe('Behaviour', () => {
-    test('not attaching to anything should throw error', () => {
-      let operation = async (): Promise<void> => {
-        new Attachable();
-      };
+    test('not attaching to anything should throw error', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
-        vi.runAllTimers();
-      }).toThrow('Attachable: The object is not attached to anything!');
+      new Attachable();
+      await Wait();
+
+      expect(() => errorCapturer.throwErrors()).toThrow('Attachable: The object is not attached to anything!');
+      errorCapturer.destroy();
     });
 
-    test('attach throws if already attached', () => {
+    test('attach throws if already attached', async () => {
       let parent = new Attachable().attachToRoot();
       let child = new Attachable();
 
       child.attach(parent);
 
-      expect(() => {
-        child.attach(parent);
-      }).toThrow('Attachable: The object is already attached to something!');
+      expect(() => child.attach(parent)).toThrow('Attachable: The object is already attached to something!');
     });
 
     test('attachToRoot throws if already attached', () => {
@@ -74,9 +71,7 @@ describe('Attachable', () => {
 
       instance.attachToRoot();
 
-      expect(() => {
-        instance.attachToRoot();
-      }).toThrow('Attachable: The object is already attached to something!');
+      expect(() => instance.attachToRoot()).toThrow('Attachable: The object is already attached to something!');
     });
 
     test('attach throws if attachToRoot was called first', () => {
@@ -270,40 +265,43 @@ describe('Attachable', () => {
   });
 
   describe('Circular attachment detection', () => {
-    test('circular attachment detection - direct self-reference', () => {
-      vi.useFakeTimers();
+    test('circular attachment detection - direct self-reference', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-      expect(() => {
-        let attachable = new Attachable().attachToRoot();
-        // Manually create a circular reference by setting the parent to itself
-        attachable['_attachedParent'] = attachable;
-        vi.runAllTimers();
-      }).toThrow('Circular attachment detected!');
+      let attachable = new Attachable().attachToRoot();
+      // Manually create a circular reference by setting the parent to itself
+      attachable['_attachedParent'] = attachable;
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
 
-    test('circular attachment detection - two-level cycle', () => {
-      vi.useFakeTimers();
+    test('circular attachment detection - two-level cycle', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-      expect(() => {
-        let parent = new Attachable().attachToRoot();
-        let child = new Attachable().attach(parent);
-        // Create circular reference: parent -> child -> parent
-        parent['_attachedParent'] = child;
-        vi.runAllTimers();
-      }).toThrow('Circular attachment detected!');
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable().attach(parent);
+      // Create circular reference: parent -> child -> parent
+      parent['_attachedParent'] = child;
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
 
-    test('circular attachment detection - three-level cycle', () => {
-      vi.useFakeTimers();
+    test('circular attachment detection - three-level cycle', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-      expect(() => {
-        let root = new Attachable().attachToRoot();
-        let middle = new Attachable().attach(root);
-        let leaf = new Attachable().attach(middle);
-        // Create circular reference: root -> middle -> leaf -> root
-        root['_attachedParent'] = leaf;
-        vi.runAllTimers();
-      }).toThrow('Circular attachment detected!');
+      let root = new Attachable().attachToRoot();
+      let middle = new Attachable().attach(root);
+      let leaf = new Attachable().attach(middle);
+      // Create circular reference: root -> middle -> leaf -> root
+      root['_attachedParent'] = leaf;
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
 
     test('normal hierarchy does not trigger circular detection', () => {

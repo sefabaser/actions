@@ -42,7 +42,7 @@ export class Attachable implements IAttachment {
   protected _destroyIfNotAttached?: true;
 
   constructor() {
-    queueMicrotask(() => {
+    Promise.resolve().then(() => {
       if (!this._attachIsCalled && !this._destroyed) {
         if (this._destroyIfNotAttached) {
           this.destroy();

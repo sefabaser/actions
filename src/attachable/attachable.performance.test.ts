@@ -21,6 +21,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     });
     // Min:  0.10060000419616699
     // queueMicrotask: 0.06649994850158691
+    // promise then: 0.028399944305419922
   }, 60000);
 
   test('Attachable create, attach and destroy', async () => {

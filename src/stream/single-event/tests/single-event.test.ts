@@ -1,4 +1,4 @@
-import { UnitTestHelper } from 'helpers-lib';
+import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Attachable } from '../../../attachable/attachable';
@@ -65,18 +65,14 @@ describe('SingleEvent', () => {
   });
 
   describe('Chain', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-
     describe('to root', () => {
-      test('without doing further operations without resolve', () => {
+      test('without doing further operations without resolve', async () => {
         let operation = new Action();
 
         let firstEvent = operation.toSingleEvent();
         let chain = firstEvent.chainToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
@@ -89,21 +85,21 @@ describe('SingleEvent', () => {
         expect(chain.attachIsCalled).toBeFalsy();
       });
 
-      test('without doing further operations with resolve', () => {
+      test('without doing further operations with resolve', async () => {
         let operation = new Action();
 
         let firstEvent = operation.toSingleEvent();
         let chain = firstEvent.chainToRoot();
 
         operation.trigger();
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeTruthy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
         expect(chain.attachIsCalled).toBeFalsy();
       });
 
-      test('using chain', () => {
+      test('using chain', async () => {
         let operation = new Action();
 
         let firstEvent = operation.toSingleEvent();
@@ -116,7 +112,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -131,7 +127,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeTruthy();
       });
 
-      test('chain parent destroy before trigger', () => {
+      test('chain parent destroy before trigger', async () => {
         let chainParent = new Attachable().attachToRoot();
         let operation = new Action();
 
@@ -145,7 +141,7 @@ describe('SingleEvent', () => {
           })
           .attach(chainParent);
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -167,7 +163,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeFalsy();
       });
 
-      test('multiple chain', () => {
+      test('multiple chain', async () => {
         let parent = new IDAttachable().attachToRoot();
         let operation = new Action<number>();
 
@@ -178,7 +174,7 @@ describe('SingleEvent', () => {
         let chain2 = chain1.tap(data => heap.push(data)).chainByID(parent.id);
         let final = chain2.tap(data => heap.push(data)).attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeFalsy();
@@ -214,14 +210,14 @@ describe('SingleEvent', () => {
     });
 
     describe('directly', () => {
-      test('without doing further operations without resolve', () => {
+      test('without doing further operations without resolve', async () => {
         let parent = new Attachable().attachToRoot();
         let operation = new Action();
 
         let firstEvent = operation.toSingleEvent();
         let chain = firstEvent.chain(parent);
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
@@ -234,7 +230,7 @@ describe('SingleEvent', () => {
         expect(chain.attachIsCalled).toBeFalsy();
       });
 
-      test('without doing further operations with resolve', () => {
+      test('without doing further operations with resolve', async () => {
         let parent = new Attachable().attachToRoot();
         let operation = new Action();
 
@@ -242,14 +238,14 @@ describe('SingleEvent', () => {
         let chain = firstEvent.chain(parent);
 
         operation.trigger();
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeTruthy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
         expect(chain.attachIsCalled).toBeFalsy();
       });
 
-      test('using chain', () => {
+      test('using chain', async () => {
         let parent = new Attachable().attachToRoot();
         let operation = new Action();
 
@@ -263,7 +259,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -278,7 +274,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeTruthy();
       });
 
-      test('chain parent destroy before trigger', () => {
+      test('chain parent destroy before trigger', async () => {
         let parent = new Attachable().attachToRoot();
         let chainParent = new Attachable().attachToRoot();
         let operation = new Action();
@@ -293,7 +289,7 @@ describe('SingleEvent', () => {
           })
           .attach(chainParent);
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -315,7 +311,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeFalsy();
       });
 
-      test('operation attached parent destroy', () => {
+      test('operation attached parent destroy', async () => {
         let parent = new Attachable().attachToRoot();
         let operation = new Action();
 
@@ -329,7 +325,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -344,7 +340,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeFalsy();
       });
 
-      test('multiple chain', () => {
+      test('multiple chain', async () => {
         let parent = new Attachable().attachToRoot();
         let operation = new Action();
 
@@ -365,7 +361,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeFalsy();
@@ -397,15 +393,15 @@ describe('SingleEvent', () => {
       });
     });
 
-    describe('by id', () => {
-      test('without doing further operations without resolve', () => {
+    describe('by id', async () => {
+      test('without doing further operations without resolve', async () => {
         let parent = new IDAttachable().attachToRoot();
         let operation = new Action();
 
         let firstEvent = operation.toSingleEvent();
         let chain = firstEvent.chainByID(parent.id);
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
@@ -418,7 +414,7 @@ describe('SingleEvent', () => {
         expect(chain.attachIsCalled).toBeFalsy();
       });
 
-      test('without doing further operations with resolve', () => {
+      test('without doing further operations with resolve', async () => {
         let parent = new IDAttachable().attachToRoot();
         let operation = new Action();
 
@@ -426,14 +422,14 @@ describe('SingleEvent', () => {
         let chain = firstEvent.chainByID(parent.id);
 
         operation.trigger();
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeTruthy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeTruthy();
         expect(chain.attachIsCalled).toBeFalsy();
       });
 
-      test('using chain', () => {
+      test('using chain', async () => {
         let parent = new IDAttachable().attachToRoot();
         let operation = new Action();
 
@@ -447,7 +443,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -462,7 +458,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeTruthy();
       });
 
-      test('chain parent destroy before trigger', () => {
+      test('chain parent destroy before trigger', async () => {
         let parent = new IDAttachable().attachToRoot();
         let chainParent = new IDAttachable().attachToRoot();
         let operation = new Action();
@@ -477,7 +473,7 @@ describe('SingleEvent', () => {
           })
           .attach(chainParent);
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -499,7 +495,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeFalsy();
       });
 
-      test('operation attached parent destroy', () => {
+      test('operation attached parent destroy', async () => {
         let parent = new IDAttachable().attachToRoot();
         let operation = new Action();
 
@@ -513,7 +509,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain.destroyed).toBeFalsy();
@@ -528,7 +524,7 @@ describe('SingleEvent', () => {
         expect(triggered).toBeFalsy();
       });
 
-      test('multiple chain', () => {
+      test('multiple chain', async () => {
         let parent = new IDAttachable().attachToRoot();
         let operation = new Action();
 
@@ -549,7 +545,7 @@ describe('SingleEvent', () => {
           })
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
         expect(firstEvent.destroyed).toBeFalsy();
         expect(firstEvent.attachIsCalled).toBeTruthy();
         expect(chain1.destroyed).toBeFalsy();
@@ -684,66 +680,64 @@ describe('SingleEvent', () => {
   });
 
   describe('Attachment Errors', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-
-    test('not attaching to anything should destroy the sequence', () => {
+    test('not attaching to anything should destroy the sequence', async () => {
       let sequence = SingleEvent.create(resolve => resolve());
-      vi.runAllTimers();
+      await Wait();
 
       expect(sequence.destroyed).toBeTruthy();
     });
 
-    test('not attaching the chain to a target should throw error', () => {
-      expect(() => {
-        SingleEvent.create<void>(resolve => resolve())
-          .tap(() => {})
-          .tap(() => {});
+    test('not attaching the chain to a target should throw error', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-        vi.runAllTimers();
-      }).toThrow('Attachable: The object is not attached to anything!');
+      SingleEvent.create<void>(resolve => resolve())
+        .tap(() => {})
+        .tap(() => {});
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Attachable: The object is not attached to anything!');
+      errorCapturer.destroy();
     });
 
     test('attaching to a target should not throw error', () => {
-      expect(() => {
+      expect(async () => {
         SingleEvent.create<void>(resolve => resolve())
           .tap(() => {})
           .attach(new Attachable().attachToRoot());
 
-        vi.runAllTimers();
+        await Wait();
       }).not.toThrow('Attachable: The object is not attached to anything!');
     });
 
     test('attaching to root should not throw error', () => {
-      expect(() => {
+      expect(async () => {
         SingleEvent.create<void>(resolve => resolve())
           .tap(() => {})
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
       }).not.toThrow('Attachable: The object is not attached to anything!');
     });
 
     test('attaching the chain to a target should not throw error', () => {
-      expect(() => {
+      expect(async () => {
         SingleEvent.create<void>(resolve => resolve())
           .tap(() => {})
           .tap(() => {})
           .attach(new Attachable().attachToRoot());
 
-        vi.runAllTimers();
+        await Wait();
       }).not.toThrow('Attachable: The object is not attached to anything!');
     });
 
     test('attaching the chain to root should not throw error', () => {
-      expect(() => {
+      expect(async () => {
         SingleEvent.create<void>(resolve => resolve())
           .tap(() => {})
           .tap(() => {})
           .attachToRoot();
 
-        vi.runAllTimers();
+        await Wait();
       }).not.toThrow('Attachable: The object is not attached to anything!');
     });
   });
