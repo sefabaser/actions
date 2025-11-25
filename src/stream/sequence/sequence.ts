@@ -102,7 +102,7 @@ export class Sequence<T = void> implements IAttachment {
     return new Sequence<K>(this._executor);
   }
 
-  mapToVoid(): Sequence {
+  mapToVoid(): Sequence<void> {
     this._validateBeforeLinking();
     this._executor._enterPipeline<T, void>((_, __, resolve) => resolve());
     return new Sequence(this._executor);

@@ -88,6 +88,10 @@ export class ActionLib {
   ): SingleEvent<any> | Sequence<any> {
     let isArray = Comparator.isArray(input);
     let streams = Object.values(input);
+    if (streams.length === 0) {
+      return isArray ? SingleEvent.instant([]) : SingleEvent.instant({});
+    }
+
     let activeStreams = this._validateAndConvertToSet(streams);
 
     let latestValues: any = isArray ? [] : {};

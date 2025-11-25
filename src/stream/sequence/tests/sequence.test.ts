@@ -359,7 +359,6 @@ describe('Sequence', () => {
       await Wait();
 
       expect(() => errorCapturer.throwErrors()).toThrow('Attachable: The object is not attached to anything!');
-
       errorCapturer.destroy();
     });
 

@@ -94,7 +94,7 @@ export class SingleEvent<T = void> implements IAttachment {
     return new SingleEvent<K>(this._executor);
   }
 
-  mapToVoid(): SingleEvent {
+  mapToVoid(): SingleEvent<void> {
     this._validateBeforeLinking();
     this._executor._enterPipeline<T, void>((_, __, resolve) => resolve());
     return new SingleEvent(this._executor);

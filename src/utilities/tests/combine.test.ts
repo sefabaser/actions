@@ -18,12 +18,21 @@ describe('Combine as Sequence', () => {
         let sequence1 = Sequence.create<string>(resolve => resolve('a'));
         let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
-        let heap: { a: string; b: number }[] = [];
+        let heap: unknown[] = [];
         ActionLib.combine({ a: sequence1, b: sequence2 })
           .tap(data => heap.push(data))
           .attachToRoot();
 
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
+      });
+
+      test('empty combine', () => {
+        let heap: unknown[] = [];
+        ActionLib.all({})
+          .tap(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([{}]);
       });
 
       test('instantly finalizing sequences', () => {
@@ -36,7 +45,7 @@ describe('Combine as Sequence', () => {
           context.final();
         });
 
-        let heap: { a: string; b: number }[] = [];
+        let heap: unknown[] = [];
         ActionLib.combine({ a: sequence1, b: sequence2 })
           .tap(data => heap.push(data))
           .attachToRoot();
@@ -48,7 +57,7 @@ describe('Combine as Sequence', () => {
         let action1 = new Action<string>();
         let action2 = new Action<number>();
 
-        let heap: { a: string; b: number }[] = [];
+        let heap: unknown[] = [];
         ActionLib.combine({ a: action1, b: action2 })
           .tap(value => heap.push(value))
           .attachToRoot();
@@ -59,7 +68,7 @@ describe('Combine as Sequence', () => {
       });
 
       test('combine instantly getting resolved sequences', async () => {
-        let heap: { a: string; b: number }[] = [];
+        let heap: unknown[] = [];
 
         let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
@@ -77,7 +86,7 @@ describe('Combine as Sequence', () => {
       });
 
       test('combine with delayed sequences', async () => {
-        let heap: { a: string; b: number }[] = [];
+        let heap: unknown[] = [];
         ActionLib.combine({
           a: Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
           b: Sequence.create<number>(resolve => UnitTestHelper.callEachDelayed([1, 2], resolve))
@@ -135,6 +144,15 @@ describe('Combine as Sequence', () => {
           .attachToRoot();
 
         expect(heap).toEqual([['a', 1]]);
+      });
+
+      test('empty combine', () => {
+        let heap: unknown[] = [];
+        ActionLib.all([])
+          .tap(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([[]]);
       });
 
       test('instantly finalizing sequences', () => {

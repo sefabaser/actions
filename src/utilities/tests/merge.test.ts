@@ -27,6 +27,15 @@ describe('Merge as Sequence', () => {
       expect(heap).toEqual(['a', 'b', 'c']);
     });
 
+    test('empty merge', () => {
+      let heap: unknown[] = [];
+      ActionLib.any()
+        .tap(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual([]);
+    });
+
     test('single event merge', async () => {
       let heap: string[] = [];
 

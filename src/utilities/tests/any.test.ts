@@ -13,7 +13,7 @@ describe('Any', () => {
   });
 
   describe('Behavior', () => {
-    test('singleEvent merge', async () => {
+    test('single event merge', async () => {
       let heap: string[] = [];
 
       ActionLib.any(
@@ -27,18 +27,13 @@ describe('Any', () => {
       expect(heap).toEqual(['a']);
     });
 
-    test('single event merge', async () => {
-      let heap: string[] = [];
-
-      ActionLib.any(
-        SingleEvent.create<string>(resolve => resolve('a')),
-        SingleEvent.create<string>(resolve => resolve('b')),
-        SingleEvent.create<string>(resolve => resolve('c'))
-      )
+    test('empty merge', () => {
+      let heap: unknown[] = [];
+      ActionLib.any()
         .tap(data => heap.push(data))
         .attachToRoot();
 
-      expect(heap).toEqual(['a']);
+      expect(heap).toEqual([]);
     });
 
     test('action merge', () => {
