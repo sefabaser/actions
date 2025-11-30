@@ -687,7 +687,7 @@ describe('SingleEvent', () => {
       expect(sequence.destroyed).toBeTruthy();
     });
 
-    test('not attaching the chain to a target should throw error', async () => {
+    test('not attaching linked event to a target should throw error', async () => {
       let errorCapturer = UnitTestHelper.captureErrors();
 
       SingleEvent.create<void>(resolve => resolve())

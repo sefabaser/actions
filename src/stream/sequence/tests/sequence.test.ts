@@ -349,7 +349,7 @@ describe('Sequence', () => {
       expect(sequence.destroyed).toBeTruthy();
     });
 
-    test('not attaching the chain to a target should throw error', async () => {
+    test('not attaching the linked sequence to a target should throw error', async () => {
       let errorCapturer = UnitTestHelper.captureErrors();
 
       Sequence.create(resolve => resolve())

@@ -32,7 +32,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
     snapshot = await takeNodeMinimalHeap();
     SequenceClassNames.forEach(name => {
       if (snapshot.hasObjectWithClassName(name)) {
-        throw new Error(name);
+        throw new Error(`"${name}" has at least one instance in the memory.`);
       }
     });
   }

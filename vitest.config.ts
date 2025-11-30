@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => ({
     },
     env: {
       QUICK: mode === 'quick' ? '1' : undefined
+    },
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        execArgv: ['--expose-gc']
+      }
     }
   },
 }));
