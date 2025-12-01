@@ -42,6 +42,7 @@ export class Attachable implements IAttachment {
   protected _destroyIfNotAttached?: true;
 
   constructor() {
+    // NOTE: this can be removed in release mode, only if "destroy if not attached" can be done differently
     Promise.resolve().then(() => {
       if (!this._attachIsCalled && !this._destroyed) {
         if (this._destroyIfNotAttached) {

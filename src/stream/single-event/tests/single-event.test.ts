@@ -579,112 +579,315 @@ describe('SingleEvent', () => {
   });
 
   describe('Destruction', () => {
-    test('Should not be destroyed after attach if it is not resolved', () => {
-      let singleEvent = SingleEvent.create<string>(() => {}).attachToRoot();
+    describe('Destroying Single Event', () => {
+      test('Should not be destroyed after attach if it is not resolved', () => {
+        let singleEvent = SingleEvent.create<string>(() => {}).attachToRoot();
 
-      expect(singleEvent.destroyed).toBeFalsy();
-    });
+        expect(singleEvent.destroyed).toBeFalsy();
+      });
 
-    test('destroying single event directly', () => {
-      let singleEvent = SingleEvent.create<void>(() => {})
-        .tap(() => {})
-        .attachToRoot();
+      test('destroying single event directly', () => {
+        let singleEvent = SingleEvent.create<void>(() => {})
+          .tap(() => {})
+          .attachToRoot();
 
-      expect(singleEvent.destroyed).toBeFalsy();
-      singleEvent.destroy();
-      expect(singleEvent.destroyed).toBeTruthy();
-      expect(singleEvent['_executor']['_pipeline']).toEqual(undefined);
-    });
+        expect(singleEvent.destroyed).toBeFalsy();
+        singleEvent.destroy();
+        expect(singleEvent.destroyed).toBeTruthy();
+        expect(singleEvent['_executor']['_pipeline']).toEqual(undefined);
+      });
 
-    test('destroying single event via constructor context', () => {
-      let sequence = SingleEvent.create<void>((resolve, context) => {
-        resolve();
-        context.destroy();
-      }).attachToRoot();
-
-      expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
-    });
-
-    test('destroying single event via iterator context', () => {
-      let sequence = SingleEvent.create<void>(resolve => {
-        resolve();
-      })
-        .tap((_, context) => {
+      test('destroying single event via constructor context', () => {
+        let singleEvent = SingleEvent.create<void>((resolve, context) => {
+          resolve();
           context.destroy();
+        }).attachToRoot();
+
+        expect(singleEvent.destroyed).toBeTruthy();
+        expect(singleEvent['_executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('destroying single event via iterator context', () => {
+        let singleEvent = SingleEvent.create<void>(resolve => {
+          resolve();
         })
-        .attachToRoot();
+          .tap((_, context) => {
+            context.destroy();
+          })
+          .attachToRoot();
 
-      expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
+        expect(singleEvent.destroyed).toBeTruthy();
+        expect(singleEvent['_executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('destroying parent should destroy single event', () => {
+        let parent = new Attachable().attachToRoot();
+
+        let singleEvent = SingleEvent.create<void>(() => {})
+          .tap(() => {})
+          .attach(parent);
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        parent.destroy();
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
+
+      test('resolve after destruction should not throw error', () => {
+        let resolve!: (data: string) => void;
+        let singleEvent = SingleEvent.create<string>(r => {
+          resolve = r;
+        }).attachToRoot();
+
+        singleEvent.destroy();
+        expect(() => resolve('test')).not.toThrow();
+      });
+
+      test('after attaching a resolved event should destroy by itself', () => {
+        let singleEvent = SingleEvent.create<void>(resolve => resolve())
+          .tap(() => {})
+          .attach(new Attachable().attachToRoot());
+
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
+
+      test('after attaching a resolved event should destroy by itself', () => {
+        let resolve!: () => void;
+        let singleEvent = SingleEvent.create<void>(r => {
+          resolve = r;
+        })
+          .tap(() => {})
+          .attach(new Attachable().attachToRoot());
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        resolve();
+
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
     });
 
-    test('destroying parent should destroy single event', () => {
-      let parent = new Attachable().attachToRoot();
+    describe('Destroy Callback', () => {
+      test('should be called when event is destroyed', () => {
+        let triggered = false;
+        let singleEvent = SingleEvent.create<void>(() => {
+          return () => {
+            triggered = true;
+          };
+        })
+          .wait()
+          .attachToRoot();
 
-      let singleEvent = SingleEvent.create<void>(() => {})
-        .tap(() => {})
-        .attach(parent);
+        expect(triggered).toBeFalsy();
+        singleEvent.destroy();
+        expect(triggered).toBeTruthy();
+      });
 
-      expect(singleEvent.destroyed).toBeFalsy();
-      parent.destroy();
-      expect(singleEvent.destroyed).toBeTruthy();
+      test('should be called when event is resolved', async () => {
+        let triggered = false;
+        let resolve!: () => void;
+
+        let singleEvent = SingleEvent.create<void>(r => {
+          resolve = r;
+          return () => {
+            triggered = true;
+          };
+        })
+          .wait()
+          .attachToRoot();
+
+        expect(triggered).toBeFalsy();
+        expect(singleEvent.destroyed).toBeFalsy();
+
+        resolve();
+        expect(triggered).toBeTruthy();
+        expect(singleEvent.destroyed).toBeFalsy();
+
+        await Wait();
+        expect(triggered).toBeTruthy();
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
     });
 
-    test('destroy single event callback', () => {
-      let triggered = false;
-      let singleEvent = SingleEvent.create<void>(() => {
-        return () => {
-          triggered = true;
-        };
-      })
-        .tap(() => {})
-        .attachToRoot();
+    describe('Attaching To Creator Context', () => {
+      test('attachments on the context attachable should be destroyed right after the iteration step', async () => {
+        let action1 = new Action<void>();
+        let action2 = new Action<void>();
+        let triggered = false;
 
-      expect(triggered).toBeFalsy();
-      singleEvent.destroy();
-      expect(triggered).toBeTruthy();
+        let singleEvent = SingleEvent.create<void>((resolve, context) => {
+          action1
+            .subscribe(() => {
+              triggered = true;
+              resolve();
+            })
+            .attach(context.attachable);
+        })
+          .asyncMap(() => action2)
+          .attachToRoot();
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(1);
+        expect(action2.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
+
+        action1.trigger();
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(1);
+        expect(triggered).toBeTruthy();
+
+        singleEvent.destroy();
+
+        expect(singleEvent.destroyed).toBeTruthy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+      });
+
+      test('destroying subscriptions via attachment, instantly finalizing sequence, in map', async () => {
+        let variable = new Variable<number>(1);
+
+        let triggered = false;
+        let subscriptionCountInside: number | undefined;
+
+        let singleEvent = SingleEvent.create<void>((resolve, context) => {
+          variable
+            .subscribe(() => {
+              triggered = true;
+            })
+            .attach(context.attachable);
+          subscriptionCountInside = variable.listenerCount;
+          resolve();
+        })
+          .wait()
+          .attachToRoot();
+
+        expect(variable.listenerCount).toEqual(0);
+        expect(subscriptionCountInside).toEqual(1);
+        expect(triggered).toBeTruthy();
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        await Wait();
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
     });
 
-    test('resolve after destruction should not throw error', () => {
-      let resolve!: (data: string) => void;
-      let singleEvent = SingleEvent.create<string>(r => {
-        resolve = r;
-      }).attachToRoot();
+    describe('Attaching To Link Context', () => {
+      test('attachments on the context attachable should be destroyed right after the iteration step', async () => {
+        let action1 = new Action<void>();
+        let action2 = new Action<void>();
+        let triggered = false;
 
-      singleEvent.destroy();
-      expect(() => resolve('test')).not.toThrow();
-    });
+        let singleEvent = SingleEvent.create<void>(resolve => resolve())
+          .asyncMap((_, context) =>
+            SingleEvent.create(r => {
+              action1
+                .subscribe(() => {
+                  triggered = true;
+                  r();
+                })
+                .attach(context.attachable);
+            })
+          )
+          .asyncMap(() => action2)
+          .attachToRoot();
 
-    test('after attaching a resolved event should destroy by itself', () => {
-      let singleEvent = SingleEvent.create<void>(resolve => resolve())
-        .tap(() => {})
-        .attach(new Attachable().attachToRoot());
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(1);
+        expect(action2.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
 
-      expect(singleEvent.destroyed).toBeTruthy();
-    });
+        action1.trigger();
 
-    test('after attaching a resolved event should destroy by itself', () => {
-      let resolve!: () => void;
-      let singleEvent = SingleEvent.create<void>(r => {
-        resolve = r;
-      })
-        .tap(() => {})
-        .attach(new Attachable().attachToRoot());
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(1);
+        expect(triggered).toBeTruthy();
 
-      expect(singleEvent.destroyed).toBeFalsy();
-      resolve();
+        singleEvent.destroy();
 
-      expect(singleEvent.destroyed).toBeTruthy();
+        expect(singleEvent.destroyed).toBeTruthy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+      });
+
+      test('destroying subscriptions via attachment, instantly finalizing sequence, in map', async () => {
+        let variable = new Variable<number>(1);
+
+        let triggered = false;
+        let subscriptionCountInside: number | undefined;
+
+        let singleEvent = SingleEvent.create<void>(resolve => {
+          resolve();
+        })
+          .map((_, context) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
+              })
+              .attach(context.attachable);
+            subscriptionCountInside = variable.listenerCount;
+          })
+          .wait()
+          .attachToRoot();
+
+        expect(triggered).toBeTruthy();
+        expect(subscriptionCountInside).toEqual(1);
+        expect(variable.listenerCount).toEqual(0);
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        await Wait();
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
+
+      test('destroying subscriptions via attachment, in returned single event', async () => {
+        let action = new Action();
+        let triggered = false;
+
+        let singleEvent = SingleEvent.create<void>(resolve => {
+          UnitTestHelper.callEachDelayed([undefined], () => resolve());
+        })
+          .asyncMap((_, context) =>
+            SingleEvent.create(r => {
+              action
+                .subscribe(() => {
+                  triggered = true;
+                  r();
+                })
+                .attach(context.attachable);
+            })
+          )
+          .wait()
+          .attachToRoot();
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
+
+        await UnitTestHelper.waitForAllOperations();
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action.listenerCount).toEqual(1);
+        expect(triggered).toBeFalsy();
+
+        action.trigger();
+
+        expect(singleEvent.destroyed).toBeFalsy();
+        expect(action.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+
+        await Wait();
+
+        expect(singleEvent.destroyed).toBeTruthy();
+      });
     });
   });
 
   describe('Attachment Errors', () => {
     test('not attaching with destroy if not attached should throw error', async () => {
-      let sequence = SingleEvent.create(resolve => resolve()).destroyIfNotAttached();
+      let singleEvent = SingleEvent.create(resolve => resolve()).destroyIfNotAttached();
       await Wait();
 
-      expect(sequence.destroyed).toBeTruthy();
+      expect(singleEvent.destroyed).toBeTruthy();
     });
 
     test('not attaching to anything should destroy the sequence', async () => {
@@ -813,114 +1016,8 @@ describe('SingleEvent', () => {
         singleEvent.tap(() => {});
       }).toThrow('Single Event: A single event can only be linked once.');
     });
-    test('attachments on the context attachable should be destroyed right after the iteration step', async () => {
-      let variable = new Variable<number>(1);
-      let action = new Action<void>();
-      let triggered = false;
 
-      let singleEvent = SingleEvent.create<void>(resolve => resolve())
-        .asyncMap((_, context) =>
-          SingleEvent.create(r => {
-            variable
-              .subscribe(() => {
-                triggered = true;
-                r();
-              })
-              .attach(context.attachable);
-          })
-        )
-        .asyncMap(() => action)
-        .attachToRoot();
-
-      expect(singleEvent.destroyed).toBeFalsy();
-      expect(variable.listenerCount).toEqual(0);
-      expect(action.listenerCount).toEqual(1);
-      expect(triggered).toBeTruthy();
-
-      singleEvent.destroy();
-
-      expect(singleEvent.destroyed).toBeTruthy();
-      expect(variable.listenerCount).toEqual(0);
-      expect(action.listenerCount).toEqual(0);
-    });
-
-    test('destroying subscriptions via attachment, instantly finalizing sequence, in map', () => {
-      let variable = new Variable<number>(1);
-      let triggered = false;
-
-      let sequence = SingleEvent.create<void>(resolve => {
-        resolve();
-      })
-        .map((_, context) => {
-          variable
-            .subscribe(() => {
-              triggered = true;
-            })
-            .attach(context.attachable);
-          expect(variable.listenerCount).toEqual(1);
-        })
-        .attachToRoot();
-
-      expect(sequence.destroyed).toBeTruthy();
-      expect(variable.listenerCount).toEqual(0);
-      expect(triggered).toBeTruthy();
-    });
-
-    test('destroying subscriptions via attachment, instantly finalizing sequence, in returned single event', () => {
-      let variable = new Variable<number>(1);
-      let triggered = false;
-
-      let sequence = SingleEvent.create<void>(resolve => {
-        resolve();
-      })
-        .asyncMap((_, context) => {
-          return SingleEvent.create(resolve => {
-            variable
-              .subscribe(() => {
-                triggered = true;
-                resolve();
-              })
-              .attach(context.attachable);
-          });
-        })
-        .attachToRoot();
-
-      expect(sequence.destroyed).toBeTruthy();
-      expect(variable.listenerCount).toEqual(0);
-      expect(triggered).toBeTruthy();
-    });
-
-    test('destroying via context attachable during async operation', async () => {
-      let variable = new Variable<number>(1);
-      let triggered = false;
-
-      let singleEvent = SingleEvent.create<void>(resolve => {
-        UnitTestHelper.callEachDelayed([undefined], () => resolve());
-      })
-        .asyncMap((_, context) =>
-          SingleEvent.create(r => {
-            variable
-              .subscribe(() => {
-                triggered = true;
-                r();
-              })
-              .attach(context.attachable);
-          })
-        )
-        .attachToRoot();
-
-      expect(singleEvent.destroyed).toBeFalsy();
-      expect(variable.listenerCount).toEqual(0);
-      expect(triggered).toBeFalsy();
-
-      await UnitTestHelper.waitForAllOperations();
-
-      expect(singleEvent.destroyed).toBeTruthy();
-      expect(variable.listenerCount).toEqual(0);
-      expect(triggered).toBeTruthy();
-    });
-
-    test('using attached event after timeout', async () => {
+    test('using an event that is already being attached after timeout', async () => {
       let event = SingleEvent.create<void>(resolve => resolve()).attachToRoot();
 
       await expect(async () => {

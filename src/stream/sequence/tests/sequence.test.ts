@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { Attachable } from '../../../attachable/attachable';
 import { IDAttachable } from '../../../attachable/id-attachable';
 import { Action } from '../../../observables/action/action';
+import { Variable } from '../../../observables/variable/variable';
 import { ActionLib } from '../../../utilities/action-lib';
 import { Sequence } from '../sequence';
 import { ISequenceCreatorContext } from '../sequence-executor';
@@ -264,80 +265,270 @@ describe('Sequence', () => {
   });
 
   describe('Destruction', () => {
-    test('destroying sequence directly', () => {
-      let sequence = Sequence.create(resolve => resolve()).attachToRoot();
+    test('Destroying Sequence', () => {
+      test('destroying sequence directly', () => {
+        let sequence = Sequence.create(resolve => resolve()).attachToRoot();
 
-      expect(sequence.destroyed).toBeFalsy();
-      sequence.destroy();
-      expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
-    });
+        expect(sequence.destroyed).toBeFalsy();
+        sequence.destroy();
+        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
+      });
 
-    test('destroying sequence via constructor context', () => {
-      let sequence = Sequence.create((resolve, context) => {
-        resolve();
-        context.destroy();
-      }).attachToRoot();
-
-      expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
-    });
-
-    test('destroying sequence via iterator context', () => {
-      let sequence = Sequence.create(resolve => {
-        resolve();
-      })
-        .tap((_, context) => {
+      test('destroying sequence via constructor context', () => {
+        let sequence = Sequence.create((resolve, context) => {
+          resolve();
           context.destroy();
+        }).attachToRoot();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('destroying sequence via iterator context', () => {
+        let sequence = Sequence.create(resolve => {
+          resolve();
         })
-        .attachToRoot();
+          .tap((_, context) => {
+            context.destroy();
+          })
+          .attachToRoot();
 
-      expect(sequence.destroyed).toBeTruthy();
-      expect(sequence['_executor']['_pipeline']).toEqual(undefined);
+        expect(sequence.destroyed).toBeTruthy();
+        expect(sequence['_executor']['_pipeline']).toEqual(undefined);
+      });
+
+      test('destroying parent should destroy sequence', () => {
+        let parent = new Attachable().attachToRoot();
+
+        let sequence = Sequence.create(resolve => resolve()).attach(parent);
+
+        expect(sequence.destroyed).toBeFalsy();
+        parent.destroy();
+        expect(sequence.destroyed).toBeTruthy();
+      });
+
+      test('resolve after destruction should not throw error', () => {
+        let triggerCount = 0;
+
+        let resolve!: () => void;
+        let context: ISequenceCreatorContext;
+
+        let sequence = Sequence.create((r, c) => {
+          resolve = r;
+          context = c;
+        })
+          .tap(() => triggerCount++)
+          .attachToRoot();
+
+        expect(() => resolve()).not.toThrowError();
+        expect(() => context.destroy()).not.toThrowError();
+        expect(() => resolve()).not.toThrowError();
+
+        expect(triggerCount).toEqual(1);
+        expect(sequence.destroyed).toBeTruthy();
+      });
     });
 
-    test('destroying parent should destroy sequence', () => {
-      let parent = new Attachable().attachToRoot();
+    describe('Destroy Callback', () => {
+      test('should be called when sequence is destroyed', () => {
+        let triggered = false;
+        let sequence = Sequence.create<void>(() => {
+          return () => {
+            triggered = true;
+          };
+        })
+          .wait()
+          .attachToRoot();
 
-      let sequence = Sequence.create(resolve => resolve()).attach(parent);
+        expect(triggered).toBeFalsy();
+        sequence.destroy();
+        expect(triggered).toBeTruthy();
+      });
 
-      expect(sequence.destroyed).toBeFalsy();
-      parent.destroy();
-      expect(sequence.destroyed).toBeTruthy();
+      test('should be called when sequence is finalized', async () => {
+        let triggered = false;
+        let final!: () => void;
+
+        let sequence = Sequence.create<void>((_, context) => {
+          final = context.final;
+          return () => {
+            triggered = true;
+          };
+        })
+          .wait()
+          .attachToRoot();
+
+        expect(triggered).toBeFalsy();
+        expect(sequence.destroyed).toBeFalsy();
+
+        final();
+        expect(triggered).toBeTruthy();
+        expect(sequence.destroyed).toBeFalsy();
+
+        await Wait();
+        expect(triggered).toBeTruthy();
+        expect(sequence.destroyed).toBeTruthy();
+      });
     });
 
-    test('destroy sequence callback', () => {
-      let triggered = false;
-      let sequence = Sequence.create(() => {
-        return () => {
-          triggered = true;
-        };
-      }).attachToRoot();
+    describe('Attaching To Creator Context', () => {
+      test('attachments on the context attachable should be destroyed right after the iteration step', async () => {
+        let action1 = new Action<void>();
+        let action2 = new Action<void>();
+        let triggered = false;
 
-      expect(triggered).toBeFalsy();
-      sequence.destroy();
-      expect(triggered).toBeTruthy();
+        let sequence = Sequence.create<void>((resolve, context) => {
+          action1
+            .subscribe(() => {
+              triggered = true;
+              resolve();
+            })
+            .attach(context.attachable);
+        })
+          .asyncMapDirect(() => action2)
+          .attachToRoot();
+
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(1);
+        expect(action2.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
+
+        action1.trigger();
+
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(1);
+        expect(triggered).toBeTruthy();
+
+        sequence.destroy();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+      });
+
+      test('destroying subscriptions via attachment, instantly finalizing sequence, in map', async () => {
+        let variable = new Variable<number>(1);
+
+        let triggered = false;
+        let subscriptionCountInside: number | undefined;
+
+        Sequence.create<void>((resolve, context) => {
+          variable
+            .subscribe(() => {
+              triggered = true;
+            })
+            .attach(context.attachable);
+          subscriptionCountInside = variable.listenerCount;
+          resolve();
+        })
+          .wait()
+          .attachToRoot();
+
+        expect(variable.listenerCount).toEqual(0);
+        expect(subscriptionCountInside).toEqual(1);
+        expect(triggered).toBeTruthy();
+      });
     });
 
-    test('resolve after destruction should not throw error', () => {
-      let triggerCount = 0;
+    describe('Attaching To Link Context', () => {
+      test('attachments on the context attachable should be destroyed right after the iteration step', async () => {
+        let action1 = new Action<void>();
+        let action2 = new Action<void>();
+        let triggered = false;
 
-      let resolve!: () => void;
-      let context: ISequenceCreatorContext;
+        let sequence = Sequence.create<void>(resolve => resolve())
+          .asyncMapDirect((_, context) =>
+            Sequence.create(r => {
+              action1
+                .subscribe(() => {
+                  triggered = true;
+                  r();
+                })
+                .attach(context.attachable);
+            })
+          )
+          .asyncMapDirect(() => action2)
+          .attachToRoot();
 
-      let sequence = Sequence.create((r, c) => {
-        resolve = r;
-        context = c;
-      })
-        .tap(() => triggerCount++)
-        .attachToRoot();
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(1);
+        expect(action2.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
 
-      expect(() => resolve()).not.toThrowError();
-      expect(() => context.destroy()).not.toThrowError();
-      expect(() => resolve()).not.toThrowError();
+        action1.trigger();
 
-      expect(triggerCount).toEqual(1);
-      expect(sequence.destroyed).toBeTruthy();
+        expect(sequence.destroyed).toBeFalsy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(1);
+        expect(triggered).toBeTruthy();
+
+        sequence.destroy();
+
+        expect(sequence.destroyed).toBeTruthy();
+        expect(action1.listenerCount).toEqual(0);
+        expect(action2.listenerCount).toEqual(0);
+      });
+
+      test('destroying subscriptions via attachment, instantly finalizing sequence, in map', async () => {
+        let variable = new Variable<number>(1);
+
+        let triggered = false;
+        let subscriptionCountInside: number | undefined;
+
+        Sequence.create<void>(resolve => {
+          resolve();
+        })
+          .map((_, context) => {
+            variable
+              .subscribe(() => {
+                triggered = true;
+              })
+              .attach(context.attachable);
+            subscriptionCountInside = variable.listenerCount;
+          })
+          .wait()
+          .attachToRoot();
+
+        expect(triggered).toBeTruthy();
+        expect(subscriptionCountInside).toEqual(1);
+        expect(variable.listenerCount).toEqual(0);
+      });
+
+      test('destroying subscriptions via attachment, in returned single event', async () => {
+        let action = new Action();
+        let triggered = false;
+
+        Sequence.create<void>(resolve => {
+          UnitTestHelper.callEachDelayed([undefined], () => resolve());
+        })
+          .asyncMapDirect((_, context) =>
+            Sequence.create(r => {
+              action
+                .subscribe(() => {
+                  triggered = true;
+                  r();
+                })
+                .attach(context.attachable);
+            })
+          )
+          .wait()
+          .attachToRoot();
+
+        expect(action.listenerCount).toEqual(0);
+        expect(triggered).toBeFalsy();
+
+        await UnitTestHelper.waitForAllOperations();
+
+        expect(action.listenerCount).toEqual(1);
+        expect(triggered).toBeFalsy();
+
+        action.trigger();
+
+        expect(action.listenerCount).toEqual(0);
+        expect(triggered).toBeTruthy();
+      });
     });
   });
 

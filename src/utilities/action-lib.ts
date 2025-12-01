@@ -143,7 +143,7 @@ export class ActionLib {
     if (streamsSet.size !== streams.length) {
       for (let i = 0; i < streams.length; i++) {
         let stream = streams[i];
-        if (stream instanceof Sequence) {
+        if (!(stream instanceof Notifier)) {
           stream._executor._attachIsCalled = true;
         }
       }
@@ -162,9 +162,9 @@ export class ActionLib {
     }
 
     if (!notifierFound) {
-      let sequences = streams as Set<Sequence<unknown>>;
+      let sequences = streams as Set<Sequence<unknown> | SingleEvent<unknown>>;
 
-      let oneDestroyed = (sequence: Sequence<unknown>) => {
+      let oneDestroyed = (sequence: Sequence<unknown> | SingleEvent<unknown>) => {
         sequences.delete(sequence);
         if (sequences.size === 0) {
           callback();
