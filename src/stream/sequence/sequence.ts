@@ -669,7 +669,6 @@ export class Sequence<T = void> implements IAttachment {
 
     let singleEventExecutor = new SingleEventExecutor();
     singleEventExecutor._chainedFrom = this._executor;
-    singleEventExecutor._attachChainedFromAsWell = true;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
 
@@ -739,7 +738,6 @@ export class Sequence<T = void> implements IAttachment {
 
     let singleEventExecutor = new SingleEventExecutor();
     singleEventExecutor.destroyIfNotAttached();
-    singleEventExecutor._chainedFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
     this._executor.attach(parent);
@@ -759,7 +757,6 @@ export class Sequence<T = void> implements IAttachment {
 
     let singleEventExecutor = new SingleEventExecutor();
     singleEventExecutor.destroyIfNotAttached();
-    singleEventExecutor._chainedFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
     this._executor.attachByID(id);
@@ -778,7 +775,6 @@ export class Sequence<T = void> implements IAttachment {
 
     let singleEventExecutor = new SingleEventExecutor();
     singleEventExecutor.destroyIfNotAttached();
-    singleEventExecutor._chainedFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
     this._executor.attachToRoot();

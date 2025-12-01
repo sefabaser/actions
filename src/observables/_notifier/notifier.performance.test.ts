@@ -15,7 +15,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('build test', async () => {
     let action = new Action<void>();
-    let subscription = action.subscribe(() => console.log('okay')).attachToRoot();
+    let subscription = action.subscribe(() => console.info('okay')).attachToRoot();
     action.trigger();
     subscription.destroy();
   });

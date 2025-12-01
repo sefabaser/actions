@@ -15,7 +15,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
   test('build test', async () => {
     let sequence = Sequence.instant()
-      .tap(() => console.log('okay'))
+      .tap(() => console.info('okay'))
       .attachToRoot();
     sequence.destroy();
   });
