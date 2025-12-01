@@ -328,6 +328,19 @@ describe('Sequence', () => {
         expect(triggerCount).toEqual(1);
         expect(sequence.destroyed).toBeTruthy();
       });
+
+      test('destroy listeners should be called after destruction', () => {
+        let sequence = Sequence.instant();
+
+        let triggered = false;
+        sequence['_executor']['_onDestroyListeners'].add(() => {
+          triggered = true;
+        });
+
+        expect(triggered).toBeFalsy();
+        sequence.destroy();
+        expect(triggered).toBeTruthy();
+      });
     });
 
     describe('Destroy Callback', () => {
@@ -344,6 +357,23 @@ describe('Sequence', () => {
         expect(triggered).toBeFalsy();
         sequence.destroy();
         expect(triggered).toBeTruthy();
+      });
+
+      test('when finalized and then destroyed, it still should be called once', () => {
+        let triggerCount = 0;
+        let singleEvent = Sequence.create<void>((resolve, context) => {
+          resolve();
+          context.final();
+          return () => {
+            triggerCount++;
+          };
+        })
+          .wait()
+          .attachToRoot();
+
+        expect(triggerCount).toEqual(1);
+        singleEvent.destroy();
+        expect(triggerCount).toEqual(1);
       });
 
       test('should be called when sequence is finalized', async () => {

@@ -20,7 +20,11 @@ export class Sequence<T = void> implements IAttachment {
     try {
       let destroyCallback = executor(sequenceExecutor._trigger.bind(sequenceExecutor), sequenceExecutor._getCreatorContext());
       if (destroyCallback) {
-        sequenceExecutor._onFinalListeners.add(destroyCallback);
+        if (sequenceExecutor._finalized) {
+          destroyCallback();
+        } else {
+          sequenceExecutor._onFinalListeners.add(destroyCallback);
+        }
       }
     } catch (e) {
       console.error(e);

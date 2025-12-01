@@ -119,8 +119,8 @@ export class SequenceExecutor extends Attachable {
   _chainedTo?: SequenceExecutor | SingleEventExecutor;
   _destroyAfterFirstPackage?: boolean;
   _pendingValues?: unknown[];
+  _finalized?: boolean;
   private _creatorContext?: SeqeunceCreatorContext;
-  private _finalized?: boolean;
 
   destroy(): void {
     if (!this._destroyed) {
@@ -181,8 +181,6 @@ export class SequenceExecutor extends Attachable {
 
     if (this.attachIsCalled && this._ongoingPackageCount === 0) {
       this.destroy();
-    } else {
-      this._finalized = true;
     }
   }
 
@@ -257,15 +255,19 @@ export class SequenceExecutor extends Attachable {
   }
 
   private _onFinalHandler(): void {
-    if (this._onFinalListenersVar) {
-      let listeners = this._onFinalListenersVar;
-      this._onFinalListenersVar = undefined as any;
-      for (let listener of listeners) {
-        listener();
-      }
-      this._onFinalListenersVar = undefined;
-    }
+    if (!this._finalized) {
+      this._finalized = true;
 
-    this._creatorContext?._destroyAttachment();
+      if (this._onFinalListenersVar) {
+        let listeners = this._onFinalListenersVar;
+        this._onFinalListenersVar = undefined as any;
+        for (let listener of listeners) {
+          listener();
+        }
+        this._onFinalListenersVar = undefined;
+      }
+
+      this._creatorContext?._destroyAttachment();
+    }
   }
 }

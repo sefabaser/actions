@@ -663,6 +663,19 @@ describe('SingleEvent', () => {
 
         expect(singleEvent.destroyed).toBeTruthy();
       });
+
+      test('destroy listeners should be called after destruction', () => {
+        let singleEvent = SingleEvent.instant();
+
+        let triggered = false;
+        singleEvent['_executor']['_onDestroyListeners'].add(() => {
+          triggered = true;
+        });
+
+        expect(triggered).toBeFalsy();
+        singleEvent.destroy();
+        expect(triggered).toBeTruthy();
+      });
     });
 
     describe('Destroy Callback', () => {
@@ -679,6 +692,22 @@ describe('SingleEvent', () => {
         expect(triggered).toBeFalsy();
         singleEvent.destroy();
         expect(triggered).toBeTruthy();
+      });
+
+      test('when finalized and then destroyed, it still should be called once', () => {
+        let triggerCount = 0;
+        let singleEvent = SingleEvent.create<void>(resolve => {
+          resolve();
+          return () => {
+            triggerCount++;
+          };
+        })
+          .wait()
+          .attachToRoot();
+
+        expect(triggerCount).toEqual(1);
+        singleEvent.destroy();
+        expect(triggerCount).toEqual(1);
       });
 
       test('should be called when event is resolved', async () => {

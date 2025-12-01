@@ -243,8 +243,7 @@ describe('SingleEvent Wait', () => {
     test('wait cleanup callback is called on destroy', () => {
       let cleanupCalled = false;
 
-      let singleEvent = SingleEvent.create<string>(resolve => {
-        resolve('test');
+      let singleEvent = SingleEvent.create<string>(() => {
         return () => {
           cleanupCalled = true;
         };

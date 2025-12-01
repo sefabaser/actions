@@ -14,7 +14,11 @@ export class SingleEvent<T = void> implements IAttachment {
         singleEventExecutor._getCreatorContext()
       );
       if (destroyCallback) {
-        singleEventExecutor._onFinalListeners.add(destroyCallback);
+        if (singleEventExecutor._finalized) {
+          destroyCallback();
+        } else {
+          singleEventExecutor._onFinalListeners.add(destroyCallback);
+        }
       }
     } catch (e) {
       console.error(e);
