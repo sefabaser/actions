@@ -18,13 +18,9 @@ export class Sequence<T = void> implements IAttachment {
     let sequenceExecutor = new SequenceExecutor();
 
     try {
-      let destroyCallback = executor(sequenceExecutor._trigger.bind(sequenceExecutor), {
-        attachable: sequenceExecutor,
-        final: sequenceExecutor._final.bind(sequenceExecutor),
-        destroy: sequenceExecutor.destroy.bind(sequenceExecutor)
-      });
+      let destroyCallback = executor(sequenceExecutor._trigger.bind(sequenceExecutor), sequenceExecutor._getCreatorContext());
       if (destroyCallback) {
-        sequenceExecutor._onDestroyListeners.add(destroyCallback);
+        sequenceExecutor._onFinalListeners.add(destroyCallback);
       }
     } catch (e) {
       console.error(e);
@@ -668,7 +664,7 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let singleEventExecutor = new SingleEventExecutor();
-    singleEventExecutor._chainedFrom = this._executor;
+    singleEventExecutor._entangledFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
 
@@ -727,7 +723,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Acts like .toSingleEvent().chain(parent) but in single run for more optimization
+   * Acts like .take(1).chain(parent) but returns a SingleEvent instead. It runs as a single step for performance optimization.
    * Destroys the sequence after single package goes out of the pipeline.
    * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
    * Set "destroyIfNotAttached()" by default.
@@ -746,7 +742,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Acts like .toSingleEvent().chainByID(id) but in single run for more optimization
+   * Acts like .take(1).chain(parent) but returns a SingleEvent instead. It runs as a single step for performance optimization.
    * Destroys the sequence after single package goes out of the pipeline.
    * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
    * Set "destroyIfNotAttached()" by default.
@@ -765,7 +761,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /**
-   * Acts like .toSingleEvent().chainToRoot() but in single run for more optimization
+   * Acts like .take(1).chain(parent) but returns a SingleEvent instead. It runs as a single step for performance optimization.
    * Destroys the sequence after single package goes out of the pipeline.
    * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
    * @returns SingleEvent

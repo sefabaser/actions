@@ -28,7 +28,7 @@ class SingleEventContext implements ISingleEventContext {
   }
 
   /** @internal */
-  _drop() {
+  _destroyAttachment() {
     this._attachable?.destroy();
   }
 }
@@ -43,13 +43,21 @@ export class SingleEventExecutor extends Attachable {
     return this._onDestroyListenersVar;
   }
 
+  private _onFinalListenersVar?: Set<() => void>;
+  get _onFinalListeners(): Set<() => void> {
+    if (!this._onFinalListenersVar) {
+      this._onFinalListenersVar = new Set();
+    }
+    return this._onFinalListenersVar;
+  }
+
   _resolved?: boolean;
   _currentData: unknown;
   _chainedTo?: SingleEventExecutor;
-  _chainedFrom?: SequenceExecutor | SingleEventExecutor;
-  _attachChainedFromAsWell?: boolean;
+  _entangledFrom?: SequenceExecutor;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private _pipelineIndex = 0;
+  private _creatorContext?: SingleEventContext;
   private _ongoingContext?: SingleEventContext;
 
   destroy(): void {
@@ -58,7 +66,9 @@ export class SingleEventExecutor extends Attachable {
 
       this._pipeline = undefined as any;
       this._currentData = undefined;
-      this._ongoingContext?._drop();
+      this._ongoingContext?._destroyAttachment();
+
+      this._onFinalHandler();
 
       if (this._onDestroyListenersVar) {
         let listeners = this._onDestroyListenersVar;
@@ -73,10 +83,10 @@ export class SingleEventExecutor extends Attachable {
         this._chainedTo = undefined;
       }
 
-      if (this._chainedFrom) {
-        this._chainedFrom._chainedTo = undefined;
-        this._chainedFrom.destroy();
-        this._chainedFrom = undefined;
+      if (this._entangledFrom) {
+        this._entangledFrom._chainedTo = undefined;
+        this._entangledFrom.destroy();
+        this._entangledFrom = undefined;
       }
     }
   }
@@ -85,6 +95,7 @@ export class SingleEventExecutor extends Attachable {
     if (!this._resolved && !this._destroyed) {
       this._resolved = true;
       this._currentData = data;
+      this._onFinalHandler();
 
       if (this.attachIsCalled) {
         this._iteratePackage(this._currentData);
@@ -100,6 +111,8 @@ export class SingleEventExecutor extends Attachable {
   }
 
   _final() {
+    this._onFinalHandler();
+
     if (!this._resolved) {
       this.destroy();
     }
@@ -112,8 +125,8 @@ export class SingleEventExecutor extends Attachable {
 
     super.attach(parent);
 
-    if (this._attachChainedFromAsWell && this._chainedFrom) {
-      this._chainedFrom.attach(parent);
+    if (this._entangledFrom) {
+      this._entangledFrom.attach(parent);
     }
     return this;
   }
@@ -125,8 +138,8 @@ export class SingleEventExecutor extends Attachable {
 
     super.attachByID(id);
 
-    if (this._attachChainedFromAsWell && this._chainedFrom) {
-      this._chainedFrom.attachByID(id);
+    if (this._entangledFrom) {
+      this._entangledFrom.attachByID(id);
     }
     return this;
   }
@@ -138,14 +151,19 @@ export class SingleEventExecutor extends Attachable {
 
     super.attachToRoot();
 
-    if (this._attachChainedFromAsWell && this._chainedFrom) {
-      this._chainedFrom.attachToRoot();
+    if (this._entangledFrom) {
+      this._entangledFrom.attachToRoot();
     }
     return this;
   }
 
   destroyIfNotAttached(): void {
     this._destroyIfNotAttached = true;
+  }
+
+  _getCreatorContext(): ISingleEventContext {
+    this._creatorContext = new SingleEventContext(this);
+    return this._creatorContext;
   }
 
   private _iteratePackage(data: unknown): void {
@@ -164,10 +182,23 @@ export class SingleEventExecutor extends Attachable {
   }
 
   private _resolve = (returnData: unknown) => {
-    this._ongoingContext?._drop();
+    this._ongoingContext?._destroyAttachment();
     this._ongoingContext = undefined;
 
     this._pipelineIndex++;
     this._iteratePackage(returnData);
   };
+
+  private _onFinalHandler(): void {
+    if (this._onFinalListenersVar) {
+      let listeners = this._onFinalListenersVar;
+      this._onFinalListenersVar = undefined as any;
+      for (let listener of listeners) {
+        listener();
+      }
+      this._onFinalListenersVar = undefined;
+    }
+
+    this._creatorContext?._destroyAttachment();
+  }
 }

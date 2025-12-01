@@ -101,7 +101,7 @@ describe('Any', () => {
     });
   });
 
-  describe('Desctruction', () => {
+  describe('Destruction', () => {
     test('merge destroy -> children destroy', async () => {
       let singleEvent1 = SingleEvent.create(() => {});
       let singleEvent2 = SingleEvent.create(() => {});

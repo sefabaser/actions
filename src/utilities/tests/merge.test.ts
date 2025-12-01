@@ -138,7 +138,7 @@ describe('Merge as Sequence', () => {
     });
   });
 
-  describe('Desctruction', () => {
+  describe('Destruction', () => {
     test('merge destroy -> children destroy', async () => {
       let sequence1 = Sequence.create(() => {});
       let sequence2 = Sequence.create(() => {});

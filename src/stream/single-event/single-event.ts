@@ -9,12 +9,12 @@ export class SingleEvent<T = void> implements IAttachment {
     let singleEventExecutor = new SingleEventExecutor();
 
     try {
-      let destroyCallback = executor(singleEventExecutor._trigger.bind(singleEventExecutor), {
-        attachable: singleEventExecutor,
-        destroy: () => singleEventExecutor.destroy()
-      });
+      let destroyCallback = executor(
+        singleEventExecutor._trigger.bind(singleEventExecutor),
+        singleEventExecutor._getCreatorContext()
+      );
       if (destroyCallback) {
-        singleEventExecutor._onDestroyListeners.add(destroyCallback);
+        singleEventExecutor._onFinalListeners.add(destroyCallback);
       }
     } catch (e) {
       console.error(e);

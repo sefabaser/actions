@@ -23,7 +23,7 @@ export interface ISequenceLinkContext {
 
 class SequencePackage {
   _pipelineIndex = 0;
-  _ongoingContext?: SequenceContext;
+  _ongoingContext?: SequenceLinkContext;
 
   constructor(public _data: unknown) {}
 
@@ -32,7 +32,31 @@ class SequencePackage {
   }
 }
 
-class SequenceContext implements ISequenceLinkContext {
+class SeqeunceCreatorContext implements ISequenceCreatorContext {
+  _attachableVar?: Attachable;
+  get attachable(): Attachable {
+    if (!this._attachableVar) {
+      this._attachableVar = new Attachable().attach(this._executor);
+    }
+    return this._attachableVar;
+  }
+
+  constructor(private _executor: SequenceExecutor) {}
+
+  final(): void {
+    this._executor._final();
+  }
+
+  destroy(): void {
+    this._executor.destroy();
+  }
+
+  _destroyAttachment() {
+    this._attachableVar?.destroy();
+  }
+}
+
+class SequenceLinkContext implements ISequenceLinkContext {
   _attachableVar?: Attachable;
   get attachable(): Attachable {
     if (!this._attachableVar) {
@@ -81,12 +105,21 @@ export class SequenceExecutor extends Attachable {
     return this._onDestroyListenersVar;
   }
 
+  private _onFinalListenersVar?: Set<() => void>;
+  get _onFinalListeners(): Set<() => void> {
+    if (!this._onFinalListenersVar) {
+      this._onFinalListenersVar = new Set();
+    }
+    return this._onFinalListenersVar;
+  }
+
   _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   _asyncPipelineIndices?: Set<number>;
   _ongoingPackageCount = 0;
   _chainedTo?: SequenceExecutor | SingleEventExecutor;
   _destroyAfterFirstPackage?: boolean;
   _pendingValues?: unknown[];
+  private _creatorContext?: SeqeunceCreatorContext;
   private _finalized?: boolean;
 
   destroy(): void {
@@ -95,6 +128,8 @@ export class SequenceExecutor extends Attachable {
 
       this._pipeline = undefined as any;
       this._pendingValues = undefined as any;
+
+      this._onFinalHandler();
 
       if (this._onDestroyListenersVar) {
         let listeners = this._onDestroyListenersVar;
@@ -142,6 +177,8 @@ export class SequenceExecutor extends Attachable {
   }
 
   _final() {
+    this._onFinalHandler();
+
     if (this.attachIsCalled && this._ongoingPackageCount === 0) {
       this.destroy();
     } else {
@@ -168,6 +205,11 @@ export class SequenceExecutor extends Attachable {
     this._destroyIfNotAttached = true;
   }
 
+  _getCreatorContext(): ISequenceCreatorContext {
+    this._creatorContext = new SeqeunceCreatorContext(this);
+    return this._creatorContext;
+  }
+
   private _onAttach(): void {
     if (this._pendingValues) {
       let pendingValues = this._pendingValues;
@@ -185,7 +227,7 @@ export class SequenceExecutor extends Attachable {
   private _iteratePackage(sequencePackage: SequencePackage): void {
     if (!this._destroyed) {
       if (sequencePackage._pipelineIndex < this._pipeline.length) {
-        let context = new SequenceContext(this, sequencePackage);
+        let context = new SequenceLinkContext(this, sequencePackage);
         sequencePackage._ongoingContext = context;
 
         this._pipeline[sequencePackage._pipelineIndex].iterator(sequencePackage._data, context, returnData => {
@@ -212,5 +254,18 @@ export class SequenceExecutor extends Attachable {
         }
       }
     }
+  }
+
+  private _onFinalHandler(): void {
+    if (this._onFinalListenersVar) {
+      let listeners = this._onFinalListenersVar;
+      this._onFinalListenersVar = undefined as any;
+      for (let listener of listeners) {
+        listener();
+      }
+      this._onFinalListenersVar = undefined;
+    }
+
+    this._creatorContext?._destroyAttachment();
   }
 }

@@ -133,7 +133,7 @@ describe('Sequence Take', () => {
         .tap(() => heap.push('read2'))
         .attachToRoot();
 
-      expect(heap).toEqual(['read1', 'read2', 'destroyed']);
+      expect(heap).toEqual(['read1', 'destroyed', 'read2']);
     });
 
     test('destroying parent should destroy sequence', () => {

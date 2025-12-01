@@ -350,8 +350,10 @@ describe('Sequence', () => {
         let triggered = false;
         let final!: () => void;
 
-        let sequence = Sequence.create<void>((_, context) => {
-          final = context.final;
+        let sequence = Sequence.create<void>((resolve, context) => {
+          resolve();
+
+          final = () => context.final();
           return () => {
             triggered = true;
           };
@@ -383,6 +385,7 @@ describe('Sequence', () => {
             .subscribe(() => {
               triggered = true;
               resolve();
+              context.final();
             })
             .attach(context.attachable);
         })
@@ -421,7 +424,9 @@ describe('Sequence', () => {
             })
             .attach(context.attachable);
           subscriptionCountInside = variable.listenerCount;
+
           resolve();
+          context.final();
         })
           .wait()
           .attachToRoot();
