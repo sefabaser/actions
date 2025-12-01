@@ -235,6 +235,10 @@ export class Notifier<T> {
     return this.toSequence().asyncMapDropIncoming(callback);
   }
 
+  clear(): void {
+    this._listenersMap.clear();
+  }
+
   /** @internal */
   _triggerAll(data: T): void {
     let listeners = [...this._listenersMap.values()];

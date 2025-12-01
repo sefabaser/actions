@@ -285,6 +285,26 @@ describe('Notifier', () => {
     });
   });
 
+  describe('Clear', () => {
+    test('listener count', () => {
+      let notifier = new Notifier<SampleModel>();
+
+      expect(notifier.listenerCount).toBe(0);
+
+      let sub1 = notifier.subscribe(_ => {}).attachToRoot();
+      expect(notifier.listenerCount).toBe(1);
+
+      notifier.subscribe(_ => {}).attachToRoot();
+      expect(notifier.listenerCount).toBe(2);
+
+      sub1.destroy();
+      expect(notifier.listenerCount).toBe(1);
+
+      notifier.clear();
+      expect(notifier.listenerCount).toBe(0);
+    });
+  });
+
   describe('To Sequence', () => {
     test('convert to sequence', () => {
       let notifier = new Notifier<string>();
