@@ -36,6 +36,6 @@
     "**/dist/**": true,
     "**/build/**": true
   },
-  "vitest.cliArguments": "--env.MANUAL=1 --expose-gc",
+  "vitest.cliArguments": "--env.MANUAL=1",
   "scm.diffDecorations": "none",
 }

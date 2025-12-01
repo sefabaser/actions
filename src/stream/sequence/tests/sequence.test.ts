@@ -342,19 +342,17 @@ describe('Sequence', () => {
   });
 
   describe('Attachment Errors', () => {
-    test('not attaching to anything should destroy the sequence', async () => {
-      let sequence = Sequence.create(resolve => resolve());
+    test('not attaching with destroyIfNotAttached should destroy the sequence', async () => {
+      let sequence = Sequence.create(resolve => resolve()).destroyIfNotAttached();
       await Wait();
 
       expect(sequence.destroyed).toBeTruthy();
     });
 
-    test('not attaching the linked sequence to a target should throw error', async () => {
+    test('not attaching the sequence should throw error', async () => {
       let errorCapturer = UnitTestHelper.captureErrors();
 
-      Sequence.create(resolve => resolve())
-        .tap(() => {})
-        .tap(() => {});
+      Sequence.create(resolve => resolve());
 
       await Wait();
 

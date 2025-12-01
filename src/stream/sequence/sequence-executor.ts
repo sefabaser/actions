@@ -89,11 +89,6 @@ export class SequenceExecutor extends Attachable {
   _pendingValues?: unknown[];
   private _finalized?: boolean;
 
-  constructor() {
-    super();
-    this._destroyIfNotAttached = true;
-  }
-
   destroy(): void {
     if (!this._destroyed) {
       super.destroy();
@@ -167,6 +162,10 @@ export class SequenceExecutor extends Attachable {
   attachToRoot(): this {
     this._onAttach();
     return super.attachToRoot();
+  }
+
+  destroyIfNotAttached(): void {
+    this._destroyIfNotAttached = true;
   }
 
   private _onAttach(): void {

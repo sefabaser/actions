@@ -144,7 +144,7 @@ describe('Any', () => {
     });
 
     test('merging same singleEvent should throw error', () => {
-      let singleEvent = SingleEvent.create(() => {});
+      let singleEvent = SingleEvent.create(() => {}).attachToRoot();
       expect(() => ActionLib.any(singleEvent, singleEvent).attachToRoot()).toThrow(
         'Each given async operation to merge or combine has to be diferent.'
       );

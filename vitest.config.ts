@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     env: {
       QUICK: mode === 'quick' ? '1' : undefined
     },
-    pool: 'forks',
+    pool: 'forks', // only needed to introduce --expoce-gc
     poolOptions: {
       forks: {
         execArgv: ['--expose-gc']

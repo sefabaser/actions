@@ -231,12 +231,14 @@ export class SingleEvent<T = void> implements IAttachment {
   /**
    * Attaches the single event and returns a new single event that continues from this.
    * Handy for function that returns a SingleEvent that might not be used. SingleEvent up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns SingleEvent
    */
   chain(parent: Attachable): SingleEvent<T> {
     this._validateBeforeLinking();
 
     let chainExecutor = new SingleEventExecutor();
+    chainExecutor.destroyIfNotAttached();
     this._executor._chainedTo = chainExecutor;
     this._executor.attach(parent);
 
@@ -246,12 +248,14 @@ export class SingleEvent<T = void> implements IAttachment {
   /**
    * Attaches the single event and returns a new single event that continues from this.
    * Handy for function that returns a SingleEvent that might not be used. SingleEvent up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns SingleEvent
    */
   chainByID(id: number): SingleEvent<T> {
     this._validateBeforeLinking();
 
     let chainExecutor = new SingleEventExecutor();
+    chainExecutor.destroyIfNotAttached();
     this._executor._chainedTo = chainExecutor;
     this._executor.attachByID(id);
 
@@ -261,16 +265,23 @@ export class SingleEvent<T = void> implements IAttachment {
   /**
    * Attaches the single event and returns a new single event that continues from this.
    * Handy for function that returns a SingleEvent that might not be used. SingleEvent up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns SingleEvent
    */
   chainToRoot(): SingleEvent<T> {
     this._validateBeforeLinking();
 
     let chainExecutor = new SingleEventExecutor();
+    chainExecutor.destroyIfNotAttached();
     this._executor._chainedTo = chainExecutor;
     this._executor.attachToRoot();
 
     return new SingleEvent(chainExecutor);
+  }
+
+  destroyIfNotAttached(): this {
+    this._executor.destroyIfNotAttached();
+    return this;
   }
 
   private _validateBeforeLinking(): void {

@@ -679,12 +679,14 @@ export class Sequence<T = void> implements IAttachment {
   /**
    * Attaches the sequence and returns a new sequence that continues from this.
    * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns Sequence
    */
   chain(parent: Attachable): Sequence<T> {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
+    chainExecutor.destroyIfNotAttached();
     this._executor._chainedTo = chainExecutor;
     this._executor.attach(parent);
 
@@ -694,12 +696,14 @@ export class Sequence<T = void> implements IAttachment {
   /**
    * Attaches the sequence and returns a new sequence that continues from this.
    * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns Sequence
    */
   chainByID(id: number): Sequence<T> {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
+    chainExecutor.destroyIfNotAttached();
     this._executor._chainedTo = chainExecutor;
     this._executor.attachByID(id);
 
@@ -709,12 +713,14 @@ export class Sequence<T = void> implements IAttachment {
   /**
    * Attaches the sequence and returns a new sequence that continues from this.
    * Handy for function that returns a Sequence that might not be used. Sequence up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns Sequence
    */
   chainToRoot(): Sequence<T> {
     this._validateBeforeLinking();
 
     let chainExecutor = new SequenceExecutor();
+    chainExecutor.destroyIfNotAttached();
     this._executor._chainedTo = chainExecutor;
     this._executor.attachToRoot();
 
@@ -725,12 +731,14 @@ export class Sequence<T = void> implements IAttachment {
    * Acts like .toSingleEvent().chain(parent) but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
    * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns SingleEvent
    */
   singleChain(parent: Attachable): SingleEvent<T> {
     this._validateBeforeLinking();
 
     let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor.destroyIfNotAttached();
     singleEventExecutor._chainedFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
@@ -743,12 +751,14 @@ export class Sequence<T = void> implements IAttachment {
    * Acts like .toSingleEvent().chainByID(id) but in single run for more optimization
    * Destroys the sequence after single package goes out of the pipeline.
    * Handy for function that returns a SingleEvent that might not be used. Sequence up to chain operates regardless.
+   * Set "destroyIfNotAttached()" by default.
    * @returns SingleEvent
    */
   singleChainByID(id: number): SingleEvent<T> {
     this._validateBeforeLinking();
 
     let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor.destroyIfNotAttached();
     singleEventExecutor._chainedFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
@@ -767,12 +777,18 @@ export class Sequence<T = void> implements IAttachment {
     this._validateBeforeLinking();
 
     let singleEventExecutor = new SingleEventExecutor();
+    singleEventExecutor.destroyIfNotAttached();
     singleEventExecutor._chainedFrom = this._executor;
     this._executor._chainedTo = singleEventExecutor;
     this._executor._destroyAfterFirstPackage = true;
     this._executor.attachToRoot();
 
     return SingleEvent._createManual(singleEventExecutor);
+  }
+
+  destroyIfNotAttached(): this {
+    this._executor.destroyIfNotAttached();
+    return this;
   }
 
   private _destroyPackagesUntilCurrent(queue: Queue<ExecutionOrderQueuer>, finalContext?: ISequenceLinkContext): void {

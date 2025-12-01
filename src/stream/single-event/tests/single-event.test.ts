@@ -680,14 +680,14 @@ describe('SingleEvent', () => {
   });
 
   describe('Attachment Errors', () => {
-    test('not attaching to anything should destroy the sequence', async () => {
-      let sequence = SingleEvent.create(resolve => resolve());
+    test('not attaching with destroy if not attached should throw error', async () => {
+      let sequence = SingleEvent.create(resolve => resolve()).destroyIfNotAttached();
       await Wait();
 
       expect(sequence.destroyed).toBeTruthy();
     });
 
-    test('not attaching linked event to a target should throw error', async () => {
+    test('not attaching to anything should destroy the sequence', async () => {
       let errorCapturer = UnitTestHelper.captureErrors();
 
       SingleEvent.create<void>(resolve => resolve())
