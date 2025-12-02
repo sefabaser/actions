@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/index.ts'],
-  format: ['cjs'],
+  format: ['cjs', 'esm'],
   dts: true,
   splitting: false,
   sourcemap: false, 
@@ -11,7 +11,6 @@ export default defineConfig({
   treeshake: true,
   target: 'esnext',
   outDir: 'dist',
-  outExtension: () => ({ js: '.js' }),
   esbuildOptions(options) {
     options.mangleProps = /^_/; 
     options.mangleQuoted = true; 

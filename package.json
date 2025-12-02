@@ -3,14 +3,20 @@
   "version": "2.0.0",
   "description": "Typescript Helpers Library",
   "main": "src/index.ts",
-  "files": [
-    "dist/**/*.js",
-    "dist/**/*.d.ts"
-  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "publishConfig": {
     "main": "dist/index.js",
+    "module": "dist/index.mjs",
     "types": "dist/index.d.ts"
   },
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sefabaser/actions.git"
