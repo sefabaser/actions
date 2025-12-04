@@ -18,7 +18,7 @@ export class Sequence<T = void> implements IAttachment {
     let sequenceExecutor = new SequenceExecutor();
 
     try {
-      let destroyCallback = executor(sequenceExecutor._trigger.bind(sequenceExecutor), sequenceExecutor._getCreatorContext());
+      let destroyCallback = executor(data => sequenceExecutor._trigger(data), sequenceExecutor._getCreatorContext());
       if (destroyCallback) {
         if (sequenceExecutor._finalized) {
           destroyCallback();

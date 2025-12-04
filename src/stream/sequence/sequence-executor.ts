@@ -36,7 +36,7 @@ class SeqeunceCreatorContext implements ISequenceCreatorContext {
   _attachableVar?: Attachable;
   get attachable(): Attachable {
     if (!this._attachableVar) {
-      this._attachableVar = new Attachable().attach(this._executor);
+      this._attachableVar = new Attachable().attachToRoot();
     }
     return this._attachableVar;
   }
@@ -127,7 +127,7 @@ export class SequenceExecutor extends Attachable {
   }
 
   _trigger(data: unknown): void {
-    if (!this._finalized && !this._destroyed) {
+    if (!this._finalized) {
       if (this.attachIsCalled) {
         this._ongoingPackageCount++;
         this._iteratePackage(new SequencePackage(data));

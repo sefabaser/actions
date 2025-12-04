@@ -3,6 +3,7 @@ import { UnitTestHelper, Wait } from 'helpers-lib';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Action } from '../../../observables/action/action';
+import { ActionLib } from '../../../utilities/action-lib';
 import { Sequence } from '../sequence';
 
 const SequencePackageClassName = 'SequencePackage';
@@ -225,7 +226,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
       }).asyncMapOrdered(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -238,7 +239,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let combined = Sequence.combine({
+      let combined = ActionLib.combine({
         m: merged,
         s3: sequence3,
         s4: sequence4
@@ -270,7 +271,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         UnitTestHelper.callEachDelayed([20, 21], delayedValue => resolve(delayedValue));
       }).asyncMapOrdered(value => Sequence.create<string>(resolve => resolve(value + 's2')));
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -283,7 +284,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let combined = Sequence.combine({
+      let combined = ActionLib.combine({
         m: merged,
         s3: sequence3,
         s4: sequence4
@@ -323,7 +324,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>(resolve => {
           UnitTestHelper.callEachDelayed([value + 'm'], delayedValue => resolve(delayedValue));
         })
@@ -344,7 +345,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let combined = Sequence.combine({
+      let combined = ActionLib.combine({
         m: merged,
         s3: sequence3,
         s4: sequence4
@@ -382,7 +383,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
         })
       );
 
-      let merged = Sequence.merge(sequence1, sequence2).asyncMapOrdered(value =>
+      let merged = ActionLib.merge(sequence1, sequence2).asyncMapOrdered(value =>
         Sequence.create<string>((resolve, executor) => {
           resolve(value + 'm');
           executor.final();
@@ -395,7 +396,7 @@ describe.skipIf(process.env.QUICK)('Memory Leak', () => {
       }).map(value => value + 's3');
 
       let heap: unknown[] = [];
-      let combined = Sequence.combine({
+      let combined = ActionLib.combine({
         s3: sequence3,
         m: merged
       })

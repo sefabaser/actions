@@ -190,12 +190,13 @@ export class ActionLib {
     let allReducer = Reducer.createExistenceChecker();
     let allEffectChannels = attachables.map(attachable => allReducer.effect().attach(attachable));
 
-    return SingleEvent.create((resolve, context) => {
-      allReducer
+    return SingleEvent.create(resolve => {
+      let subscription = allReducer
         .filter(value => value === false)
         ._subscribeSingle(() => resolve())
-        .attach(context.attachable);
+        .attachToRoot();
       return () => {
+        subscription.destroy();
         for (let i = 0; i < allEffectChannels.length; i++) {
           allEffectChannels[i].destroy();
         }

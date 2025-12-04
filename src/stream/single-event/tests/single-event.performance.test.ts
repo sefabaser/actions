@@ -41,6 +41,56 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 1.073199987411499
   }, 60000);
 
+  test('create instant resolve single event', async () => {
+    await UnitTestHelper.testPerformance(
+      () => {
+        let singleEvent = SingleEvent.create(resolve => resolve())
+          .tap(() => {})
+          .attachToRoot();
+
+        singleEvent.destroy();
+      },
+      { sampleCount: 500, repetationCount: 10000 }
+    );
+    // 1.1361000537872314
+  }, 60000);
+
+  test('create later resolve single event', async () => {
+    await UnitTestHelper.testPerformance(
+      () => {
+        let resolve!: () => void;
+        let singleEvent = SingleEvent.create(r => {
+          resolve = r;
+        })
+          .tap(() => {})
+          .attachToRoot();
+        resolve();
+        singleEvent.destroy();
+      },
+      { sampleCount: 500, repetationCount: 10000 }
+    );
+    // 1.1923000812530518
+  }, 60000);
+
+  test('create later resolve with attachment single event', async () => {
+    await UnitTestHelper.testPerformance(
+      () => {
+        let resolve!: () => void;
+        let singleEvent = SingleEvent.create((r, context) => {
+          resolve = r;
+          new Attachable().attach(context.attachable);
+        })
+          .tap(() => {})
+          .attachToRoot();
+        resolve();
+        singleEvent.destroy();
+      },
+      { sampleCount: 500, repetationCount: 10000 }
+    );
+    // 9.873600006103516
+    // attach to root: 7.686899900436401
+  }, 60000);
+
   test('chaining instant single event', async () => {
     await UnitTestHelper.testPerformance(
       () => {
