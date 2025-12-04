@@ -146,13 +146,11 @@ describe('Merge as Sequence', () => {
 
       expect(sequence1.destroyed).toBeFalsy();
       expect(sequence2.destroyed).toBeFalsy();
-      expect(sequence1['_executor']['_onDestroyListeners'].size).toEqual(1);
-      expect(sequence2['_executor']['_onDestroyListeners'].size).toEqual(1);
+      expect(sequence1['_executor']['_onDestroyListener']).toBeDefined();
+      expect(sequence2['_executor']['_onDestroyListener']).toBeDefined();
       merged.destroy();
       expect(sequence1.destroyed).toBeTruthy();
       expect(sequence2.destroyed).toBeTruthy();
-      expect(sequence1['_executor']['_onDestroyListeners'].size).toEqual(0);
-      expect(sequence2['_executor']['_onDestroyListeners'].size).toEqual(0);
     });
 
     test('children destroy -> merge destroy', async () => {

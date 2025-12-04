@@ -27,13 +27,14 @@ export class IDAttachable extends Attachable {
     if (!this._destroyed) {
       AttachmentTargetStore._unregisterIDAttachable(this);
 
-      let listeners = this._onDestroyListeners;
+      let listenersSet = this._onDestroyListeners;
       this._onDestroyListeners = undefined;
       super.destroy();
 
-      if (listeners) {
-        for (let listener of listeners) {
-          listener();
+      if (listenersSet) {
+        let listeners = [...listenersSet.values()];
+        for (let i = 0; i < listeners.length; i++) {
+          CallbackHelper._triggerCallback(undefined, listeners[i]);
         }
       }
     }

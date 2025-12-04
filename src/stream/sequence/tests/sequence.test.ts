@@ -333,9 +333,9 @@ describe('Sequence', () => {
         let sequence = Sequence.instant();
 
         let triggered = false;
-        sequence['_executor']['_onDestroyListeners'].add(() => {
+        sequence['_executor']['_onDestroyListener'] = () => {
           triggered = true;
-        });
+        };
 
         expect(triggered).toBeFalsy();
         sequence.destroy();
@@ -2019,6 +2019,61 @@ describe('Sequence', () => {
         sequence.tap(() => {}).attachToRoot();
         sequence.tap(() => {});
       }).toThrow('A sequence can only be linked once.');
+    });
+
+    test(`Race condition, sequences destroying another sequences' parent`, () => {
+      expect(() => {
+        let action = new Action();
+
+        class Foo extends Attachable {
+          foo = { x: 1 };
+
+          destroy(): void {
+            super.destroy();
+            this.foo = undefined as any;
+          }
+        }
+
+        let parent = new Foo().attachToRoot();
+
+        action
+          .toSequence()
+          .tap(() => {
+            if (parent.foo.x) {
+              parent.destroy();
+            }
+          })
+          .attach(parent);
+
+        action
+          .toSequence()
+          .tap(() => {
+            if (parent.foo.x) {
+              parent.destroy();
+            }
+          })
+          .attach(parent);
+
+        action.trigger();
+      }).not.throw();
+    });
+
+    test('using an attached sequence after timeout should throw error', async () => {
+      let event = Sequence.create<void>(resolve => resolve()).attachToRoot();
+
+      await expect(async () => {
+        UnitTestHelper.callDelayed(() => {
+          let sequence = Sequence.create<void>(resolve => resolve());
+          try {
+            sequence.asyncMapDirect(() => event).attachToRoot();
+          } catch (e) {
+            sequence['_executor']['_attachIsCalled'] = true; // silence the error
+            throw e;
+          }
+        });
+
+        await UnitTestHelper.waitForAllOperations();
+      }).rejects.toThrow('Sequence: After attaching, you cannot add another operation.');
     });
   });
 });

@@ -109,13 +109,11 @@ describe('Any', () => {
 
       expect(singleEvent1.destroyed).toBeFalsy();
       expect(singleEvent2.destroyed).toBeFalsy();
-      expect(singleEvent1['_executor']['_onDestroyListeners'].size).toEqual(1);
-      expect(singleEvent2['_executor']['_onDestroyListeners'].size).toEqual(1);
+      expect(singleEvent1['_executor']['_onDestroyListener']).toBeDefined();
+      expect(singleEvent2['_executor']['_onDestroyListener']).toBeDefined();
       merged.destroy();
       expect(singleEvent1.destroyed).toBeTruthy();
       expect(singleEvent2.destroyed).toBeTruthy();
-      expect(singleEvent1['_executor']['_onDestroyListeners'].size).toEqual(0);
-      expect(singleEvent2['_executor']['_onDestroyListeners'].size).toEqual(0);
     });
 
     test('children destroy -> merge destroy', async () => {

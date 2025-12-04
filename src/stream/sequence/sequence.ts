@@ -23,7 +23,7 @@ export class Sequence<T = void> implements IAttachment {
         if (sequenceExecutor._finalized) {
           destroyCallback();
         } else {
-          sequenceExecutor._onFinalListeners.add(destroyCallback);
+          sequenceExecutor._onFinalListener = destroyCallback;
         }
       }
     } catch (e) {

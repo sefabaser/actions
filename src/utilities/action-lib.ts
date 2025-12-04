@@ -175,7 +175,7 @@ export class ActionLib {
         if (sequence.destroyed) {
           oneDestroyed(sequence);
         } else {
-          sequence._executor._onDestroyListeners.add(() => oneDestroyed(sequence));
+          sequence._executor._onDestroyListener = () => oneDestroyed(sequence);
         }
       }
     }

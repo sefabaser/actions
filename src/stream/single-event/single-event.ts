@@ -17,7 +17,7 @@ export class SingleEvent<T = void> implements IAttachment {
         if (singleEventExecutor._finalized) {
           destroyCallback();
         } else {
-          singleEventExecutor._onFinalListeners.add(destroyCallback);
+          singleEventExecutor._onFinalListener = destroyCallback;
         }
       }
     } catch (e) {

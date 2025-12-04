@@ -97,21 +97,8 @@ class SequenceLinkContext implements ISequenceLinkContext {
 
 /** @internal */
 export class SequenceExecutor extends Attachable {
-  private _onDestroyListenersVar?: Set<() => void>;
-  get _onDestroyListeners(): Set<() => void> {
-    if (!this._onDestroyListenersVar) {
-      this._onDestroyListenersVar = new Set();
-    }
-    return this._onDestroyListenersVar;
-  }
-
-  private _onFinalListenersVar?: Set<() => void>;
-  get _onFinalListeners(): Set<() => void> {
-    if (!this._onFinalListenersVar) {
-      this._onFinalListenersVar = new Set();
-    }
-    return this._onFinalListenersVar;
-  }
+  _onDestroyListener?: () => void;
+  _onFinalListener?: () => void;
 
   _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
   _asyncPipelineIndices?: Set<number>;
@@ -130,14 +117,7 @@ export class SequenceExecutor extends Attachable {
       this._pendingValues = undefined as any;
 
       this._onFinalHandler();
-
-      if (this._onDestroyListenersVar) {
-        let listeners = this._onDestroyListenersVar;
-        this._onDestroyListenersVar = undefined as any;
-        for (let listener of listeners) {
-          listener();
-        }
-      }
+      this._onDestroyListener?.();
 
       if (this._chainedTo) {
         this._chainedTo._final();
@@ -257,16 +237,7 @@ export class SequenceExecutor extends Attachable {
   private _onFinalHandler(): void {
     if (!this._finalized) {
       this._finalized = true;
-
-      if (this._onFinalListenersVar) {
-        let listeners = this._onFinalListenersVar;
-        this._onFinalListenersVar = undefined as any;
-        for (let listener of listeners) {
-          listener();
-        }
-        this._onFinalListenersVar = undefined;
-      }
-
+      this._onFinalListener?.();
       this._creatorContext?._destroyAttachment();
     }
   }
