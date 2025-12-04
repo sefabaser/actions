@@ -41,7 +41,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       },
       { sampleCount: 500, repetationCount: 10000 }
     );
-    // 2.3292999267578125
+    // 2.121799945831299
   }, 60000);
 
   test('sequence single resolve later read', async () => {

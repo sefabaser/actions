@@ -16,12 +16,20 @@ class SingleEventContext implements ISingleEventContext {
   private _attachable?: Attachable;
   get attachable(): Attachable {
     if (!this._attachable) {
-      this._attachable = new Attachable().attach(this._executor);
+      this._attachable = new Attachable();
+      if (this._attachToExecutor) {
+        this._attachable.attach(this._executor);
+      } else {
+        this._attachable.attachToRoot();
+      }
     }
     return this._attachable;
   }
 
-  constructor(private _executor: SingleEventExecutor) {}
+  constructor(
+    private _executor: SingleEventExecutor,
+    private _attachToExecutor = true
+  ) {}
 
   destroy(): void {
     this._executor.destroy();
@@ -143,7 +151,7 @@ export class SingleEventExecutor extends Attachable {
   }
 
   _getCreatorContext(): ISingleEventContext {
-    this._creatorContext = new SingleEventContext(this);
+    this._creatorContext = new SingleEventContext(this, false);
     return this._creatorContext;
   }
 
