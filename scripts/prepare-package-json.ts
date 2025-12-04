@@ -9,7 +9,8 @@ let newPackageJson = {
   ...packageJson,
   main: packageJson.publishConfig?.main ?? packageJson.main,
   types: packageJson.publishConfig?.types ?? packageJson.types,
-  module: packageJson.publishConfig?.module ?? packageJson.module
+  module: packageJson.publishConfig?.module ?? packageJson.module,
+  exports: packageJson.publishConfig?.exports ?? packageJson.exports,
 };
 
 try {
