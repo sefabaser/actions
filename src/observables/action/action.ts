@@ -18,6 +18,7 @@ export class Action<T = void> extends Notifier<T> {
     this.trigger = options.clone ? this._cloneTrigger.bind(this) : this._noCloneTrigger.bind(this);
   }
 
+  // Dummy function, will be replaced with real one on constructor
   trigger(_: T): this {
     return this;
   }

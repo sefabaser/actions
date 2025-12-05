@@ -48,19 +48,22 @@ export class Notifier<T = void> {
     };
   }
 
-  private _listenersMap = new Map<number, NotifierCallbackFunction<T>>();
-  private _nextAvailableSubscriptionID = 1;
+  protected _listenersMap = new Map<number, NotifierCallbackFunction<T>>();
+  protected _nextAvailableSubscriptionID = 1;
+  protected _notifier: Notifier<T> | undefined;
 
   get listenerCount(): number {
     return this._listenersMap.size;
   }
 
   get notifier(): Notifier<T> {
-    let wrapper = new Notifier<T>();
-    wrapper._listenersMap = this._listenersMap;
-    wrapper._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
-    wrapper.subscribe = this.subscribe.bind(this);
-    return wrapper;
+    if (!this._notifier) {
+      this._notifier = new Notifier<T>();
+      this._notifier._listenersMap = this._listenersMap;
+      this._notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
+      this._notifier.subscribe = this.subscribe.bind(this);
+    }
+    return this._notifier;
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
