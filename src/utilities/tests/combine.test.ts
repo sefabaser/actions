@@ -131,6 +131,8 @@ describe('Combine as Sequence', () => {
           }
         ]);
       });
+
+      test('combining two variables, ');
     });
 
     describe('Array Input', () => {
@@ -296,7 +298,7 @@ describe('Combine as Sequence', () => {
       );
     });
 
-    test('combining a finalized sequence which had a delayed map link was throwing error', async () => {
+    test('combining a finalized sequence which had a delayed map link should not throw error', async () => {
       let sequence = Sequence.create((resolve, context) => {
         resolve();
         context.final();

@@ -31,23 +31,20 @@ export class ActionLib {
   private static _merge<S>(streams: AsyncOperation<S>[], type: 1 | 2): SingleEvent<S> | Sequence<S> {
     let activeSequences = this._validateAndConvertToSet(streams);
 
-    let subscriptionsParent = new Attachable().attachToRoot();
-    let subscriptions: IAttachment[] = [];
-
     let creator = type === 1 ? SingleEvent.create : Sequence.create;
     let merge = creator<S>(resolve => {
+      let subscriptions: IAttachment[] = [];
+
       for (let i = 0; i < streams.length; i++) {
-        let subscription = streams[i]
-          .subscribe(response => {
-            resolve(response);
-            if (type === 1) {
-              subscriptionsParent.destroy();
-            }
-          })
-          .attach(subscriptionsParent);
+        let subscription = streams[i].subscribe(resolve).attachToRoot();
         subscriptions.push(subscription);
       }
-      return () => subscriptionsParent.destroy();
+
+      return () => {
+        for (let i = 0; i < subscriptions.length; i++) {
+          subscriptions[i].destroy();
+        }
+      };
     });
 
     this._waitUntilAllSequencesDestroyed(activeSequences, () => merge._executor._final());
@@ -98,11 +95,10 @@ export class ActionLib {
     let keys = Object.keys(input);
     let unresolvedKeys = new Set(keys);
 
-    let subscriptionsParent = new Attachable().attachToRoot();
-    let subscriptions: IAttachment[] = [];
-
     let creator = type === 1 ? SingleEvent.create : Sequence.create;
     let combination = creator(resolve => {
+      let subscriptions: IAttachment[] = [];
+
       for (let i = 0; i < keys.length; i++) {
         let key = keys[i];
         let stream = (input as any)[key];
@@ -111,20 +107,22 @@ export class ActionLib {
             latestValues[key] = data;
             if (unresolvedKeys.size === 0) {
               resolve(isArray ? [...latestValues] : this._shallowCopy(latestValues));
-              type === 1 && subscriptionsParent.destroy();
             } else {
               unresolvedKeys.delete(key);
               if (unresolvedKeys.size === 0) {
                 resolve(isArray ? [...latestValues] : this._shallowCopy(latestValues));
-                type === 1 && subscriptionsParent.destroy();
               }
             }
           })
-          .attach(subscriptionsParent); // Each handled manually
+          .attachToRoot();
         subscriptions.push(subscription);
       }
 
-      return () => subscriptionsParent.destroy();
+      return () => {
+        for (let i = 0; i < subscriptions.length; i++) {
+          subscriptions[i].destroy();
+        }
+      };
     });
 
     this._waitUntilAllSequencesDestroyed(activeStreams, () => combination._executor._final());
