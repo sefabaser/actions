@@ -150,7 +150,8 @@ describe('IDAttachable', () => {
       let sample = new IDAttachable().attachToRoot();
 
       let sub = sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
@@ -168,7 +169,8 @@ describe('IDAttachable', () => {
       sample.destroy();
 
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
@@ -183,17 +185,20 @@ describe('IDAttachable', () => {
       let sample = new IDAttachable().attachToRoot();
 
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callback1Invoked = true;
         })
         .attachToRoot();
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callback2Invoked = true;
         })
         .attachToRoot();
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callback3Invoked = true;
         })
         .attachToRoot();
@@ -208,7 +213,8 @@ describe('IDAttachable', () => {
       let sample = new IDAttachable().attachToRoot();
 
       let subscription = sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callbackInvoked = true;
         })
         .attachToRoot();
@@ -227,12 +233,13 @@ describe('IDAttachable', () => {
 
       let error = new Error('Test error');
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           throw error;
         })
         .attachToRoot();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', error);
+      expect(consoleErrorSpy).toHaveBeenCalledWith('SingleEvent callback function error: ', error);
       consoleErrorSpy.mockRestore();
     });
 
@@ -242,12 +249,14 @@ describe('IDAttachable', () => {
       let sample = new IDAttachable().attachToRoot();
 
       let subscription1 = sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callback1Invoked = true;
         })
         .attachToRoot();
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callback2Invoked = true;
         })
         .attachToRoot();
@@ -263,7 +272,8 @@ describe('IDAttachable', () => {
       let sample = new IDAttachable().attachToRoot();
 
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           triggerCount++;
         })
         .attachToRoot();
@@ -274,18 +284,79 @@ describe('IDAttachable', () => {
       expect(triggerCount).toBe(1);
     });
 
-    test('onDestroy should be triggered when destroy listener is attached to the attachable that owns the onDestroy', () => {
+    test('onDestroy should not be triggered when destroy listener is attached to the attachable that owns the onDestroy', () => {
       let callbackInvoked = false;
       let sample = new IDAttachable().attachToRoot();
 
       sample
-        .onDestroy(() => {
+        .onDestroy()
+        .tap(() => {
           callbackInvoked = true;
         })
         .attach(sample);
 
       sample.destroy();
-      expect(callbackInvoked).toBeTruthy();
+      expect(callbackInvoked).toBeFalsy();
+    });
+
+    test(`Race condition, sequences destroying another sequences' parent`, () => {
+      class Foo extends IDAttachable {
+        foo = { x: 1 };
+
+        destroy(): void {
+          super.destroy();
+          this.foo = undefined as any;
+        }
+      }
+
+      let target = new IDAttachable();
+      let parent = new Foo().attachToRoot();
+      let triggered1 = false;
+      let triggered2 = false;
+
+      target
+        .onDestroy()
+        .tap(() => {
+          triggered1 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      target
+        .onDestroy()
+        .tap(() => {
+          triggered2 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      expect(() => target.destroy()).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
+    });
+
+    test('One subscription that is added by another subscription on trigger, should be called right away', () => {
+      let target = new IDAttachable();
+
+      let called = false;
+      target
+        .onDestroy()
+        .tap(() => {
+          target
+            .onDestroy()
+            .tap(() => {
+              called = true;
+            })
+            .attachToRoot();
+        })
+        .attachToRoot();
+
+      target.destroy();
+      expect(called).toBeTruthy(); // Unlike other cases, new destroy listeners will be triggered even after the event
     });
   });
 

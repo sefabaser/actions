@@ -245,33 +245,6 @@ describe('Notifier', () => {
 
       expect(heap).toEqual(['1message', '3message']);
     });
-
-    test('destroy should not take affect until all subscribers being notified', () => {
-      let listener1 = false;
-      let listener2 = false;
-
-      let subscription1: any;
-      let subscription2: any;
-
-      subscription1 = notifier
-        .subscribe(_ => {
-          listener1 = true;
-          subscription2.destroy();
-        })
-        .attachToRoot();
-
-      subscription2 = notifier
-        .subscribe(_ => {
-          listener2 = true;
-          subscription1.destroy();
-        })
-        .attachToRoot();
-
-      notifier._triggerAll('sample');
-
-      expect(listener1).toEqual(true);
-      expect(listener2).toEqual(true);
-    });
   });
 
   describe('Attached Parent', () => {
@@ -408,6 +381,65 @@ describe('Notifier', () => {
       expect(externalNotifier.listenerCount).toEqual(1);
       parent.destroy();
       expect(externalNotifier.listenerCount).toEqual(0);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test(`Race condition, sequences destroying another sequences' parent`, () => {
+      let notifier = new Notifier();
+
+      class Foo extends Attachable {
+        foo = { x: 1 };
+
+        destroy(): void {
+          super.destroy();
+          this.foo = undefined as any;
+        }
+      }
+
+      let parent = new Foo().attachToRoot();
+      let triggered1 = false;
+      let triggered2 = false;
+
+      notifier
+        .subscribe(() => {
+          triggered1 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      notifier
+        .subscribe(() => {
+          triggered2 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      expect(() => notifier._triggerAll()).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
+    });
+
+    test('One subscription that is added by another subscription on trigger, should not be called right away', () => {
+      let notifier = new Notifier();
+
+      let called = false;
+      notifier
+        .subscribe(() => {
+          notifier
+            .subscribe(() => {
+              called = true;
+            })
+            .attachToRoot();
+        })
+        .attachToRoot();
+
+      notifier._triggerAll();
+      expect(called).toBeFalsy();
     });
   });
 });

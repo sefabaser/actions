@@ -12,8 +12,9 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
       if (this._untilAddedListenersVar.has(key)) {
         let listeners = this._untilAddedListenersVar.get(key);
         if (listeners) {
-          for (let listener of listeners) {
-            CallbackHelper._triggerCallback<ValueType>(item, listener);
+          let arr = [...listeners];
+          for (let i = 0; i < arr.length; i++) {
+            CallbackHelper._triggerCallback<ValueType>(item, arr[i]);
           }
         }
         this._untilAddedListenersVar.delete(key);
@@ -32,8 +33,9 @@ export class ObservableMap<KeyType extends number | string, ValueType> extends O
       if (this._untilRemovedListenersVar.has(key)) {
         let listeners = this._untilRemovedListenersVar.get(key);
         if (listeners) {
-          for (let listener of listeners) {
-            CallbackHelper._triggerCallback(undefined, listener);
+          let arr = [...listeners];
+          for (let i = 0; i < arr.length; i++) {
+            CallbackHelper._triggerCallback(undefined, arr[i]);
           }
         }
         this._untilRemovedListenersVar.delete(key);

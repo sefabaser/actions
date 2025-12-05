@@ -1,4 +1,3 @@
-import { CallbackHelper } from '../helpers/callback.helper';
 import { SingleEvent } from '../stream/single-event/single-event';
 import { Attachable } from './attachable';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
@@ -27,40 +26,32 @@ export class IDAttachable extends Attachable {
     if (!this._destroyed) {
       AttachmentTargetStore._unregisterIDAttachable(this);
 
-      let listenersSet = this._onDestroyListeners;
+      let listeners = this._onDestroyListeners;
       this._onDestroyListeners = undefined;
       super.destroy();
 
-      if (listenersSet) {
-        let listeners = [...listenersSet.values()];
-        for (let i = 0; i < listeners.length; i++) {
-          CallbackHelper._triggerCallback(undefined, listeners[i]);
+      if (listeners) {
+        // all race conditions are covered for this case, and no need to take snapshot of the listeners.
+        for (let listener of listeners) {
+          // this listener does not need to be wrapped, it is triggering single events, they will handle it.
+          listener();
         }
       }
     }
   }
 
-  onDestroy(callback?: () => void): SingleEvent<void> {
+  onDestroy(): SingleEvent<void> {
     if (this._destroyed) {
-      if (callback) {
-        CallbackHelper._triggerCallback(undefined, callback);
-      }
-      return SingleEvent.create<void>(resolve => resolve());
+      return SingleEvent.instant();
     } else {
       if (!this._onDestroyListeners) {
         this._onDestroyListeners = new Set();
       }
 
       return SingleEvent.create<void>(resolve => {
-        let listener = () => {
-          if (callback) {
-            CallbackHelper._triggerCallback(undefined, callback);
-          }
-          resolve();
-        };
-        this._onDestroyListeners!.add(listener);
+        this._onDestroyListeners!.add(resolve);
         return () => {
-          this._onDestroyListeners?.delete(listener);
+          this._onDestroyListeners?.delete(resolve);
         };
       });
     }

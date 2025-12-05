@@ -66,9 +66,9 @@ export class Reference<T extends number | object = number> extends Attachable {
 
       if (data) {
         let referenceID = this._getReferenceID(data, this._options.path);
-        this._destroySubscription = AttachmentTargetStore._findAttachmentTarget(referenceID).onDestroy(() => {
-          !this._destroyed && this.set(undefined);
-        });
+        this._destroySubscription = AttachmentTargetStore._findAttachmentTarget(referenceID)
+          .onDestroy()
+          .tap(() => !this._destroyed && this.set(undefined));
 
         if (this.attachIsCalled) {
           if (this.attachedParent) {

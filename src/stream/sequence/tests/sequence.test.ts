@@ -2022,40 +2022,44 @@ describe('Sequence', () => {
     });
 
     test(`Race condition, sequences destroying another sequences' parent`, () => {
-      expect(() => {
-        let action = new Action();
+      let action = new Action();
 
-        class Foo extends Attachable {
-          foo = { x: 1 };
+      class Foo extends Attachable {
+        foo = { x: 1 };
 
-          destroy(): void {
-            super.destroy();
-            this.foo = undefined as any;
-          }
+        destroy(): void {
+          super.destroy();
+          this.foo = undefined as any;
         }
+      }
 
-        let parent = new Foo().attachToRoot();
+      let parent = new Foo().attachToRoot();
+      let triggered1 = false;
+      let triggered2 = false;
 
-        action
-          .toSequence()
-          .tap(() => {
-            if (parent.foo.x) {
-              parent.destroy();
-            }
-          })
-          .attach(parent);
+      action
+        .toSequence()
+        .tap(() => {
+          triggered1 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
 
-        action
-          .toSequence()
-          .tap(() => {
-            if (parent.foo.x) {
-              parent.destroy();
-            }
-          })
-          .attach(parent);
+      action
+        .toSequence()
+        .tap(() => {
+          triggered2 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
 
-        action.trigger();
-      }).not.throw();
+      expect(() => action.trigger()).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
     });
 
     test('using an attached sequence after timeout should throw error', async () => {

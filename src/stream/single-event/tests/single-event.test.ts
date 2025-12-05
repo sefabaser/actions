@@ -1046,41 +1046,45 @@ describe('SingleEvent', () => {
       }).toThrow('Single Event: A single event can only be linked once.');
     });
 
-    test(`Race condition, sequences destroying another sequences' parent`, () => {
-      expect(() => {
-        let action = new Action();
+    test(`Race condition, single events destroying another sequences' parent`, () => {
+      let action = new Action();
 
-        class Foo extends Attachable {
-          foo = { x: 1 };
+      class Foo extends Attachable {
+        foo = { x: 1 };
 
-          destroy(): void {
-            super.destroy();
-            this.foo = undefined as any;
-          }
+        destroy(): void {
+          super.destroy();
+          this.foo = undefined as any;
         }
+      }
 
-        let parent = new Foo().attachToRoot();
+      let parent = new Foo().attachToRoot();
+      let triggered1 = false;
+      let triggered2 = false;
 
-        action
-          .toSingleEvent()
-          .tap(() => {
-            if (parent.foo.x) {
-              parent.destroy();
-            }
-          })
-          .attach(parent);
+      action
+        .toSingleEvent()
+        .tap(() => {
+          triggered1 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
 
-        action
-          .toSingleEvent()
-          .tap(() => {
-            if (parent.foo.x) {
-              parent.destroy();
-            }
-          })
-          .attach(parent);
+      action
+        .toSingleEvent()
+        .tap(() => {
+          triggered2 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
 
-        action.trigger();
-      }).not.throw();
+      expect(() => action.trigger()).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
     });
 
     test('using an attached event after timeout should throw error', async () => {

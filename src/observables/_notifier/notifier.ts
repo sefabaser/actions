@@ -20,7 +20,7 @@ export class ActionSubscription extends Attachable {
 
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
-export class Notifier<T> {
+export class Notifier<T = void> {
   static fromSequence<S>(sequence: Sequence<S>): {
     attach: (parent: Attachable) => Notifier<S>;
     attachByID: (parent: number) => Notifier<S>;
@@ -83,10 +83,7 @@ export class Notifier<T> {
   toSingleEvent(): SingleEvent<T> {
     return SingleEvent.create<T>(resolve => {
       let subscriptionID = this._nextAvailableSubscriptionID++;
-      this._listenersMap.set(subscriptionID, event => {
-        resolve(event);
-        this._listenersMap.delete(subscriptionID);
-      });
+      this._listenersMap.set(subscriptionID, resolve);
       return () => this._listenersMap.delete(subscriptionID);
     });
   }
@@ -241,10 +238,32 @@ export class Notifier<T> {
 
   /** @internal */
   _triggerAll(data: T): void {
+    /*
     let listeners = [...this._listenersMap.values()];
     for (let i = 0; i < listeners.length; i++) {
       CallbackHelper._triggerCallback(data, listeners[i]);
+    }*/
+    // 2.4265999794006348
+    // after repetation 10k: 60.559799909591675
+
+    let listenerKeys = [...this._listenersMap.keys()];
+    for (let i = 0; i < listenerKeys.length; i++) {
+      let listener = this._listenersMap.get(listenerKeys[i]);
+      if (listener !== undefined) {
+        CallbackHelper._triggerCallback(data, listener);
+      }
     }
+    // 7.984999895095825
+    // only key: 3.8285999298095703
+    // not checking has(key): 3.557300090789795
+    // after repetation 10k: 68.83400011062622
+
+    /*
+    for (let listener of this._listenersMap.values()) {
+      CallbackHelper._triggerCallback(data, listener);
+    }*/
+    // 2.3047001361846924
+    // after repetation 10k: 52.22070002555847
   }
 
   /** @internal */
