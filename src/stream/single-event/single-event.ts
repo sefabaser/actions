@@ -298,6 +298,3 @@ export class SingleEvent<T = void> implements IAttachment {
     this._linked = true;
   }
 }
-
-/** @internal */
-export const SingleEventClassNames = [SingleEvent.name, SingleEventExecutor.name, 'SingleEventContext'];
