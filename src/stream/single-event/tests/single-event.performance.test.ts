@@ -39,6 +39,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // after: repetationCount: 10000
     // 1.073199987411499
+    // 1.2242000102996826
   }, 60000);
 
   test('create instant resolve single event', async () => {
@@ -53,6 +54,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       { sampleCount: 500, repetationCount: 10000 }
     );
     // 1.1361000537872314
+    // 1.3729000091552734
   }, 60000);
 
   test('create later resolve single event', async () => {
@@ -70,6 +72,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
       { sampleCount: 500, repetationCount: 10000 }
     );
     // 1.1923000812530518
+    // 1.483799934387207
   }, 60000);
 
   test('create later resolve with attachment single event', async () => {
@@ -89,6 +92,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     );
     // 9.873600006103516
     // attach to root: 7.686899900436401
+    // 8.880300045013428
   }, 60000);
 
   test('chaining instant single event', async () => {
@@ -108,6 +112,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // after: repetationCount: 10000
     // 1.9372000694274902
+    // 2.315500020980835
   }, 60000);
 
   test('custom chaining instant single event', async () => {
@@ -183,6 +188,8 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // after: repetationCount: 10000
     // 29.101799964904785
+    // 29.66980004310608
+    // reusing the context: 28.051499843597412
   }, 60000);
 
   test('single read', async () => {

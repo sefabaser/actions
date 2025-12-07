@@ -23,12 +23,17 @@ export interface ISequenceLinkContext {
 
 class SequencePackage {
   _pipelineIndex = 0;
-  _ongoingContext?: SequenceLinkContext;
+  _ongoingContext!: SequenceLinkContext;
 
-  constructor(public _data: unknown) {}
+  constructor(
+    _executor: SequenceExecutor,
+    public _data: unknown
+  ) {
+    this._ongoingContext = new SequenceLinkContext(_executor, this);
+  }
 
   _destroyAttachment() {
-    this._ongoingContext?._attachableVar?.destroy();
+    this._ongoingContext._destroyAttachment();
   }
 }
 
@@ -57,7 +62,7 @@ class SeqeunceCreatorContext implements ISequenceCreatorContext {
 }
 
 class SequenceLinkContext implements ISequenceLinkContext {
-  _attachableVar?: Attachable;
+  private _attachableVar?: Attachable;
   get attachable(): Attachable {
     if (!this._attachableVar) {
       this._attachableVar = new Attachable().attach(this._executor);
@@ -92,6 +97,12 @@ class SequenceLinkContext implements ISequenceLinkContext {
   drop(): void {
     this._sequencePackage._destroyAttachment();
     this._executor._ongoingPackageCount--;
+  }
+
+  /** @internal */
+  _destroyAttachment() {
+    this._attachableVar?.destroy();
+    this._attachableVar = undefined;
   }
 }
 
@@ -130,7 +141,7 @@ export class SequenceExecutor extends Attachable {
     if (!this._finalized) {
       if (this.attachIsCalled) {
         this._ongoingPackageCount++;
-        this._iteratePackage(new SequencePackage(data));
+        this._iteratePackage(new SequencePackage(this, data));
       } else {
         if (!this._pendingValues) {
           this._pendingValues = [];
@@ -196,7 +207,7 @@ export class SequenceExecutor extends Attachable {
 
       for (let i = 0; i < pendingValues.length; i++) {
         if (startedAsFinalized === this._finalized) {
-          this._iteratePackage(new SequencePackage(pendingValues[i]));
+          this._iteratePackage(new SequencePackage(this, pendingValues[i]));
         }
       }
     }
@@ -205,17 +216,17 @@ export class SequenceExecutor extends Attachable {
   private _iteratePackage(sequencePackage: SequencePackage): void {
     if (!this._destroyed) {
       if (sequencePackage._pipelineIndex < this._pipeline.length) {
-        let context = new SequenceLinkContext(this, sequencePackage);
-        sequencePackage._ongoingContext = context;
+        this._pipeline[sequencePackage._pipelineIndex].iterator(
+          sequencePackage._data,
+          sequencePackage._ongoingContext,
+          returnData => {
+            sequencePackage._destroyAttachment();
 
-        this._pipeline[sequencePackage._pipelineIndex].iterator(sequencePackage._data, context, returnData => {
-          sequencePackage._destroyAttachment();
-          sequencePackage._ongoingContext = undefined;
-
-          sequencePackage._data = returnData;
-          sequencePackage._pipelineIndex++;
-          this._iteratePackage(sequencePackage);
-        });
+            sequencePackage._data = returnData;
+            sequencePackage._pipelineIndex++;
+            this._iteratePackage(sequencePackage);
+          }
+        );
       } else {
         if (this._chainedTo) {
           this._chainedTo._trigger(sequencePackage._data);

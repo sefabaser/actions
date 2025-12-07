@@ -38,6 +38,7 @@ class SingleEventContext implements ISingleEventContext {
   /** @internal */
   _destroyAttachment() {
     this._attachable?.destroy();
+    this._attachable = undefined;
   }
 }
 
@@ -87,6 +88,7 @@ export class SingleEventExecutor extends Attachable {
       this._onFinalHandler();
 
       if (this.attachIsCalled) {
+        this._ongoingContext = new SingleEventContext(this);
         this._iteratePackage(this._currentData);
       }
     }
@@ -109,6 +111,7 @@ export class SingleEventExecutor extends Attachable {
 
   attach(parent: Attachable): this {
     if (this._resolved) {
+      this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
     }
 
@@ -122,6 +125,7 @@ export class SingleEventExecutor extends Attachable {
 
   attachByID(id: number): this {
     if (this._resolved) {
+      this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
     }
 
@@ -135,6 +139,7 @@ export class SingleEventExecutor extends Attachable {
 
   attachToRoot(): this {
     if (this._resolved) {
+      this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
     }
 
@@ -158,9 +163,7 @@ export class SingleEventExecutor extends Attachable {
   private _iteratePackage(data: unknown): void {
     if (!this._destroyed) {
       if (this._pipelineIndex < this._pipeline.length) {
-        this._ongoingContext = new SingleEventContext(this);
-
-        this._pipeline[this._pipelineIndex](data, this._ongoingContext, this._resolve);
+        this._pipeline[this._pipelineIndex](data, this._ongoingContext!, this._resolve);
       } else {
         if (this._chainedTo) {
           this._chainedTo._trigger(data);
@@ -172,7 +175,6 @@ export class SingleEventExecutor extends Attachable {
 
   private _resolve = (returnData: unknown) => {
     this._ongoingContext?._destroyAttachment();
-    this._ongoingContext = undefined;
 
     this._pipelineIndex++;
     this._iteratePackage(returnData);
