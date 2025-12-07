@@ -48,18 +48,25 @@ export class Notifier<T = void> {
     };
   }
 
-  protected _listenersMap = new Map<number, NotifierCallbackFunction<T>>();
+  protected _listenersMapVar: Map<number, NotifierCallbackFunction<T>> | undefined;
+  protected get _listenersMap() {
+    if (!this._listenersMapVar) {
+      this._listenersMapVar = new Map<number, NotifierCallbackFunction<T>>();
+    }
+    return this._listenersMapVar;
+  }
+
   protected _nextAvailableSubscriptionID = 1;
   protected _notifier: Notifier<T> | undefined;
 
   get listenerCount(): number {
-    return this._listenersMap.size;
+    return this._listenersMapVar?.size ?? 0;
   }
 
   get notifier(): Notifier<T> {
     if (!this._notifier) {
       this._notifier = new Notifier<T>();
-      this._notifier._listenersMap = this._listenersMap;
+      this._notifier._listenersMapVar = this._listenersMap;
       this._notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
       this._notifier.subscribe = this.subscribe.bind(this);
     }
@@ -236,37 +243,39 @@ export class Notifier<T = void> {
   }
 
   clear(): void {
-    this._listenersMap.clear();
+    this._listenersMapVar?.clear();
   }
 
   /** @internal */
   _triggerAll(data: T): void {
-    /*
-    let listeners = [...this._listenersMap.values()];
-    for (let i = 0; i < listeners.length; i++) {
-      CallbackHelper._triggerCallback(data, listeners[i]);
-    }*/
-    // 2.4265999794006348
-    // after repetation 10k: 60.559799909591675
+    if (this._listenersMapVar) {
+      /*
+      let listeners = [...this._listenersMapVar.values()];
+      for (let i = 0; i < listeners.length; i++) {
+        CallbackHelper._triggerCallback(data, listeners[i]);
+      }*/
+      // 2.4265999794006348
+      // after repetation 10k: 60.559799909591675
 
-    let listenerKeys = [...this._listenersMap.keys()];
-    for (let i = 0; i < listenerKeys.length; i++) {
-      let listener = this._listenersMap.get(listenerKeys[i]);
-      if (listener !== undefined) {
-        CallbackHelper._triggerCallback(data, listener);
+      let listenerKeys = [...this._listenersMapVar.keys()];
+      for (let i = 0; i < listenerKeys.length; i++) {
+        let listener = this._listenersMapVar.get(listenerKeys[i]);
+        if (listener !== undefined) {
+          CallbackHelper._triggerCallback(data, listener);
+        }
       }
-    }
-    // 7.984999895095825
-    // only key: 3.8285999298095703
-    // not checking has(key): 3.557300090789795
-    // after repetation 10k: 68.83400011062622
+      // 7.984999895095825
+      // only key: 3.8285999298095703
+      // not checking has(key): 3.557300090789795
+      // after repetation 10k: 68.83400011062622
 
-    /*
-    for (let listener of this._listenersMap.values()) {
-      CallbackHelper._triggerCallback(data, listener);
-    }*/
-    // 2.3047001361846924
-    // after repetation 10k: 52.22070002555847
+      /*
+      for (let listener of this._listenersMapVar.values()) {
+        CallbackHelper._triggerCallback(data, listener);
+      }*/
+      // 2.3047001361846924
+      // after repetation 10k: 52.22070002555847
+    }
   }
 
   /** @internal */

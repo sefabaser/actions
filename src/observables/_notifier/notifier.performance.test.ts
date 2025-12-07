@@ -20,6 +20,17 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     subscription.destroy();
   });
 
+  test('no sub', async () => {
+    await UnitTestHelper.testPerformance(
+      () => {
+        new Variable(0);
+      },
+      { sampleCount: 500, repetationCount: 100000 }
+    );
+    // 9.273900032043457
+    // lazy map creation: 6.1438000202178955
+  }, 60000);
+
   test('action subscribe single', async () => {
     let action = new Action<void>();
     await UnitTestHelper.testPerformance(
@@ -90,6 +101,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // After repetationCount: 10000
     // 60.559799909591675
+    // 70.01830005645752
   }, 60000);
 
   test('variable subscribe and set 10x', async () => {
@@ -136,6 +148,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // After repetationCount: 10000
     // 61.86680006980896
+    // 71.84860014915466
   }, 60000);
 
   test('manual take next', async () => {
@@ -172,6 +185,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // After repetationCount: 10000
     // 2.7869999408721924
+    // 3.8064000606536865 ?
   }, 60000);
 
   test('take 1', async () => {
