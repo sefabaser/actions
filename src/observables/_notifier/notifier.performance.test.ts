@@ -275,5 +275,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
 
     // After repetationCount: 10000
     // 1.9760000705718994
+    // 1.5657999515533447
   }, 60000);
 });

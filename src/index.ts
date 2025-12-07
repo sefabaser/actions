@@ -17,8 +17,11 @@ export {
 } from './observables/reducer/reducer';
 export { Reference } from './observables/reference/reference';
 export {
+  SingleAction,
+  SingleActionOptions
+} from './observables/single-action/single-action';
+export {
   Variable,
-  VariableListenerCallbackFunction,
   VariableOptions
 } from './observables/variable/variable';
 export { Sequence } from './stream/sequence/sequence';
