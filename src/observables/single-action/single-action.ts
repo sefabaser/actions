@@ -61,6 +61,14 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
 }
 
 export class SingleAction<T = void> extends SingleActionNotifier<T> {
+  get resolved(): boolean {
+    return this._resolved === true;
+  }
+
+  get value(): T | undefined {
+    return this._resolvedValue;
+  }
+
   constructor(partialOptions?: Partial<SingleActionOptions>) {
     super();
     let options = {

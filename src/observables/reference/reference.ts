@@ -1,9 +1,9 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable } from '../..';
-import { IAttachment } from '../../attachable/attachable';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
-import { Variable, VariableListenerCallbackFunction } from '../variable/variable';
+import { NotifierCallbackFunction } from '../_notifier/notifier';
+import { Variable } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T extends number | object> {
   readonly initialValue?: T;
@@ -84,7 +84,7 @@ export class Reference<T extends number | object = number> extends Attachable {
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T | undefined>): IAttachment {
+  subscribe(callback: NotifierCallbackFunction<T | undefined>): IAttachment {
     if (this._destroyed) {
       throw new Error(`Reference: This reference is destroyed cannot be subscribed to!`);
     }
