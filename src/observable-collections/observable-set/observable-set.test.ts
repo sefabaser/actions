@@ -31,7 +31,8 @@ describe('ObservableSet', () => {
     set.add(1);
     let called = false;
     set
-      .waitUntilAdded(1, () => {
+      .waitUntilAdded(1)
+      .tap(() => {
         called = true;
       })
       .attachToRoot();
@@ -42,7 +43,8 @@ describe('ObservableSet', () => {
     let set = new ObservableSet<number>();
     let called = false;
     set
-      .waitUntilAdded(1, () => {
+      .waitUntilAdded(1)
+      .tap(() => {
         called = true;
       })
       .attachToRoot();
@@ -53,9 +55,12 @@ describe('ObservableSet', () => {
   test('should return waitUntilRemovedSync if item is added', () => {
     let set = new ObservableSet<number>();
     let called = false;
-    set.waitUntilRemoved(1, () => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .tap(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -64,9 +69,12 @@ describe('ObservableSet', () => {
     set.add(1);
     set.delete(1);
     let called = false;
-    set.waitUntilRemoved(1, () => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .tap(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 

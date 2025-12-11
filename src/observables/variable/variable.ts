@@ -1,77 +1,117 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachable } from '../../attachable/attachable';
-import { LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
-import { NotificationHelper } from '../../helpers/notification.helper';
-import { Notifier } from '../_notifier/notifier';
-
-export type VariableListenerCallbackFunction<T> = (data: T) => void;
+import { CallbackHelper } from '../../helpers/callback.helper';
+import { Sequence } from '../../stream/sequence/sequence';
+import { SingleEvent } from '../../stream/single-event/single-event';
+import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
 
 export interface VariableOptions {
   readonly clone: boolean;
   readonly notifyOnChange: boolean;
 }
 
-export interface VariableSubscriptionOptions {
-  readonly listenOnlyNewChanges: boolean;
+class VariableNotifier<T> extends Notifier<T> {
+  protected _currentValue!: T;
+
+  get notifier(): Notifier<T> {
+    if (!this._notifier) {
+      let notifier = new VariableNotifier<T>();
+      notifier._listenersMapVar = this._listenersMapVar;
+      notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
+      notifier.subscribe = this.subscribe.bind(this);
+      this._notifier = notifier;
+    }
+    return this._notifier;
+  }
+
+  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
+    CallbackHelper._triggerCallback(this._currentValue, callback);
+    return super.subscribe(callback);
+  }
+
+  toSequence(): Sequence<T> {
+    return Sequence.create<T>(resolve => {
+      let subscription = this.subscribe(resolve).attachToRoot();
+      return () => subscription.destroy();
+    });
+  }
+
+  toSingleEvent(): SingleEvent<T> {
+    return SingleEvent.create<T>(resolve => {
+      let subscription = this.subscribe(resolve).attachToRoot();
+      return () => subscription.destroy();
+    });
+  }
+
+  /** @internal */
+  _subscribeSingle(callback: (data: T) => void): IAttachment {
+    CallbackHelper._triggerCallback(this._currentValue, callback);
+    return Attachable.getDestroyed();
+  }
 }
 
-export interface IVariable<T> {
-  value: T;
-  listenerCount: number;
-  set(data: T): this;
-  subscribe(callback: VariableListenerCallbackFunction<T>): IAttachable;
-  waitUntilNext(callback: (data: T) => void): void;
-  waitUntil(data: T, callback: (data: T) => void): void;
-}
-
-export class Variable<T> extends Notifier<T> implements IVariable<T> {
+export class Variable<T> extends VariableNotifier<T> {
   get value(): T {
-    return this.currentValue;
+    return this._currentValue;
   }
   set value(value: T) {
     this.set(value);
   }
 
-  private options: VariableOptions;
-
-  private currentValue!: T;
-
-  constructor(value: T, options?: Partial<VariableOptions>) {
+  constructor(value: T, partialOptions?: Partial<VariableOptions>) {
     super();
-    this.currentValue = value;
-    this.options = {
+    this._currentValue = value;
+    let options = {
       notifyOnChange: ActionLibDefaults.variable.notifyOnChange,
       clone: ActionLibDefaults.variable.cloneBeforeNotification,
-      ...options
+      ...partialOptions
     };
+
+    if (options.notifyOnChange) {
+      this.set = options.clone ? this._notifyOnChangeCloneSet.bind(this) : this._notifyOnChangeNoCloneSet.bind(this);
+    } else {
+      this.set = options.clone ? this._notifyAlwaysCloneSet.bind(this) : this._notifyAlwaysNoCloneSet.bind(this);
+    }
   }
 
-  set(data: T): this {
-    let previousData = this.currentValue;
-    this.currentValue = this.options.clone && Comparator.isObject(data) ? JsonHelper.deepCopy(data) : data;
+  // Dummy function, will be replaced with real one on constructor
+  set(_: T): this {
+    return this;
+  }
 
-    if (!this.options.notifyOnChange || !Comparator.isEqual(previousData, data)) {
-      this.notificationHandler.forEach(callback => NotificationHelper.notify(data, callback));
+  private _notifyAlwaysNoCloneSet(data: T): this {
+    this._currentValue = data;
+    this._triggerAll(data);
+    return this;
+  }
+
+  private _notifyAlwaysCloneSet(data: T): this {
+    this._currentValue = JsonHelper.deepCopy(data);
+    this._triggerAll(data);
+    return this;
+  }
+
+  private _notifyOnChangeNoCloneSet(data: T): this {
+    let previousData = this._currentValue;
+    this._currentValue = data;
+
+    if (!Comparator.isEqual(previousData, data)) {
+      this._triggerAll(data);
     }
 
     return this;
   }
 
-  subscribe(callback: VariableListenerCallbackFunction<T>, options?: VariableSubscriptionOptions): IAttachable {
-    if (!options?.listenOnlyNewChanges) {
-      NotificationHelper.notify(this.currentValue, callback);
-    }
-    return super.subscribe(callback);
-  }
+  private _notifyOnChangeCloneSet(data: T): this {
+    let previousData = this._currentValue;
+    this._currentValue = JsonHelper.deepCopy(data);
 
-  waitUntil(expectedData: T, callback: (data: T) => void): IAttachable {
-    if (Comparator.isEqual(this.currentValue, expectedData)) {
-      NotificationHelper.notify(expectedData, callback);
-      return LightweightAttachable.getDestroyed();
-    } else {
-      return super.waitUntil(expectedData, callback);
+    if (!Comparator.isEqual(previousData, data)) {
+      this._triggerAll(data);
     }
+
+    return this;
   }
 }

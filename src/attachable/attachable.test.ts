@@ -1,36 +1,18 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { UnitTestHelper, Wait } from 'helpers-lib';
+import { describe, expect, test, vi } from 'vitest';
 
-import { ActionLibUnitTestHelper } from '..';
 import { Attachable } from './attachable';
 
 describe('Attachable', () => {
-  beforeEach(() => {
-    ActionLibUnitTestHelper.hardReset();
-  });
-
-  describe('basic', () => {
-    test('attachable should have an id', () => {
-      let sample = new Attachable().attachToRoot();
-      expect(sample.id).toBeDefined();
+  describe('Setup', () => {
+    test('creates instance successfully', () => {
+      let instance = new Attachable().attachToRoot();
+      expect(instance).toBeInstanceOf(Attachable);
     });
 
-    test('ids should be unique', () => {
-      let sample1 = new Attachable().attachToRoot();
-      let sample2 = new Attachable().attachToRoot();
-      expect(sample1.id !== sample2.id).toBeTruthy();
-    });
-
-    test('not attaching to anything should throw error', () => {
-      let operation = async (): Promise<void> => {
-        new Attachable();
-      };
-
-      vi.useFakeTimers();
-      expect(() => {
-        operation();
-        vi.runAllTimers();
-      }).toThrow('Attachable: The object is not attached to anything!');
-      vi.useRealTimers();
+    test('destroyed property is false initially', () => {
+      let instance = new Attachable().attachToRoot();
+      expect(instance.destroyed).toBe(false);
     });
 
     test('attachment is not necessary if attachable is destroyed right after creation', () => {
@@ -44,256 +26,294 @@ describe('Attachable', () => {
         operation();
         vi.runAllTimers();
       }).not.toThrow('Attachable: The object is not attached to anything!');
-      vi.useRealTimers();
     });
 
-    test('when attachment target is destroyed, it should destroy its attachments', () => {
-      let target = new Attachable();
-      let attachment = new Attachable().attach(target);
-      target.destroy();
+    test('attach returns this for chaining', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
 
-      expect(attachment.destroyed).toBeTruthy();
+      let result = child.attach(parent);
+
+      expect(result).toBe(child);
     });
 
-    test('onDestroy should be triggered when destroy is called', () => {
-      let destroyCalled = false;
+    test('attachToRoot returns this for chaining', () => {
+      let instance = new Attachable();
 
-      class Sample extends Attachable {
-        destroy(): void {
-          super.destroy();
-          destroyCalled = true;
-        }
-      }
+      let result = instance.attachToRoot();
 
-      let sample = new Sample().attachToRoot();
-      sample.destroy();
-
-      expect(destroyCalled).toBeTruthy();
+      expect(result).toBe(instance);
     });
   });
 
-  describe('edge cases', () => {
-    test('destroy calls should be executed attached first then parent', () => {
-      class Sample extends Attachable {
-        constructor(private destroyCallback: () => void) {
-          super();
-        }
+  describe('Behaviour', () => {
+    test('not attaching to anything should throw error', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-        destroy(): void {
-          super.destroy();
-          this.destroyCallback();
-        }
-      }
+      new Attachable();
+      await Wait();
 
-      let heap: string[] = [];
-
-      let sample1 = new Sample(() => heap.push('sample1')).attachToRoot();
-      new Sample(() => heap.push('sample2')).attach(sample1);
-      sample1.destroy();
-
-      expect(heap).toEqual(['sample2', 'sample1']);
+      expect(() => errorCapturer.throwErrors()).toThrow('Attachable: The object is not attached to anything!');
+      errorCapturer.destroy();
     });
 
-    test('when attachment target is destroyed, it should destroy its the attachments that are attached in constructor', () => {
-      let child: Attachment | undefined;
+    test('attach throws if already attached', async () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
 
-      class Target extends Attachable {
-        constructor() {
-          super();
-          child = new Attachment().attach(this);
-        }
-      }
+      child.attach(parent);
 
-      class Attachment extends Attachable {}
+      expect(() => child.attach(parent)).toThrow('Attachable: The object is already attached to something!');
+    });
 
-      let parent = new Target().attachToRoot();
+    test('attachToRoot throws if already attached', () => {
+      let instance = new Attachable();
+
+      instance.attachToRoot();
+
+      expect(() => instance.attachToRoot()).toThrow('Attachable: The object is already attached to something!');
+    });
+
+    test('attach throws if attachToRoot was called first', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
+
+      child.attachToRoot();
+
+      expect(() => {
+        child.attach(parent);
+      }).toThrow('Attachable: The object is already attached to something!');
+    });
+
+    test('attachToRoot throws if attach was called first', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
+
+      child.attach(parent);
+
+      expect(() => {
+        child.attachToRoot();
+      }).toThrow('Attachable: The object is already attached to something!');
+    });
+
+    test('destroy sets destroyed to true', () => {
+      let instance = new Attachable();
+
+      instance.destroy();
+
+      expect(instance.destroyed).toBe(true);
+    });
+
+    test('destroy can be called multiple times', () => {
+      let instance = new Attachable();
+
+      instance.destroy();
+      instance.destroy();
+      instance.destroy();
+
+      expect(instance.destroyed).toBe(true);
+    });
+
+    test('destroy removes from parent', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
+
+      child.attach(parent);
+      child.destroy();
+
+      expect(child.destroyed).toBe(true);
+    });
+
+    test('attach by parent reference', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
+
+      child.attach(parent);
+
+      expect(child.destroyed).toBe(false);
+    });
+
+    test('attach when already destroyed does not throw', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
+
+      child.destroy();
+
+      expect(() => {
+        child.attach(parent);
+      }).not.toThrow();
+    });
+
+    test('attachToRoot when already destroyed does not throw', () => {
+      let child = new Attachable();
+
+      child.destroy();
+
+      expect(() => {
+        child.attachToRoot();
+      }).not.toThrow();
+    });
+
+    test('nested attachment hierarchy', () => {
+      let root = new Attachable().attachToRoot();
+      let parent = new Attachable().attach(root);
+      let child = new Attachable().attach(parent);
+
+      expect(child.destroyed).toBe(false);
+      expect(parent.destroyed).toBe(false);
+      expect(root.destroyed).toBe(false);
+    });
+  });
+
+  describe('Desctruction', () => {
+    test('parent destroy also destroys child', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable();
+
+      child.attach(parent);
       parent.destroy();
 
-      expect(child?.destroyed).toBeTruthy();
+      expect(parent.destroyed).toBe(true);
+      expect(child.destroyed).toBe(true);
     });
 
-    test('attach to self should throw error', () => {
-      let sample = new Attachable();
-      expect(() => {
-        sample.attach(sample);
-      }).toThrow('Circular attachment detected!');
+    test('multiple children destroyed when parent destroys', () => {
+      let parent = new Attachable().attachToRoot();
+      let child1 = new Attachable().attach(parent);
+      let child2 = new Attachable().attach(parent);
+      let child3 = new Attachable().attach(parent);
+
+      parent.destroy();
+
+      expect(child1.destroyed).toBe(true);
+      expect(child2.destroyed).toBe(true);
+      expect(child3.destroyed).toBe(true);
     });
 
-    test('circular attachment should throw error', () => {
-      class Sample extends Attachable {}
+    test('nested destroy propagates down', () => {
+      let root = new Attachable().attachToRoot();
+      let parent = new Attachable().attach(root);
+      let child = new Attachable().attach(parent);
 
-      let sample1 = new Sample();
-      let sample2 = new Sample();
+      root.destroy();
 
-      expect(() => {
-        sample2.attach(sample1);
-        sample1.attach(sample2);
-      }).toThrow('Circular attachment detected!');
-    });
-  });
-
-  describe('onDestroy', () => {
-    test('callback is invoked when attachable is destroyed', () => {
-      let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
-
-      sample
-        .onDestroy(() => {
-          callbackInvoked = true;
-        })
-        .attachToRoot();
-
-      sample.destroy();
-      expect(callbackInvoked).toBeTruthy();
+      expect(root.destroyed).toBe(true);
+      expect(parent.destroyed).toBe(true);
+      expect(child.destroyed).toBe(true);
     });
 
-    test('callback is invoked immediately if attachable is already destroyed', () => {
-      let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+    test('middle level destroy does not affect root', () => {
+      let root = new Attachable().attachToRoot();
+      let parent = new Attachable().attach(root);
+      let child = new Attachable().attach(parent);
 
-      sample.destroy();
+      parent.destroy();
 
-      sample
-        .onDestroy(() => {
-          callbackInvoked = true;
-        })
-        .attachToRoot();
-
-      expect(callbackInvoked).toBeTruthy();
+      expect(root.destroyed).toBe(false);
+      expect(parent.destroyed).toBe(true);
+      expect(child.destroyed).toBe(true);
     });
 
-    test('multiple callbacks can be subscribed and all are invoked', () => {
-      let callback1Invoked = false;
-      let callback2Invoked = false;
-      let callback3Invoked = false;
-      let sample = new Attachable().attachToRoot();
+    test('child destroy does not affect parent', () => {
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable().attach(parent);
 
-      sample
-        .onDestroy(() => {
-          callback1Invoked = true;
-        })
-        .attachToRoot();
-      sample
-        .onDestroy(() => {
-          callback2Invoked = true;
-        })
-        .attachToRoot();
-      sample
-        .onDestroy(() => {
-          callback3Invoked = true;
-        })
-        .attachToRoot();
+      child.destroy();
 
-      sample.destroy();
-
-      expect([callback1Invoked, callback2Invoked, callback3Invoked]).toEqual([true, true, true]);
+      expect(parent.destroyed).toBe(false);
+      expect(child.destroyed).toBe(true);
     });
 
-    test('subscription can be unsubscribed', () => {
-      let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
+    test('sibling attachments are independent', () => {
+      let parent = new Attachable().attachToRoot();
+      let child1 = new Attachable().attach(parent);
+      let child2 = new Attachable().attach(parent);
 
-      let subscription = sample
-        .onDestroy(() => {
-          callbackInvoked = true;
-        })
-        .attachToRoot();
+      child1.destroy();
 
-      subscription.destroy();
-      sample.destroy();
-
-      expect(callbackInvoked).toBeFalsy();
+      expect(child1.destroyed).toBe(true);
+      expect(child2.destroyed).toBe(false);
+      expect(parent.destroyed).toBe(false);
     });
 
-    test('error in callback is caught and logged when attachable is already destroyed', () => {
-      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      let sample = new Attachable().attachToRoot();
+    test('complex hierarchy with multiple levels', () => {
+      let root = new Attachable().attachToRoot();
+      let level1a = new Attachable().attach(root);
+      let level1b = new Attachable().attach(root);
+      let level2a = new Attachable().attach(level1a);
+      let level2b = new Attachable().attach(level1a);
+      let level2c = new Attachable().attach(level1b);
 
-      sample.destroy();
+      level1a.destroy();
 
-      let error = new Error('Test error');
-      sample
-        .onDestroy(() => {
-          throw error;
-        })
-        .attachToRoot();
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', error);
-      consoleErrorSpy.mockRestore();
+      expect(root.destroyed).toBe(false);
+      expect(level1a.destroyed).toBe(true);
+      expect(level1b.destroyed).toBe(false);
+      expect(level2a.destroyed).toBe(true);
+      expect(level2b.destroyed).toBe(true);
+      expect(level2c.destroyed).toBe(false);
     });
 
-    test('callback is not invoked after unsubscribe even if other callbacks exist', () => {
-      let callback1Invoked = false;
-      let callback2Invoked = false;
-      let sample = new Attachable().attachToRoot();
+    test('attach to destroyed parent immediately destroys child', () => {
+      let parent = new Attachable().attachToRoot();
+      parent.destroy();
 
-      let subscription1 = sample
-        .onDestroy(() => {
-          callback1Invoked = true;
-        })
-        .attachToRoot();
-      sample
-        .onDestroy(() => {
-          callback2Invoked = true;
-        })
-        .attachToRoot();
+      let child = new Attachable().attach(parent);
 
-      subscription1.destroy();
-      sample.destroy();
-
-      expect([callback1Invoked, callback2Invoked]).toEqual([false, true]);
-    });
-
-    test('triggereding destroy multiple times should not take effect multiply', () => {
-      let triggerCount = 0;
-      let sample = new Attachable().attachToRoot();
-
-      sample
-        .onDestroy(() => {
-          triggerCount++;
-        })
-        .attachToRoot();
-
-      sample.destroy();
-      sample.destroy();
-
-      expect(triggerCount).toBe(1);
-    });
-
-    test('onDestroy should be triggered when destroy listener is attached to the attachable that owns the onDestroy', () => {
-      let callbackInvoked = false;
-      let sample = new Attachable().attachToRoot();
-
-      sample
-        .onDestroy(() => {
-          callbackInvoked = true;
-        })
-        .attach(sample);
-
-      sample.destroy();
-      expect(callbackInvoked).toBeTruthy();
+      expect(child.destroyed).toBe(true);
     });
   });
 
-  describe('validateId', () => {
-    test('valid target valid id', () => {
-      class Child extends Attachable {}
-      let child = new Child().attachToRoot();
-      expect(Child.validateId(child.id)).toBe(true);
+  describe('Circular attachment detection', () => {
+    test('circular attachment detection - direct self-reference', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
+
+      let attachable = new Attachable().attachToRoot();
+      // Manually create a circular reference by setting the parent to itself
+      attachable['_attachedParent'] = attachable;
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
 
-    test('invalid target valid id', () => {
-      class Child1 extends Attachable {}
-      class Child2 extends Attachable {}
+    test('circular attachment detection - two-level cycle', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
 
-      let child1 = new Child1().attachToRoot();
+      let parent = new Attachable().attachToRoot();
+      let child = new Attachable().attach(parent);
+      // Create circular reference: parent -> child -> parent
+      parent['_attachedParent'] = child;
 
-      expect(Child2.validateId(child1.id)).toBe(false);
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
     });
 
-    test('invalid id', () => {
-      class Child extends Attachable {}
-      expect(Child.validateId('invalidId')).toBe(false);
+    test('circular attachment detection - three-level cycle', async () => {
+      let errorCapturer = UnitTestHelper.captureErrors();
+
+      let root = new Attachable().attachToRoot();
+      let middle = new Attachable().attach(root);
+      let leaf = new Attachable().attach(middle);
+      // Create circular reference: root -> middle -> leaf -> root
+      root['_attachedParent'] = leaf;
+
+      await Wait();
+      expect(() => errorCapturer.throwErrors()).toThrow('Circular attachment detected!');
+      errorCapturer.destroy();
+    });
+
+    test('normal hierarchy does not trigger circular detection', () => {
+      vi.useFakeTimers();
+
+      expect(() => {
+        let root = new Attachable().attachToRoot();
+        let level1 = new Attachable().attach(root);
+        let level2 = new Attachable().attach(level1);
+        new Attachable().attach(level2);
+        vi.runAllTimers();
+      }).not.toThrow('Circular attachment detected!');
     });
   });
 });

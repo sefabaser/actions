@@ -1,41 +1,41 @@
-import { IAttachable } from '../../attachable/attachable';
+import { SingleEvent } from '../../stream/single-event/single-event';
 import { ObservableMap } from '../observable-map/observable-map';
 
 export class ObservableSet<KeyType extends number | string> {
-  private observableMap = new ObservableMap<KeyType, void>();
+  private _observableMap = new ObservableMap<KeyType, void>();
 
   constructor(set?: Set<KeyType> | undefined) {
     let map = set ? new Map(Array.from(set.keys()).map(key => [key, undefined])) : undefined;
-    this.observableMap = new ObservableMap<KeyType, void>(map);
+    this._observableMap = new ObservableMap<KeyType, void>(map);
   }
 
   convertToSet(): Set<KeyType> {
-    return new Set(this.observableMap.convertToMap().keys());
+    return new Set(this._observableMap.convertToMap().keys());
   }
 
   get size(): number {
-    return this.observableMap.size;
+    return this._observableMap.size;
   }
 
   has(value: KeyType): boolean {
-    return this.observableMap.has(value);
+    return this._observableMap.has(value);
   }
 
   add(key: KeyType): this {
-    this.observableMap.set(key, undefined);
+    this._observableMap.set(key, undefined);
     return this;
   }
 
   delete(key: KeyType): this {
-    this.observableMap.delete(key);
+    this._observableMap.delete(key);
     return this;
   }
 
-  waitUntilAdded(value: KeyType, callback: () => void): IAttachable {
-    return this.observableMap.waitUntilAdded(value, callback);
+  waitUntilAdded(value: KeyType): SingleEvent<void> {
+    return this._observableMap.waitUntilAdded(value);
   }
 
-  waitUntilRemoved(value: KeyType, callback: () => void): IAttachable {
-    return this.observableMap.waitUntilRemoved(value, callback);
+  waitUntilRemoved(value: KeyType): SingleEvent<void> {
+    return this._observableMap.waitUntilRemoved(value);
   }
 }

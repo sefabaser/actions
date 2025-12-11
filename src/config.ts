@@ -1,12 +1,12 @@
-export const ActionLibDefaults = new (class {
-  readonly action = new (class {
-    cloneBeforeNotification = false;
-  })();
-  readonly variable = new (class {
-    notifyOnChange = false;
-    cloneBeforeNotification = false;
-  })();
-  readonly reducer = new (class {
-    cloneBeforeNotification = false;
-  })();
-})();
+export const ActionLibDefaults = {
+  action: {
+    cloneBeforeNotification: false
+  },
+  variable: {
+    notifyOnChange: false,
+    cloneBeforeNotification: false
+  },
+  reducer: {
+    cloneBeforeNotification: false
+  }
+} as const;

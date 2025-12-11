@@ -73,17 +73,17 @@ describe(`Action`, () => {
       }));
 
     test('clone before notification', () => {
-      let action = new Action<SampleModel>({ clone: true });
+      let action2 = new Action<SampleModel>({ clone: true });
 
       let receivedData: any;
-      action
-        .subscribe(data => {
-          receivedData = data;
+      action2
+        .subscribe(received => {
+          receivedData = received;
         })
         .attachToRoot();
 
       let data = { testData: 'sample' };
-      action.trigger(data);
+      action2.trigger(data);
       expect(receivedData === data).toBeFalsy();
     });
   });

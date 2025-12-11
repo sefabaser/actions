@@ -24,7 +24,7 @@ describe(`Reducer`, () => {
 
     test('should be subscribable', () => {
       reducer.subscribe(() => {}).attachToRoot();
-      expect(reducer['notificationHandler']['listenersMap'].size).toEqual(1);
+      expect(reducer['_listenersMap'].size).toEqual(1);
     });
 
     test('should be able to use subscribe only new changes', () => {
@@ -46,7 +46,7 @@ describe(`Reducer`, () => {
     test('should be destroyable', () => {
       let subscription = reducer.subscribe(() => {});
       subscription.destroy();
-      expect(reducer['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(reducer['_listenersMap'].size).toEqual(0);
     });
 
     test('triggerring without listeners', () => {
@@ -225,15 +225,15 @@ describe(`Reducer`, () => {
       }));
 
     test('should give unique id to different effecters', () => {
-      let firstId: number | undefined;
-      let secondId: number | undefined;
+      let firstID: number | undefined;
+      let secondID: number | undefined;
 
       let reducer = new Reducer<boolean, void>(change => {
         if (change.type === 'effect') {
-          if (!firstId) {
-            firstId = change.id;
+          if (!firstID) {
+            firstID = change.id;
           } else {
-            secondId = change.id;
+            secondID = change.id;
           }
         }
       });
@@ -241,9 +241,9 @@ describe(`Reducer`, () => {
       reducer.effect(true).attachToRoot();
       reducer.effect(true).attachToRoot();
 
-      expect(firstId).toBeDefined();
-      expect(secondId).toBeDefined();
-      expect(firstId !== secondId).toEqual(true);
+      expect(firstID).toBeDefined();
+      expect(secondID).toBeDefined();
+      expect(firstID !== secondID).toEqual(true);
     });
 
     test('should give same unique id to all operations of the same effecter', () => {
@@ -612,47 +612,6 @@ describe(`Reducer`, () => {
       effect.destroy();
       reducer.effect(4).attachToRoot();
       expect(reducer.value).toEqual(7);
-    });
-  });
-
-  describe(`Wait Until`, () => {
-    let reducer: Reducer<boolean, boolean>;
-
-    beforeEach(() => {
-      reducer = Reducer.createOr();
-    });
-
-    test('wait until spesific data', async () => {
-      let resolvedWith: boolean | undefined;
-
-      reducer
-        .waitUntil(true, data => {
-          resolvedWith = data;
-        })
-        .attachToRoot();
-
-      let effectChannel = reducer.effect(false).attachToRoot();
-      expect(resolvedWith).toEqual(undefined);
-
-      effectChannel.update(true);
-      expect(resolvedWith).toEqual(true);
-    });
-
-    test('wait until callback throws error', () => {
-      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      reducer.effect(true).attachToRoot();
-
-      expect(() =>
-        reducer
-          .waitUntil(true, () => {
-            throw new Error('test error');
-          })
-          .attachToRoot()
-      ).not.toThrow();
-
-      expect(consoleErrorSpy).toBeCalled();
-      consoleErrorSpy.mockRestore();
     });
   });
 });

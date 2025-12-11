@@ -1,40 +1,38 @@
-import { IAttachable } from '../../attachable/attachable';
-import { LightweightAttachable } from '../../attachable/lightweight-attachable';
-import { NotificationHelper } from '../../helpers/notification.helper';
-import { ActionSubscription } from '../../observables/_notifier/action-subscription';
-import { NotifierCallbackFunction } from '../../observables/_notifier/notification-handler';
+import { SingleEvent } from '../../stream/single-event/single-event';
 
 export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
 
-  protected _untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>;
-  private get untilAddedListeners(): Map<KeyType, Set<(data: KeyType) => void>> {
-    if (!this._untilAddedListeners) {
-      this._untilAddedListeners = new Map();
+  /** @internal */
+  protected _untilAddedListenersVar?: Map<KeyType, Set<(data: ValueType) => void>>;
+  private get _UntilAddedListeners(): Map<KeyType, Set<(data: ValueType) => void>> {
+    if (!this._untilAddedListenersVar) {
+      this._untilAddedListenersVar = new Map();
     }
-    return this._untilAddedListeners;
+    return this._untilAddedListenersVar;
   }
 
-  protected _untilRemovedListeners?: Map<KeyType, Set<() => void>>;
-  private get untilRemovedListeners(): Map<KeyType, Set<() => void>> {
-    if (!this._untilRemovedListeners) {
-      this._untilRemovedListeners = new Map();
+  /** @internal */
+  protected _untilRemovedListenersVar?: Map<KeyType, Set<() => void>>;
+  private get _untilRemovedListeners(): Map<KeyType, Set<() => void>> {
+    if (!this._untilRemovedListenersVar) {
+      this._untilRemovedListenersVar = new Map();
     }
-    return this._untilRemovedListeners;
+    return this._untilRemovedListenersVar;
   }
 
   get notifier(): ObservableMapNotifier<KeyType, ValueType> {
-    return new ObservableMapNotifier<KeyType, ValueType>(this.map, this._untilAddedListeners, this._untilRemovedListeners);
+    return new ObservableMapNotifier<KeyType, ValueType>(this.map, this._untilAddedListenersVar, this._untilRemovedListenersVar);
   }
 
   constructor(
     map: Map<KeyType, ValueType>,
-    untilAddedListeners?: Map<KeyType, Set<(data: KeyType) => void>>,
+    untilAddedListeners?: Map<KeyType, Set<(data: ValueType) => void>>,
     untilRemovedListeners?: Map<KeyType, Set<() => void>>
   ) {
     this.map = map ?? new Map<KeyType, ValueType>();
-    this._untilAddedListeners = untilAddedListeners;
-    this._untilRemovedListeners = untilRemovedListeners;
+    this._untilAddedListenersVar = untilAddedListeners;
+    this._untilRemovedListenersVar = untilRemovedListeners;
   }
 
   convertToMap(): Map<KeyType, ValueType> {
@@ -53,45 +51,40 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
     return this.map.get(key);
   }
 
-  waitUntilAdded(value: KeyType, callback: NotifierCallbackFunction<ValueType>): IAttachable {
-    let triggerCallback = () => {
-      NotificationHelper.notify(this.map.get(value), callback);
-    };
-
+  waitUntilAdded(value: KeyType): SingleEvent<ValueType> {
     if (this.map.has(value)) {
-      triggerCallback();
-      return LightweightAttachable.getDestroyed();
+      return SingleEvent.instant(this.map.get(value)!);
     } else {
-      let untilAddedListenerSet = this.untilAddedListeners.get(value);
-      if (!untilAddedListenerSet) {
-        untilAddedListenerSet = new Set();
-        this.untilAddedListeners.set(value, untilAddedListenerSet);
-      }
+      return SingleEvent.create<ValueType>(resolve => {
+        let untilAddedListenerSet = this._UntilAddedListeners.get(value);
+        if (!untilAddedListenerSet) {
+          untilAddedListenerSet = new Set();
+          this._UntilAddedListeners.set(value, untilAddedListenerSet);
+        }
 
-      untilAddedListenerSet.add(triggerCallback);
-      return new ActionSubscription(() => {
-        this._untilAddedListeners?.get(value)?.delete(triggerCallback);
+        untilAddedListenerSet.add(resolve);
+        return () => {
+          this._untilAddedListenersVar?.get(value)?.delete(resolve);
+        };
       });
     }
   }
 
-  waitUntilRemoved(value: KeyType, callback: NotifierCallbackFunction<void>): IAttachable {
+  waitUntilRemoved(value: KeyType): SingleEvent<void> {
     if (!this.map.has(value)) {
-      NotificationHelper.notify(undefined, callback);
-      return LightweightAttachable.getDestroyed();
+      return SingleEvent.instant();
     } else {
-      let untilRemovedListenerSet = this.untilRemovedListeners.get(value);
-      if (!untilRemovedListenerSet) {
-        untilRemovedListenerSet = new Set();
-        this.untilRemovedListeners.set(value, untilRemovedListenerSet);
-      }
+      return SingleEvent.create(resolve => {
+        let untilRemovedListenerSet = this._untilRemovedListeners.get(value);
+        if (!untilRemovedListenerSet) {
+          untilRemovedListenerSet = new Set();
+          this._untilRemovedListeners.set(value, untilRemovedListenerSet);
+        }
 
-      let item = () => {
-        NotificationHelper.notify(undefined, callback);
-      };
-      untilRemovedListenerSet.add(item);
-      return new ActionSubscription(() => {
-        this._untilRemovedListeners?.get(value)?.delete(item);
+        untilRemovedListenerSet.add(resolve);
+        return () => {
+          this._untilRemovedListenersVar?.get(value)?.delete(resolve);
+        };
       });
     }
   }

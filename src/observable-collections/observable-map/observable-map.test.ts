@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import { Attachable } from '../../attachable/attachable';
 import { ObservableMap } from './observable-map';
 
 describe('ObservableMap', () => {
@@ -37,9 +38,12 @@ describe('ObservableMap', () => {
     let set = new ObservableMap<number, string>();
     set.set(1, 'test');
     let called = false;
-    set.waitUntilAdded(1, () => {
-      called = true;
-    });
+    set
+      .waitUntilAdded(1)
+      .tap(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -47,7 +51,8 @@ describe('ObservableMap', () => {
     let set = new ObservableMap<number, string>();
     let called = false;
     set
-      .waitUntilAdded(1, () => {
+      .waitUntilAdded(1)
+      .tap(() => {
         called = true;
       })
       .attachToRoot();
@@ -58,9 +63,12 @@ describe('ObservableMap', () => {
   test('should return waitUntilRemovedSync if item is not set', async () => {
     let set = new ObservableMap<number, string>();
     let called = false;
-    set.waitUntilRemoved(1, () => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .tap(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -69,9 +77,12 @@ describe('ObservableMap', () => {
     let called = false;
     set.set(1, 'test');
     set.delete(1);
-    set.waitUntilRemoved(1, () => {
-      called = true;
-    });
+    set
+      .waitUntilRemoved(1)
+      .tap(() => {
+        called = true;
+      })
+      .attachToRoot();
     expect(called).toEqual(true);
   });
 
@@ -87,5 +98,74 @@ describe('ObservableMap', () => {
     let map = set.convertToMap();
     map.set(2, 'test2');
     expect(set.convertToMap()).toEqual(new Map([[1, 'test']]));
+  });
+
+  describe('Race conditions', () => {
+    test(`subscription destroying another subscription's parent`, () => {
+      let set = new ObservableMap<number, string>();
+
+      class Foo extends Attachable {
+        foo = { x: 1 };
+
+        destroy(): void {
+          super.destroy();
+          this.foo = undefined as any;
+        }
+      }
+
+      let parent = new Foo().attachToRoot();
+
+      let triggered1 = false;
+      let triggered2 = false;
+
+      set
+        .waitUntilAdded(1)
+        .tap(() => {
+          triggered1 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      set
+        .waitUntilAdded(1)
+        .tap(() => {
+          triggered2 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      expect(() => set.set(1, 'a')).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
+    });
+
+    test(`new subscriber should not be directly executed if it is created by another subscriber`, () => {
+      let set = new ObservableMap<number, string>();
+
+      let triggered1 = false;
+      let triggered2 = false;
+
+      set
+        .waitUntilAdded(1)
+        .tap(() => {
+          triggered1 = true;
+          set.delete(1);
+          set
+            .waitUntilAdded(1) // set does not have 1 at this moment
+            .tap(() => {
+              triggered2 = true;
+            })
+            .attachToRoot();
+        })
+        .attachToRoot();
+
+      expect(() => set.set(1, 'a')).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
+    });
   });
 });

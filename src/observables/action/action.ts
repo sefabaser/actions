@@ -1,30 +1,36 @@
-import { Comparator, JsonHelper } from 'helpers-lib';
+import { JsonHelper } from 'helpers-lib';
 
 import { ActionLibDefaults } from '../../config';
-import { NotificationHelper } from '../../helpers/notification.helper';
 import { Notifier } from '../_notifier/notifier';
 
 export interface ActionOptions {
   readonly clone: boolean;
 }
 
-export class Action<T> extends Notifier<T> {
-  private options: ActionOptions;
-
-  constructor(options?: Partial<ActionOptions>) {
+export class Action<T = void> extends Notifier<T> {
+  constructor(partialOptions?: Partial<ActionOptions>) {
     super();
-    this.options = {
+    let options = {
       clone: ActionLibDefaults.action.cloneBeforeNotification,
-      ...options
+      ...partialOptions
     };
+
+    this.trigger = options.clone ? this._cloneTrigger.bind(this) : this._noCloneTrigger.bind(this);
   }
 
-  trigger(data: T): this {
-    if (this.options.clone && Comparator.isObject(data)) {
-      data = JsonHelper.deepCopy(data);
-    }
+  // Dummy function, will be replaced with real one on constructor
+  trigger(_: T): this {
+    return this;
+  }
 
-    this.notificationHandler.forEach(callback => NotificationHelper.notify(data, callback));
+  private _noCloneTrigger(data: T): this {
+    this._triggerAll(data);
+    return this;
+  }
+
+  private _cloneTrigger(data: T): this {
+    data = JsonHelper.deepCopy(data);
+    this._triggerAll(data);
     return this;
   }
 }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 
-import { ActionLibUnitTestHelper } from '../..';
+import { ActionLib } from '../../utilities/action-lib';
 import { Variable } from './variable';
 
 describe(`Variable`, () => {
@@ -11,7 +11,7 @@ describe(`Variable`, () => {
 
   describe(`Basics`, () => {
     beforeEach(() => {
-      ActionLibUnitTestHelper.hardReset();
+      ActionLib.hardReset();
     });
 
     test('should be definable', () => {
@@ -90,49 +90,17 @@ describe(`Variable`, () => {
       variable.set(data);
 
       variable
-        .subscribe(
-          value => {
-            triggeredWith = value;
-          },
-          { listenOnlyNewChanges: true }
-        )
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(undefined);
-    });
-
-    test('wait until', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable
-        .waitUntil(2, value => {
+        .skip(1)
+        .tap(value => {
           triggeredWith = value;
         })
         .attachToRoot();
 
       expect(triggeredWith).toEqual(undefined);
-      variable.value = 2;
-      expect(triggeredWith).toEqual(2);
-    });
-
-    test('wait until next', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable
-        .waitUntilNext(value => {
-          triggeredWith = value;
-        })
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(undefined);
-      variable.value = 2;
-      expect(triggeredWith).toEqual(2);
     });
   });
 
-  describe(`Current Value`, () => {
+  describe(`Getting Value`, () => {
     test('initial value', () => {
       let variable = new Variable<number>(1);
       expect(variable.value).toEqual(1);
@@ -160,21 +128,10 @@ describe(`Variable`, () => {
 
       expect(heap).toEqual([1, 1, 2, 2]);
     });
+  });
 
-    test('if wait until is equal to current value, it should be triggered', () => {
-      let variable = new Variable<number>(1);
-
-      let triggeredWith: number | undefined;
-      variable
-        .waitUntil(1, value => {
-          triggeredWith = value;
-        })
-        .attachToRoot();
-
-      expect(triggeredWith).toEqual(1);
-    });
-
-    test('notifier subscribe should trigger right away like variable does', () => {
+  describe('Initial Value Subscription', () => {
+    test('notifier subscribe should be triggerred right away', () => {
       let variable = new Variable<number>(1);
 
       let triggeredWith: number | undefined;
@@ -187,12 +144,55 @@ describe(`Variable`, () => {
       expect(triggeredWith).toEqual(1);
     });
 
-    test('notifier wait until should trigger right away like variable does', () => {
+    test('to sequence function should be triggerred right away', () => {
       let variable = new Variable<number>(1);
-
       let triggeredWith: number | undefined;
+
+      variable
+        .toSequence()
+        .tap(value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(1);
+    });
+
+    test('to single event function should be triggerred right away', () => {
+      let variable = new Variable<number>(1);
+      let triggeredWith: number | undefined;
+
+      variable
+        .toSingleEvent()
+        .tap(value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(1);
+    });
+
+    test('notifier to sequence function should be triggerred right away', () => {
+      let variable = new Variable<number>(1);
+      let triggeredWith: number | undefined;
+
       variable.notifier
-        .waitUntil(1, value => {
+        .toSequence()
+        .tap(value => {
+          triggeredWith = value;
+        })
+        .attachToRoot();
+
+      expect(triggeredWith).toEqual(1);
+    });
+
+    test('notifier to single event function should be triggerred right away', () => {
+      let variable = new Variable<number>(1);
+      let triggeredWith: number | undefined;
+
+      variable.notifier
+        .toSingleEvent()
+        .tap(value => {
           triggeredWith = value;
         })
         .attachToRoot();

@@ -1,11 +1,9 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { IAttachable } from '../../attachable/attachable';
-import { LightweightAttachable } from '../../attachable/lightweight-attachable';
+import { Attachable, IAttachment } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
-import { NotificationHelper } from '../../helpers/notification.helper';
-import { NotifierCallbackFunction } from '../_notifier/notification-handler';
-import { Notifier } from '../_notifier/notifier';
+import { CallbackHelper } from '../../helpers/callback.helper';
+import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
 
 export interface ReducerOptions {
   readonly clone: boolean;
@@ -22,15 +20,15 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   readonly type: 'initial' | 'effect' | 'update' | 'destroy';
 }) => ResponseType;
 
-export class ReducerEffectChannel<EffectType, ResponseType> extends LightweightAttachable {
-  private static nextAvailableId = 1;
+export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
+  private static _nextAvailableID = 1;
 
-  private id: number;
-  private reducer: Reducer<EffectType, ResponseType>;
+  private _id: number;
+  private _reducer: Reducer<EffectType, ResponseType>;
 
-  private effectValue: EffectType;
+  private _: EffectType;
   get value(): EffectType {
-    return this.effectValue;
+    return this._;
   }
   set value(value: EffectType) {
     this.update(value);
@@ -39,46 +37,46 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends LightweightA
   constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
     super();
 
-    this.id = ReducerEffectChannel.nextAvailableId++;
-    this.reducer = reducer;
+    this._id = ReducerEffectChannel._nextAvailableID++;
+    this._reducer = reducer;
 
-    let reducerResponse = this.reducer['reduceFunction']({
-      id: this.id,
+    let reducerResponse = this._reducer._reduceFunction({
+      id: this._id,
       current: value,
       type: 'effect'
     });
 
-    this.effectValue = value;
-    this.reducer['broadcast'](reducerResponse);
+    this._ = value;
+    this._reducer._broadcast(reducerResponse);
   }
 
   update(value: EffectType): void {
-    if (!this.destroyed) {
-      let reducerResponse = this.reducer['reduceFunction']({
-        id: this.id,
-        previous: this.effectValue,
+    if (!this._destroyed) {
+      let reducerResponse = this._reducer._reduceFunction({
+        id: this._id,
+        previous: this._,
         current: value,
         type: 'update'
       });
 
-      this.effectValue = value;
-      this.reducer['broadcast'](reducerResponse);
+      this._ = value;
+      this._reducer._broadcast(reducerResponse);
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
     }
   }
 
   destroy(): void {
-    if (!this.destroyed) {
-      let reducerResponse = this.reducer['reduceFunction']({
-        id: this.id,
-        previous: this.effectValue,
+    if (!this._destroyed) {
+      let reducerResponse = this._reducer._reduceFunction({
+        id: this._id,
+        previous: this._,
         type: 'destroy'
       });
 
-      this.reducer['broadcast'](reducerResponse);
+      this._reducer._broadcast(reducerResponse);
 
-      this.reducer['effects'].delete(this);
+      this._reducer._effects.delete(this);
 
       super.destroy();
     }
@@ -160,32 +158,32 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     );
   }
 
-  static createCollector<EffectType>(options: Partial<ReducerOptions> = {}): Reducer<EffectType, EffectType[]> {
-    let collection = new Map<number, EffectType>();
-    return new Reducer<EffectType, EffectType[]>(change => {
+  static createCollector<S>(options: Partial<ReducerOptions> = {}): Reducer<S, S[]> {
+    let collection = new Map<number, S>();
+    return new Reducer<S, S[]>(change => {
       if (change.type === 'destroy') {
         collection.delete(change.id);
       } else if (change.type === 'effect' || change.type === 'update') {
         change.current && collection.set(change.id, change.current);
       }
 
-      let response: EffectType[] = [];
-      collection.forEach(item => {
+      let response: S[] = [];
+      for (let item of collection.values()) {
         response.push(item);
-      });
+      }
       return response;
     }, options);
   }
 
-  static createObjectCreator<ResultType>(options?: {
-    initial?: ResultType;
+  static createObjectCreator<S>(options?: {
+    initial?: S;
     doNotUpdateValueAtEffectCreation?: boolean;
     clone?: boolean;
-  }): Reducer<{ key: string; value: any }, ResultType> {
+  }): Reducer<{ key: string; value: any }, S> {
     let collection: any = (options && options.initial) || {};
     let activeEffects = new Set<string>();
 
-    return new Reducer<{ key: string; value: any }, ResultType>(change => {
+    return new Reducer<{ key: string; value: any }, S>(change => {
       if (change.type === 'destroy') {
         if (change.previous) {
           delete collection[change.previous.key];
@@ -208,34 +206,36 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
         }
       }
 
-      return <ResultType>collection;
+      return <S>collection;
     }, options);
   }
 
   get value(): ResponseType {
-    return this.previousBroadcast;
+    return this._previousBroadcast;
   }
 
   get effectCount(): number {
-    return this.effects.size;
+    return this._effects.size;
   }
 
-  private previousBroadcast: ResponseType;
-  private options: ReducerOptions;
+  private _previousBroadcast: ResponseType;
+  private _options: ReducerOptions;
 
-  private effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
-  private reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
+  /** @internal */
+  _effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
+  /** @internal */
+  _reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
   constructor(reduceFunction: ReducerReduceFunction<EffectType, ResponseType>, partialOptions: Partial<ReducerOptions> = {}) {
     super();
-    this.options = {
+    this._options = {
       clone: ActionLibDefaults.reducer.cloneBeforeNotification,
       ...partialOptions
     };
 
-    this.reduceFunction = reduceFunction;
+    this._reduceFunction = reduceFunction;
 
-    let reducerResponse = this.reduceFunction({
+    let reducerResponse = this._reduceFunction({
       id: 0,
       type: 'initial'
     });
@@ -243,39 +243,37 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     if (Comparator.isObject(reducerResponse)) {
       reducerResponse = JsonHelper.deepCopy(reducerResponse);
     }
-    this.previousBroadcast = reducerResponse;
+    this._previousBroadcast = reducerResponse;
   }
 
   effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
     let effect = new ReducerEffectChannel<EffectType, ResponseType>(<any>this, value);
-    this.effects.add(effect);
+    this._effects.add(effect);
     return effect;
   }
 
-  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachable {
+  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
     if (!options?.listenOnlyNewChanges) {
-      NotificationHelper.notify(this.previousBroadcast, callback);
+      CallbackHelper._triggerCallback(this._previousBroadcast, callback);
     }
     return super.subscribe(callback);
   }
 
-  waitUntil(data: ResponseType, callback: NotifierCallbackFunction<ResponseType>): IAttachable {
-    if (Comparator.isEqual(this.previousBroadcast, data)) {
-      NotificationHelper.notify(data, callback);
-      return LightweightAttachable.getDestroyed();
-    } else {
-      return super.waitUntil(data, callback);
-    }
-  }
-
-  private broadcast(value: ResponseType): void {
-    if (!Comparator.isEqual(this.previousBroadcast, value)) {
-      if (this.options.clone && Comparator.isObject(value)) {
+  /** @internal */
+  _broadcast(value: ResponseType): void {
+    if (!Comparator.isEqual(this._previousBroadcast, value)) {
+      if (this._options.clone && Comparator.isObject(value)) {
         value = JsonHelper.deepCopy(value);
       }
 
-      this.notificationHandler.forEach(callback => NotificationHelper.notify(value, callback));
-      this.previousBroadcast = value;
+      this._triggerAll(value);
+      this._previousBroadcast = value;
     }
+  }
+
+  /** @internal */
+  _subscribeSingle(callback: (data: ResponseType) => void): IAttachment {
+    CallbackHelper._triggerCallback(this._previousBroadcast, callback);
+    return Attachable.getDestroyed();
   }
 }

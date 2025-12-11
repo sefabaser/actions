@@ -1,6 +1,6 @@
 /** @internal */
-export class NotificationHelper {
-  static notify<T>(data: T, callback: (data: T) => void): void {
+export class CallbackHelper {
+  static _triggerCallback<T>(data: T, callback: (returnData: T) => void): void {
     try {
       callback(data);
     } catch (e) {

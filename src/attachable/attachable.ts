@@ -1,22 +1,25 @@
-import { NotificationHelper } from '../helpers/notification.helper';
-import { Action } from '../observables/action/action';
 import { AttachmentTargetStore } from './helpers/attachment-target.store';
-import { ClassId } from './helpers/class-id';
-import { LightweightAttachable } from './lightweight-attachable';
 
-export interface IAttachable {
+export interface IAttachment {
   destroyed: boolean;
+  attachIsCalled: boolean;
   destroy(): void;
-  attach(parent: Attachable | string): this;
+  attach(parent: Attachable): this;
+  attachByID(parent: number): this;
   attachToRoot(): this;
 }
 
-export class Attachable extends ClassId {
-  static validateId(this: typeof Attachable, id: string): boolean {
-    return AttachmentTargetStore.validateIdForClass(id, this);
+export class Attachable implements IAttachment {
+  /**
+   * @returns Attachable that is already destroyed
+   */
+  static getDestroyed(): IAttachment {
+    let destroyedSubscription = new Attachable();
+    destroyedSubscription._destroyed = true;
+    return destroyedSubscription;
   }
 
-  readonly id: string = AttachmentTargetStore.registerAttachmentTarget(this);
+  private _attachments: Set<IAttachment> | undefined;
 
   private _attachedParent: Attachable | undefined;
   /** @internal */
@@ -24,63 +27,83 @@ export class Attachable extends ClassId {
     return this._attachedParent;
   }
 
-  private _attachIsCalled = false;
-  private attachments: IAttachable[] = [];
-
-  private _destroyed = false;
+  /** @internal */
+  _destroyed = false;
   get destroyed(): boolean {
     return this._destroyed;
   }
 
-  private _onDestroy: Action<void> | undefined;
-  onDestroy(callback: () => void): IAttachable {
-    if (this._destroyed) {
-      NotificationHelper.notify(undefined, callback);
-      return LightweightAttachable.getDestroyed();
-    } else {
-      if (!this._onDestroy) {
-        this._onDestroy = new Action<void>();
-      }
-      return this._onDestroy.subscribe(callback);
-    }
+  /** @internal */
+  _attachIsCalled = false;
+  get attachIsCalled(): boolean {
+    return this._attachIsCalled;
   }
 
+  /** @internal */
+  protected _destroyIfNotAttached?: true;
+
   constructor() {
-    super();
-    setTimeout(() => {
-      if (!this._destroyed && !this._attachIsCalled) {
-        throw new Error(`Attachable: The object is not attached to anything!`);
+    // NOTE: this can be removed in release mode, only if "destroy if not attached" can be done differently
+    Promise.resolve().then(() => {
+      if (!this._attachIsCalled && !this._destroyed) {
+        if (this._destroyIfNotAttached) {
+          this.destroy();
+        } else {
+          throw new Error(`Attachable: The object is not attached to anything!`);
+        }
+      }
+
+      let currentParent: Attachable | undefined = this.attachedParent;
+      while (currentParent) {
+        if (currentParent === this) {
+          throw new Error(`Circular attachment detected!`);
+        }
+        currentParent = currentParent.attachedParent;
       }
     });
   }
 
   destroy(): void {
     if (!this._destroyed) {
-      this._attachedParent?.removeAttachment(this);
-      this._attachedParent = undefined;
-      AttachmentTargetStore.unregisterAttachmentTarget(this);
+      if (this._attachedParent) {
+        this._attachedParent._removeAttachment(this);
+        this._attachedParent = undefined;
+      }
 
-      let onDestroyListeners = this._onDestroy?.listeners ?? [];
+      let attachedEntities = this._attachments;
+      this._attachments = undefined;
+      if (attachedEntities) {
+        for (let entity of attachedEntities) {
+          entity.destroy();
+        }
+      }
 
-      let attachedEntities = [...this.attachments];
-      attachedEntities.forEach(item => item.destroy());
-      this.attachments = [];
       this._destroyed = true;
-      this._onDestroy = undefined;
-
-      onDestroyListeners.forEach(listener => NotificationHelper.notify(undefined, listener));
     }
   }
 
-  attach(parent: Attachable | string): this {
+  attach(parent: Attachable): this {
     if (this._attachIsCalled) {
       throw new Error(`Attachable: The object is already attached to something!`);
     }
 
     this._attachIsCalled = true;
     if (!this._destroyed) {
-      let parentEntity = LightweightAttachable.attach(parent, this);
-      this._attachedParent = parentEntity;
+      this._attachedParent = parent;
+      this._attachedParent._setAttachment(this);
+    }
+    return this;
+  }
+
+  attachByID(id: number): this {
+    if (this._attachIsCalled) {
+      throw new Error(`Attachable: The object is already attached to something!`);
+    }
+
+    this._attachIsCalled = true;
+    if (!this._destroyed) {
+      this._attachedParent = AttachmentTargetStore._findAttachmentTarget(id);
+      this._attachedParent._setAttachment(this);
     }
     return this;
   }
@@ -95,19 +118,19 @@ export class Attachable extends ClassId {
   }
 
   /** @internal */
-  setAttachment(child: IAttachable): void {
-    if (this._destroyed) {
+  _setAttachment(child: IAttachment): void {
+    if (this.destroyed) {
       child.destroy();
     } else {
-      this.attachments.push(child);
+      if (!this._attachments) {
+        this._attachments = new Set();
+      }
+      this._attachments.add(child);
     }
   }
 
   /** @internal */
-  removeAttachment(child: IAttachable): void {
-    let index = this.attachments.indexOf(child);
-    if (index >= 0) {
-      this.attachments.splice(index, 1);
-    }
+  _removeAttachment(child: IAttachment): void {
+    this._attachments?.delete(child);
   }
 }

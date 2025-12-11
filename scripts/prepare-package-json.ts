@@ -1,15 +1,21 @@
-let fs = require('fs');
+import fs from 'fs';
+import path from 'path';
 
 let cwd = process.cwd();
-let packageJson = require(`${cwd}/package.json`);
+let packageJsonPath = path.join(cwd, 'package.json');
+let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 
 let newPackageJson = {
   ...packageJson,
   main: packageJson.publishConfig?.main ?? packageJson.main,
   types: packageJson.publishConfig?.types ?? packageJson.types,
-  module: packageJson.publishConfig?.module ?? packageJson.module
+  module: packageJson.publishConfig?.module ?? packageJson.module,
+  exports: packageJson.publishConfig?.exports ?? packageJson.exports,
 };
 
 try {
-  fs.writeFileSync(`${cwd}/package.json`, JSON.stringify(newPackageJson, undefined, 2));
-} catch (e) {}
+  fs.writeFileSync(packageJsonPath, JSON.stringify(newPackageJson, undefined, 2));
+} catch (e) {
+  console.error('Failed to write package.json:', e);
+}
+

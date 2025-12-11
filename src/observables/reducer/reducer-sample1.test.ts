@@ -79,7 +79,5 @@ describe(`Reducer Sample Scenario`, () => {
     // after both calls are completed
     expect(loadingIndicator.screenIsBlocked).toBe(false);
     expect(loadingIndicator.triggerCount).toBe(3);
-
-    vi.useRealTimers();
   });
 });

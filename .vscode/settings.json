@@ -35,5 +35,7 @@
     "**/.git/subtree-cache/**": true,
     "**/dist/**": true,
     "**/build/**": true
-  }
+  },
+  "vitest.cliArguments": "--env.MANUAL=1",
+  "scm.diffDecorations": "none",
 }

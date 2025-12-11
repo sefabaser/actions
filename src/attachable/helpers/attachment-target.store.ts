@@ -1,58 +1,41 @@
-import { Comparator } from 'helpers-lib';
-
-import { Attachable } from '../attachable';
+import { IDAttachable } from '../id-attachable';
 
 /** @internal */
 export class AttachmentTargetStore {
-  private static nextAvailableIds = new WeakMap<typeof Attachable, number>();
+  private static _nextAvailableID = 1;
+  private static _storage = new Map<number, { instance: IDAttachable; class: typeof IDAttachable }>();
 
-  private static idToAttachmentTarget = new Map<string, Attachable>();
-  private static idToAttachmentTargetClass = new Map<string, typeof Attachable>();
-
-  static findAttachmentTarget(attachableCandidate: Attachable | string): Attachable {
-    let attachmentTarget: Attachable;
-    if (Comparator.isString(attachableCandidate)) {
-      let attachableId: string = attachableCandidate as string;
-      attachmentTarget = this.idToAttachmentTarget.get(attachableId) as Attachable;
-      if (!attachmentTarget) {
-        throw new Error(`Attachable: attachable not found by id! id: ${attachableId}`);
-      }
-    } else {
-      attachmentTarget = attachableCandidate as Attachable;
+  static _findAttachmentTarget(attachableCandidate: number): IDAttachable {
+    let item = this._storage.get(attachableCandidate);
+    if (!item) {
+      throw new Error(`Attachable: attachable not found by id! id: ${attachableCandidate}`);
     }
-    return attachmentTarget;
+    return item.instance;
   }
 
-  static registerAttachmentTarget(attachmentTarget: Attachable): string {
-    let Class = attachmentTarget.constructor as typeof Attachable;
+  static _registerIDAttachable(attachmentTarget: IDAttachable): number {
+    let Class = attachmentTarget.constructor as typeof IDAttachable;
 
-    let numberPartOfTheId = this.nextAvailableIds.get(Class) || 1;
-    this.nextAvailableIds.set(Class, numberPartOfTheId + 1);
+    let id = this._nextAvailableID++;
 
-    let classId = Class.id;
-    let id = `${classId}:${numberPartOfTheId}`;
-
-    this.idToAttachmentTarget.set(id, attachmentTarget);
-    this.idToAttachmentTargetClass.set(id, Class);
+    this._storage.set(id, { instance: attachmentTarget, class: Class });
     return id;
   }
 
-  static unregisterAttachmentTarget(attachmentTarget: Attachable): void {
-    this.idToAttachmentTarget.delete(attachmentTarget.id);
-    this.idToAttachmentTargetClass.delete(attachmentTarget.id);
+  static _unregisterIDAttachable(attachmentTarget: IDAttachable): void {
+    this._storage.delete(attachmentTarget.id);
   }
 
-  static validateIdForClass(id: string, expectedConstructor: typeof Attachable): boolean {
-    let actualConstructor = this.idToAttachmentTargetClass.get(id);
-    return actualConstructor === expectedConstructor;
+  static _validateIDForClass(id: number, expectedConstructor: typeof IDAttachable): boolean {
+    let item = this._storage.get(id);
+    return item?.class === expectedConstructor;
   }
 
   /**
    * Required to be called before or after each unit test to reset the store
    */
-  static hardReset(): void {
-    this.nextAvailableIds = new WeakMap<typeof Attachable, number>();
-    this.idToAttachmentTarget.clear();
-    this.idToAttachmentTargetClass.clear();
+  static _hardReset(): void {
+    this._nextAvailableID = 1;
+    this._storage.clear();
   }
 }

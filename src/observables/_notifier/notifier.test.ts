@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { NotificationHelper } from '../../helpers/notification.helper';
+import { Attachable } from '../../attachable/attachable';
+import { CallbackHelper } from '../../helpers/callback.helper';
+import { Sequence } from '../../stream/sequence/sequence';
+import { SingleEvent } from '../../stream/single-event/single-event';
 import { Notifier } from './notifier';
 
 class SampleModel {
@@ -9,7 +12,7 @@ class SampleModel {
 
 describe('Notifier', () => {
   let triggerNotifierWith = <T>(data: T, notifier: Notifier<T>) => {
-    notifier.listeners.forEach(listener => NotificationHelper.notify(data, listener));
+    notifier['_listenersMap'].forEach(listener => CallbackHelper._triggerCallback(data, listener));
   };
 
   describe('Basics', () => {
@@ -25,16 +28,16 @@ describe('Notifier', () => {
 
     test('subscribable', () => {
       notifier.subscribe(_ => {}).attachToRoot();
-      expect(notifier['notificationHandler']['listenersMap'].size).toEqual(1);
+      expect(notifier['_listenersMap'].size).toEqual(1);
     });
 
     test('subscription destroyable', () => {
       let subscription = notifier.subscribe(_ => {}).attachToRoot();
       subscription.destroy();
-      expect(notifier['notificationHandler']['listenersMap'].size).toEqual(0);
+      expect(notifier['_listenersMap'].size).toEqual(0);
     });
 
-    test('loop through listeners', () => {
+    test('trigger listeners', () => {
       let listener1TriggeredWith: any;
       let listener2TriggeredWith: any;
 
@@ -108,185 +111,33 @@ describe('Notifier', () => {
 
       consoleErrorSpy.mockRestore();
     });
-  });
 
-  describe('Wait Until', () => {
-    let notifier: Notifier<SampleModel | undefined>;
-
-    beforeEach(() => {
-      notifier = new Notifier<SampleModel | undefined>();
-    });
-
-    test('wait until next', () => {
-      let resolvedWith: SampleModel | undefined;
-
-      notifier
-        .waitUntilNext(state => {
-          resolvedWith = state;
-        })
-        .attachToRoot();
-
-      expect(resolvedWith).toBeUndefined();
-      triggerNotifierWith({ testData: 'sample' }, notifier);
-      expect(resolvedWith).toEqual({ testData: 'sample' });
-    });
-
-    test('wait until spesific data', () => {
-      let resolvedWith: SampleModel | undefined;
-
-      notifier
-        .waitUntil({ testData: 'expected' }, state => {
-          resolvedWith = state;
-        })
-        .attachToRoot();
-
-      expect(resolvedWith).toBeUndefined();
-      triggerNotifierWith({ testData: 'sample' }, notifier);
-      expect(resolvedWith).toBeUndefined();
-      triggerNotifierWith({ testData: 'expected' }, notifier);
-      expect(resolvedWith).toEqual({ testData: 'expected' });
-    });
-
-    test('wait until undefined', () => {
-      let resolvedWith: SampleModel | undefined;
-      let resolved = false;
-
-      notifier
-        .waitUntil(undefined, state => {
-          resolvedWith = state;
-          resolved = true;
-        })
-        .attachToRoot();
-
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-
-      triggerNotifierWith({ testData: 'sample' }, notifier);
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-
-      triggerNotifierWith(undefined, notifier);
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(true);
-    });
-
-    test('wait until next not triggered if subscription is destroyed', () => {
-      let resolvedWith: SampleModel | undefined;
-      let resolved = false;
+    test('read single', () => {
+      let listenerTriggeredWith: any;
 
       let subscription = notifier
-        .waitUntilNext(state => {
-          resolvedWith = state;
-          resolved = true;
+        ._subscribeSingle(message => {
+          listenerTriggeredWith = message;
         })
         .attachToRoot();
 
-      subscription.destroy();
+      expect(subscription.destroyed).toBeFalsy();
+      expect(listenerTriggeredWith).toEqual(undefined);
 
       triggerNotifierWith({ testData: 'sample' }, notifier);
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-    });
-
-    test('wait until spesific data not triggered if subscription is destroyed', () => {
-      let resolvedWith: SampleModel | undefined;
-      let resolved = false;
-
-      let subscription = notifier
-        .waitUntil(undefined, state => {
-          resolvedWith = state;
-          resolved = true;
-        })
-        .attachToRoot();
-
-      subscription.destroy();
-      notifier['notificationHandler']['forEach'](listener => listener(undefined));
-
-      expect(resolvedWith).toBeUndefined();
-      expect(resolved).toBe(false);
-    });
-
-    test('wait until next auto-unsubscribes after first trigger', () => {
-      let callCount = 0;
-
-      notifier
-        .waitUntilNext(_ => {
-          callCount++;
-        })
-        .attachToRoot();
-
-      expect(notifier.listenerCount).toBe(1);
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'first' }));
-      expect(callCount).toBe(1);
-      expect(notifier.listenerCount).toBe(0);
-
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'second' }));
-      expect(callCount).toBe(1);
-    });
-
-    test('wait until auto-unsubscribes after matching data', () => {
-      let callCount = 0;
-
-      notifier
-        .waitUntil({ testData: 'expected' }, _ => {
-          callCount++;
-        })
-        .attachToRoot();
-
-      expect(notifier.listenerCount).toBe(1);
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'wrong' }));
-      expect(callCount).toBe(0);
-      expect(notifier.listenerCount).toBe(1);
-
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'expected' }));
-      expect(callCount).toBe(1);
-      expect(notifier.listenerCount).toBe(0);
-
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'expected' }));
-      expect(callCount).toBe(1);
-    });
-
-    test('wait until next handles callback errors', () => {
-      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      notifier
-        .waitUntilNext(_ => {
-          throw new Error('Test error');
-        })
-        .attachToRoot();
-
-      triggerNotifierWith({ testData: 'sample' }, notifier);
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', expect.any(Error));
-
-      consoleErrorSpy.mockRestore();
-    });
-
-    test('wait until handles callback errors', () => {
-      let consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      notifier
-        .waitUntil({ testData: 'expected' }, _ => {
-          throw new Error('Test error');
-        })
-        .attachToRoot();
-
-      notifier['notificationHandler']['forEach'](listener => listener({ testData: 'expected' }));
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Notifier callback function error: ', expect.any(Error));
-
-      consoleErrorSpy.mockRestore();
+      expect(subscription.destroyed).toBeTruthy();
+      expect(listenerTriggeredWith).toEqual({ testData: 'sample' });
     });
   });
 
-  describe('Notifier getter', () => {
+  describe('Notifier Getter', () => {
     test('returns new notifier with same handler', () => {
       let notifier = new Notifier<SampleModel>();
       let notifier2 = notifier.notifier;
 
       expect(notifier2).toBeInstanceOf(Notifier);
       expect(notifier2).not.toBe(notifier);
-      expect(notifier2['notificationHandler']).toBe(notifier['notificationHandler']);
+      expect(notifier2['_listenersMap']).toBe(notifier['_listenersMap']);
     });
 
     test('subscriptions are shared between notifiers', () => {
@@ -336,6 +187,259 @@ describe('Notifier', () => {
       triggerNotifierWith({ testData: 'sample' }, notifier);
 
       expect(called).toBe(false);
+    });
+  });
+
+  describe('For Each', () => {
+    let notifier: Notifier<string>;
+
+    beforeEach(() => {
+      notifier = new Notifier<string>();
+    });
+
+    test('iterate without listeners', () =>
+      new Promise<void>(done => {
+        notifier._triggerAll('');
+        done();
+      }));
+
+    test('iterate through listeners', () => {
+      let count = 0;
+
+      notifier
+        .subscribe(() => {
+          count++;
+        })
+        .attachToRoot();
+      notifier
+        .subscribe(() => {
+          count++;
+        })
+        .attachToRoot();
+
+      notifier._triggerAll('');
+
+      expect(count).toEqual(2);
+    });
+
+    test('notify listeners', () => {
+      let heap: string[] = [];
+
+      notifier.subscribe(message => heap.push(message)).attachToRoot();
+      notifier.subscribe(message => heap.push(message)).attachToRoot();
+
+      notifier._triggerAll('message');
+
+      expect(heap).toEqual(['message', 'message']);
+    });
+
+    test('notifying listeners should follow the subscription order', () => {
+      let heap: string[] = [];
+
+      notifier.subscribe(message => heap.push('1' + message)).attachToRoot();
+      let secondSubscription = notifier.subscribe(message => heap.push('2' + message)).attachToRoot();
+      notifier.subscribe(message => heap.push('3' + message)).attachToRoot();
+
+      secondSubscription.destroy();
+      notifier._triggerAll('message');
+
+      expect(heap).toEqual(['1message', '3message']);
+    });
+  });
+
+  describe('Attached Parent', () => {
+    test('should destroy the subscription when it is destroyed', () => {
+      let notifier = new Notifier<string>();
+      let parent = new Attachable().attachToRoot();
+      let subscription = notifier.subscribe(_ => {}).attach(parent);
+      expect(subscription.destroyed).toEqual(false);
+      parent.destroy();
+      expect(subscription.destroyed).toEqual(true);
+    });
+  });
+
+  describe('Clear', () => {
+    test('listener count', () => {
+      let notifier = new Notifier<SampleModel>();
+
+      expect(notifier.listenerCount).toBe(0);
+
+      let sub1 = notifier.subscribe(_ => {}).attachToRoot();
+      expect(notifier.listenerCount).toBe(1);
+
+      notifier.subscribe(_ => {}).attachToRoot();
+      expect(notifier.listenerCount).toBe(2);
+
+      sub1.destroy();
+      expect(notifier.listenerCount).toBe(1);
+
+      notifier.clear();
+      expect(notifier.listenerCount).toBe(0);
+    });
+  });
+
+  describe('To Sequence', () => {
+    test('convert to sequence', () => {
+      let notifier = new Notifier<string>();
+      let sequence = notifier.toSequence().attachToRoot();
+      expect(sequence).toBeInstanceOf(Sequence);
+    });
+
+    test('triggering notifier should trigger sequence', () => {
+      let notifier = new Notifier<void>();
+
+      let triggered = false;
+      notifier
+        .toSequence()
+        .tap(() => {})
+        .tap(() => (triggered = true))
+        .attachToRoot();
+
+      notifier._triggerAll();
+      expect(triggered).toEqual(true);
+    });
+
+    test('destroying sequence should remove the listener', () => {
+      let notifier = new Notifier<void>();
+      let sequence = notifier.toSequence().attachToRoot();
+      expect(notifier.listenerCount).toEqual(1);
+      sequence.destroy();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+  });
+
+  describe('To Single Event', () => {
+    test('convert to single event', () => {
+      let notifier = new Notifier<string>();
+      let singleEvent = notifier.toSingleEvent().attachToRoot();
+      expect(singleEvent).toBeInstanceOf(SingleEvent);
+    });
+
+    test('triggering notifier should trigger single event', () => {
+      let notifier = new Notifier<void>();
+
+      let triggered = false;
+      notifier
+        .toSingleEvent()
+        .tap(() => {})
+        .tap(() => (triggered = true))
+        .attachToRoot();
+
+      notifier._triggerAll();
+      expect(triggered).toEqual(true);
+    });
+
+    test('destroying single event should remove the listener', () => {
+      let notifier = new Notifier<void>();
+      let singleEvent = notifier.toSingleEvent().attachToRoot();
+      expect(notifier.listenerCount).toEqual(1);
+      singleEvent.destroy();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+
+    test('the completion of the single event should remove the listener', () => {
+      let notifier = new Notifier<void>();
+      notifier.toSingleEvent().attachToRoot();
+      expect(notifier.listenerCount).toEqual(1);
+      notifier._triggerAll();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+  });
+
+  describe('Create From Sqeuence', () => {
+    test('setup', () => {
+      let sequence = Sequence.create<string>(() => {});
+      let notifier = Notifier.fromSequence(sequence).attachToRoot();
+      expect(notifier.listenerCount).toEqual(0);
+    });
+
+    test('converting notifier before attaching should throw error', () => {
+      vi.useFakeTimers();
+      expect(() => {
+        let sequence = Sequence.create<string>(() => {}).attachToRoot();
+        Notifier.fromSequence(sequence);
+
+        vi.runAllTimers();
+      }).toThrow('Attached sequences cannot be converted to notifier!');
+    });
+
+    test('converted notifier can be subscribed by many', () => {
+      let sequence = Sequence.create<string>(resolve => resolve('a'));
+      let notifier = Notifier.fromSequence(sequence).attachToRoot();
+      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
+      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
+      expect(notifier.listenerCount).toEqual(2);
+    });
+
+    test('destroyed attached parent of the sequence, should destroy subscriptions', () => {
+      let externalNotifier = new Notifier<string>();
+
+      let parent = new Attachable().attachToRoot();
+      let sequence = Sequence.create(resolve => resolve()).asyncMapOrdered(() => externalNotifier);
+      Notifier.fromSequence(sequence).attach(parent);
+
+      expect(externalNotifier.listenerCount).toEqual(1);
+      parent.destroy();
+      expect(externalNotifier.listenerCount).toEqual(0);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test(`Race condition, sequences destroying another sequences' parent`, () => {
+      let notifier = new Notifier();
+
+      class Foo extends Attachable {
+        foo = { x: 1 };
+
+        destroy(): void {
+          super.destroy();
+          this.foo = undefined as any;
+        }
+      }
+
+      let parent = new Foo().attachToRoot();
+      let triggered1 = false;
+      let triggered2 = false;
+
+      notifier
+        .subscribe(() => {
+          triggered1 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      notifier
+        .subscribe(() => {
+          triggered2 = true;
+          if (parent.foo.x) {
+            parent.destroy();
+          }
+        })
+        .attach(parent);
+
+      expect(() => notifier._triggerAll()).not.throw();
+      expect(triggered1).toBeTruthy();
+      expect(triggered2).toBeFalsy();
+    });
+
+    test('One subscription that is added by another subscription on trigger, should not be called right away', () => {
+      let notifier = new Notifier();
+
+      let called = false;
+      notifier
+        .subscribe(() => {
+          notifier
+            .subscribe(() => {
+              called = true;
+            })
+            .attachToRoot();
+        })
+        .attachToRoot();
+
+      notifier._triggerAll();
+      expect(called).toBeFalsy();
     });
   });
 });
