@@ -1,6 +1,6 @@
 {
   "name": "actions-lib",
-  "version": "3.0.0-rc2",
+  "version": "3.0.0",
   "description": "Typescript Helpers Library",
   "main": "src/index.ts",
   "publishConfig": {
@@ -42,7 +42,7 @@
     "postpack": "mv package.json.bak package.json"
   },
   "peerDependencies": {
-    "helpers-lib": "^1.14.0"
+    "helpers-lib": "^2.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

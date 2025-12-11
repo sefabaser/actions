@@ -16,7 +16,7 @@ export default defineConfig({
     options.charset = 'utf8';
     options.mangleProps = /^_/;
     options.mangleCache = mangleCache;
-    options.mangleQuoted = true; 
+    options.mangleQuoted = false; 
     options.keepNames = false;
     options.drop = [];
     options.pure = [];

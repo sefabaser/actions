@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { ManglePrefix } from './config';
 
 const srcDir = './src';
 const outputFile = './mangle-cache.json';
@@ -39,7 +40,7 @@ props.forEach((prop, index) => {
     name = String.fromCharCode(97 + (i % 26)) + name;
     i = Math.floor(i / 26) - 1;
   } while (i >= 0);
-  cache[prop] = '₺' + name;
+  cache[prop] = ManglePrefix + name;
 });
 
 fs.writeFileSync(outputFile, JSON.stringify(cache, undefined, 2));
