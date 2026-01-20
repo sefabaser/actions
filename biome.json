@@ -83,7 +83,8 @@
           }
         },
         "useShorthandFunctionType": "error",
-        "useUnifiedTypeSignatures": "error"
+        "useUnifiedTypeSignatures": "error",
+        "useDefaultSwitchClause": "error"
       },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",
