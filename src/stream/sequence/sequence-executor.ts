@@ -2,7 +2,7 @@ import { Attachable } from '../../attachable/attachable';
 import { SingleEventExecutor } from '../single-event/single-event-executor';
 
 type SequencePipelineDestructor = (finalContext?: ISequenceLinkContext) => void;
-type SequencePipelineIterator<A = unknown, B = unknown> = (
+type SequencePipelineIterator<A = any, B = any> = (
   _data: A,
   _context: ISequenceLinkContext,
   _callback: (returnData: B) => void

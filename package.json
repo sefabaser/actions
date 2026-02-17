@@ -37,6 +37,7 @@
     "build": "npx ts-node scripts/generate-mangle-cache.ts && tsup && npx ts-node scripts/remove-private-properties-from-build.ts && npm run restart-vitest",
     "restart-vitest": "touch vitest.config.ts",
     "lint": "biome check . --write --max-diagnostics=1",
+    "type-check": "tsc --noEmit",
     "deploy": "npm run test-full && npm run build && npm publish",
     "prepack": "cp package.json package.json.bak && npx ts-node scripts/prepare-package-json.ts",
     "postpack": "mv package.json.bak package.json"

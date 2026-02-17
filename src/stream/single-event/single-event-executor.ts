@@ -1,7 +1,7 @@
 import { Attachable } from '../../attachable/attachable';
 import { SequenceExecutor } from '../sequence/sequence-executor';
 
-type SingleEventPipelineIterator<A = unknown, B = unknown> = (
+type SingleEventPipelineIterator<A = any, B = any> = (
   _data: A,
   _context: SingleEventContext,
   _callback: (returnData: B) => void

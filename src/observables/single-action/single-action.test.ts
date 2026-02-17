@@ -162,7 +162,7 @@ describe(`SingleAction`, () => {
       expect(listenerTriggered).toBeFalsy();
     });
 
-    test('should trigger listeners instantly if resolved', () => {
+    test('should trigger listeners instantly when resolved', () => {
       let listenerTriggered = false;
 
       action.notifier
@@ -172,6 +172,20 @@ describe(`SingleAction`, () => {
         .attachToRoot();
 
       action.resolve({ testData: 'sample' });
+
+      expect(listenerTriggered).toBeTruthy();
+    });
+
+    test('should trigger listeners instantly if already resolved', () => {
+      let listenerTriggered = false;
+
+      action.resolve({ testData: 'sample' });
+
+      action.notifier
+        .subscribe(() => {
+          listenerTriggered = true;
+        })
+        .attachToRoot();
 
       expect(listenerTriggered).toBeTruthy();
     });
@@ -202,6 +216,22 @@ describe(`SingleAction`, () => {
 
       voidAction.notifier
         .subscribe(() => {
+          listenerTriggered = true;
+        })
+        .attachToRoot();
+
+      expect(listenerTriggered).toBeTruthy();
+    });
+
+    test('edge case: to notfier -> to single event -> listen after resolve', () => {
+      let listenerTriggered = false;
+
+      let notifier = action.notifier;
+      action.resolve({ testData: 'sample' });
+      let action2 = notifier.toSingleEvent().destroyIfNotAttached();
+
+      action2
+        .tap(() => {
           listenerTriggered = true;
         })
         .attachToRoot();

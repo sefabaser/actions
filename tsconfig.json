@@ -16,7 +16,6 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "strictFunctionTypes": false,
     "allowSyntheticDefaultImports": true,
     "useDefineForClassFields": false,
     "declaration": true,

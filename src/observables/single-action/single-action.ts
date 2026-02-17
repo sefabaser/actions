@@ -28,7 +28,7 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
     if (this._resolved) {
-      CallbackHelper._triggerCallback(this._resolvedValue, callback);
+      CallbackHelper._triggerCallback(this._resolvedValue!, callback);
       return Attachable.getDestroyed();
     } else {
       return super.subscribe(callback);
@@ -52,7 +52,7 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
   /** @internal */
   _subscribeSingle(callback: (data: T) => void): IAttachment {
     if (this._resolved) {
-      CallbackHelper._triggerCallback(this._resolvedValue, callback);
+      CallbackHelper._triggerCallback(this._resolvedValue!, callback);
       return Attachable.getDestroyed();
     } else {
       return super._subscribeSingle(callback);

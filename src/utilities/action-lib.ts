@@ -136,7 +136,7 @@ export class ActionLib {
     }, {} as any);
   }
 
-  private static _validateAndConvertToSet(streams: AsyncOperation<unknown>[]) {
+  private static _validateAndConvertToSet<S>(streams: AsyncOperation<S>[]): Set<AsyncOperation<S>> {
     let streamsSet = new Set(streams);
     if (streamsSet.size !== streams.length) {
       for (let i = 0; i < streams.length; i++) {
@@ -151,7 +151,7 @@ export class ActionLib {
     return streamsSet;
   }
 
-  private static _waitUntilAllSequencesDestroyed(streams: Set<AsyncOperation<unknown>>, callback: () => void): void {
+  private static _waitUntilAllSequencesDestroyed<S>(streams: Set<AsyncOperation<S>>, callback: () => void): void {
     let notifierFound: boolean | undefined;
     for (let stream of streams) {
       if (stream instanceof Notifier) {
