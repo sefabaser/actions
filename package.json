@@ -1,6 +1,6 @@
 {
   "name": "actions-lib",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Typescript Helpers Library",
   "main": "src/index.ts",
   "publishConfig": {
@@ -32,7 +32,7 @@
     "i": "npm cache clean --force && npm install",
     "pretest": "clear",
     "test": "vitest run --mode=quick",
-    "test-full": "vitest run",
+    "test-full": "vitest run && npm run type-check",
     "start": "npm run build && node dist",
     "build": "npx ts-node scripts/generate-mangle-cache.ts && tsup && npx ts-node scripts/remove-private-properties-from-build.ts && npm run restart-vitest",
     "restart-vitest": "touch vitest.config.ts",

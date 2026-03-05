@@ -132,6 +132,10 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   take(count: number): Sequence<T> {
+    if (count === Number.POSITIVE_INFINITY) {
+      return new Sequence<T>(this._executor);
+    }
+
     this._validateBeforeLinking();
 
     let taken = 0;
@@ -152,6 +156,10 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   skip(count: number): Sequence<T> {
+    if (count <= 0) {
+      return new Sequence<T>(this._executor);
+    }
+
     this._validateBeforeLinking();
 
     let skipped = 0;
