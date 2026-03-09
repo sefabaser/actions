@@ -35,6 +35,19 @@ describe('Combine as Sequence', () => {
         expect(heap).toEqual([{}]);
       });
 
+      test('resolved with nullable values', () => {
+        let sequence1 = Sequence.create<string>(resolve => resolve(''));
+        let sequence2 = Sequence.create<number>(resolve => resolve(0));
+        let sequence3 = Sequence.create<boolean>(resolve => resolve(false));
+
+        let heap: unknown[] = [];
+        ActionLib.combine({ a: sequence1, b: sequence2, c: sequence3 })
+          .tap(data => heap.push(data))
+          .attachToRoot();
+
+        expect(heap).toEqual([{ a: '', b: 0, c: false }]);
+      });
+
       test('instantly finalizing sequences', () => {
         let sequence1 = Sequence.create<string>((resolve, context) => {
           resolve('a');

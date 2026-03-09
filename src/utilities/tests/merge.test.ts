@@ -36,6 +36,19 @@ describe('Merge as Sequence', () => {
       expect(heap).toEqual([]);
     });
 
+    test('resolved with nullable values', () => {
+      let singleEvent1 = SingleEvent.create<string>(resolve => resolve(''));
+      let singleEvent2 = SingleEvent.create<number>(resolve => resolve(0));
+      let singleEvent3 = SingleEvent.create<boolean>(resolve => resolve(false));
+
+      let heap: unknown[] = [];
+      ActionLib.merge<string | number | boolean>(singleEvent1, singleEvent2, singleEvent3)
+        .tap(data => heap.push(data))
+        .attachToRoot();
+
+      expect(heap).toEqual(['', 0, false]);
+    });
+
     test('single event merge', async () => {
       let heap: string[] = [];
 
