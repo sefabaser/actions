@@ -238,5 +238,14 @@ describe(`SingleAction`, () => {
 
       expect(listenerTriggered).toBeTruthy();
     });
+
+    test('notifier should share the listeners map', () => {
+      let singleAction = new SingleAction();
+      let singleActionNotifier = singleAction.notifier;
+
+      singleActionNotifier.subscribe(() => {}).attachToRoot();
+
+      expect(singleActionNotifier.listenerCount).toBe(1);
+    });
   });
 });

@@ -19,7 +19,7 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
   get notifier(): Notifier<T> {
     if (!this._notifier) {
       let notifier = new SingleActionNotifier<T>();
-      notifier._listenersMapVar = this._listenersMapVar;
+      notifier._listenersMapVar = this._listenersMap;
       notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
       notifier.subscribe = this.subscribe.bind(this);
       this._notifier = notifier;

@@ -200,4 +200,31 @@ describe(`Variable`, () => {
       expect(triggeredWith).toEqual(1);
     });
   });
+
+  describe('Edge Cases', () => {
+    test('sending notifier of the single action to async pipeline should not break the subscription', () => {
+      let variable = new Variable(1);
+      let variableNotifier = variable.notifier;
+
+      let listenerTriggered = false;
+      variableNotifier
+        ._subscribeSingle(() => {
+          listenerTriggered = true;
+        })
+        .attachToRoot();
+
+      variable.value = 2;
+
+      expect(listenerTriggered).toBeTruthy();
+    });
+
+    test('notifier should share the listeners map', () => {
+      let variable = new Variable(1);
+      let variableNotifier = variable.notifier;
+
+      variableNotifier.subscribe(() => {}).attachToRoot();
+
+      expect(variableNotifier.listenerCount).toBe(1);
+    });
+  });
 });
