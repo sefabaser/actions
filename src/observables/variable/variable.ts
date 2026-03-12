@@ -5,7 +5,8 @@ import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';
-import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
+import { Notifier } from '../_notifier/notifier';
+import { NotifierCallbackFunction } from '../_notifier/notifier-base';
 
 export interface VariableOptions {
   readonly clone: boolean;

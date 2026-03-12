@@ -6,7 +6,9 @@ export { ActionLibDefaults } from './config';
 export { ObservableMapNotifier } from './observable-collections/_notifier/observable-map-notifier';
 export { ObservableMap } from './observable-collections/observable-map/observable-map';
 export { ObservableSet } from './observable-collections/observable-set/observable-set';
-export { ActionSubscription, Notifier, NotifierCallbackFunction } from './observables/_notifier/notifier';
+export { Notifier } from './observables/_notifier/notifier';
+export { ActionSubscription, NotifierBase, NotifierCallbackFunction } from './observables/_notifier/notifier-base';
+export { SingleNotifier } from './observables/_notifier/single-notifier';
 export { Action, ActionOptions } from './observables/action/action';
 export {
   Reducer,

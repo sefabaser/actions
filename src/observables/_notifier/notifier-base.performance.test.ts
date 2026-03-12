@@ -188,32 +188,6 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 3.8064000606536865 ?
   }, 60000);
 
-  test('take 1', async () => {
-    let action = new Action<void>();
-    await UnitTestHelper.testPerformance(
-      () => {
-        let subscription = action
-          .take(1)
-          .map(() => {})
-          .attachToRoot();
-        action.trigger();
-        subscription.destroy();
-      },
-      { sampleCount: 500, repetationCount: 10000 }
-    );
-    // Min: 1.1456000804901123
-    // default attachable: 0.9167001247406006
-    // no attachable: 0.6552000045776367
-    // manual destruction of the sequence: 0.6094000339508057
-    // queueMicrotask: 0.5446999073028564
-    // trigger all change: 0.5025999546051025
-    // read single changes: 0.5067000389099121
-    // 0.3692000061273575
-
-    // After repetationCount: 10000
-    // 7.20110011100769
-  }, 60000);
-
   test('action to sequence read', async () => {
     let action = new Action<void>();
     await UnitTestHelper.testPerformance(

@@ -5,20 +5,21 @@ import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';
-import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
+import { NotifierCallbackFunction } from '../_notifier/notifier-base';
+import { SingleNotifier } from '../_notifier/single-notifier';
 
 export interface SingleActionOptions {
   readonly clone: boolean;
 }
 
-class SingleActionNotifier<T = void> extends Notifier<T> {
+class SingleActionNotifier<T = void> extends SingleNotifier<T> {
   protected _state = {
     resolved: false as boolean,
     resolvedValue: undefined as T | undefined
   };
 
-  // TODO: Should be returning "SingleNotifier" which would only have asyncMap method.
-  get notifier(): Notifier<T> {
+  protected _notifier: SingleNotifier<T> | undefined;
+  get notifier(): SingleNotifier<T> {
     if (!this._notifier) {
       let notifier = new SingleActionNotifier<T>();
       notifier._listenersMapVar = this._listenersMap;
@@ -64,7 +65,7 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
 }
 
 /**
- * Can be triggered only once, multiple triggers will be ignored.
+ * Can be resolved only once, multiple resolutions will be ignored.
  * If resolved, the new subscribers will be notified directly with the resolved value.
  */
 export class SingleAction<T = void> extends SingleActionNotifier<T> {
