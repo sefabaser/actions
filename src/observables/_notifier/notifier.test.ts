@@ -441,5 +441,23 @@ describe('Notifier', () => {
       notifier._triggerAll();
       expect(called).toBeFalsy();
     });
+
+    test('subscribe single to a notifier should not break the previous subscription', () => {
+      let onCloseAction = new Notifier();
+      let onClose = onCloseAction.notifier;
+
+      let onCloseCalled = false;
+      onCloseAction
+        .subscribe(() => {
+          onCloseCalled = true;
+        })
+        .attachToRoot();
+
+      onClose._subscribeSingle(() => {}).attachToRoot();
+
+      onCloseAction._triggerAll();
+
+      expect(onCloseCalled).toBeTruthy();
+    });
   });
 });

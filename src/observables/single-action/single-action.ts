@@ -15,6 +15,7 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
   protected _resolved: true | undefined;
   protected _resolvedValue: T | undefined;
 
+  // TODO: Should be returning "SingleNotifier" which would only have asyncMap method.
   get notifier(): Notifier<T> {
     if (!this._notifier) {
       let notifier = new SingleActionNotifier<T>();
@@ -60,6 +61,10 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
   }
 }
 
+/**
+ * Can be triggered only once, multiple triggers will be ignored.
+ * If resolved, the new subscribers will be notified directly with the resolved value.
+ */
 export class SingleAction<T = void> extends SingleActionNotifier<T> {
   get resolved(): boolean {
     return this._resolved === true;

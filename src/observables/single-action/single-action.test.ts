@@ -223,7 +223,7 @@ describe(`SingleAction`, () => {
       expect(listenerTriggered).toBeTruthy();
     });
 
-    test('edge case: to notfier -> to single event -> listen after resolve', () => {
+    test('edge case: to notifier -> to single event -> listen after resolve', () => {
       let listenerTriggered = false;
 
       let notifier = action.notifier;

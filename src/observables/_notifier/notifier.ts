@@ -56,7 +56,7 @@ export class Notifier<T = void> {
     return this._listenersMapVar;
   }
 
-  protected _nextAvailableSubscriptionID = 1;
+  protected _nextAvailableSubscriptionID = { v: 1 };
   protected _notifier: Notifier<T> | undefined;
 
   get listenerCount(): number {
@@ -74,7 +74,7 @@ export class Notifier<T = void> {
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    let subscriptionID = this._nextAvailableSubscriptionID++;
+    let subscriptionID = this._nextAvailableSubscriptionID.v++;
     this._listenersMap.set(subscriptionID, callback);
 
     return new ActionSubscription(() => {
@@ -84,7 +84,7 @@ export class Notifier<T = void> {
 
   toSequence(): Sequence<T> {
     return Sequence.create<T>(resolve => {
-      let subscriptionID = this._nextAvailableSubscriptionID++;
+      let subscriptionID = this._nextAvailableSubscriptionID.v++;
       this._listenersMap.set(subscriptionID, resolve);
       return () => this._listenersMap.delete(subscriptionID);
     });
@@ -92,7 +92,7 @@ export class Notifier<T = void> {
 
   toSingleEvent(): SingleEvent<T> {
     return SingleEvent.create<T>(resolve => {
-      let subscriptionID = this._nextAvailableSubscriptionID++;
+      let subscriptionID = this._nextAvailableSubscriptionID.v++;
       this._listenersMap.set(subscriptionID, resolve);
       return () => this._listenersMap.delete(subscriptionID);
     });
@@ -280,7 +280,7 @@ export class Notifier<T = void> {
 
   /** @internal */
   _subscribeSingle(callback: (data: T) => void): IAttachment {
-    let subscriptionID = this._nextAvailableSubscriptionID++;
+    let subscriptionID = this._nextAvailableSubscriptionID.v++;
 
     let subscription = new ActionSubscription(() => {
       this._listenersMap.delete(subscriptionID);
