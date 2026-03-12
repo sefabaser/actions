@@ -68,7 +68,6 @@ export class Notifier<T = void> {
       this._notifier = new Notifier<T>();
       this._notifier._listenersMapVar = this._listenersMap;
       this._notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
-      this._notifier.subscribe = this.subscribe.bind(this);
     }
     return this._notifier;
   }

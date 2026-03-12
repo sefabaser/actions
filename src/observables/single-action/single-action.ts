@@ -12,8 +12,10 @@ export interface SingleActionOptions {
 }
 
 class SingleActionNotifier<T = void> extends Notifier<T> {
-  protected _resolved: true | undefined;
-  protected _resolvedValue: T | undefined;
+  protected _state = {
+    resolved: false as boolean,
+    resolvedValue: undefined as T | undefined
+  };
 
   // TODO: Should be returning "SingleNotifier" which would only have asyncMap method.
   get notifier(): Notifier<T> {
@@ -21,15 +23,15 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
       let notifier = new SingleActionNotifier<T>();
       notifier._listenersMapVar = this._listenersMap;
       notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
-      notifier.subscribe = this.subscribe.bind(this);
+      notifier._state = this._state;
       this._notifier = notifier;
     }
     return this._notifier;
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    if (this._resolved) {
-      CallbackHelper._triggerCallback(this._resolvedValue!, callback);
+    if (this._state.resolved) {
+      CallbackHelper._triggerCallback(this._state.resolvedValue!, callback);
       return Attachable.getDestroyed();
     } else {
       return super.subscribe(callback);
@@ -52,8 +54,8 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
 
   /** @internal */
   _subscribeSingle(callback: (data: T) => void): IAttachment {
-    if (this._resolved) {
-      CallbackHelper._triggerCallback(this._resolvedValue!, callback);
+    if (this._state.resolved) {
+      CallbackHelper._triggerCallback(this._state.resolvedValue!, callback);
       return Attachable.getDestroyed();
     } else {
       return super._subscribeSingle(callback);
@@ -67,11 +69,11 @@ class SingleActionNotifier<T = void> extends Notifier<T> {
  */
 export class SingleAction<T = void> extends SingleActionNotifier<T> {
   get resolved(): boolean {
-    return this._resolved === true;
+    return this._state.resolved === true;
   }
 
   get value(): T | undefined {
-    return this._resolvedValue;
+    return this._state.resolvedValue;
   }
 
   constructor(partialOptions?: Partial<SingleActionOptions>) {
@@ -91,19 +93,19 @@ export class SingleAction<T = void> extends SingleActionNotifier<T> {
   }
 
   private _notifyNoClone(data: T): this {
-    if (!this._resolved) {
-      this._resolved = true;
-      this._resolvedValue = data;
+    if (!this._state.resolved) {
+      this._state.resolved = true;
+      this._state.resolvedValue = data;
       this._triggerAll(data);
     }
     return this;
   }
 
   private _notifyClone(data: T): this {
-    if (!this._resolved) {
-      this._resolved = true;
-      this._resolvedValue = JsonHelper.deepCopy(data);
-      this._triggerAll(this._resolvedValue);
+    if (!this._state.resolved) {
+      this._state.resolved = true;
+      this._state.resolvedValue = JsonHelper.deepCopy(data);
+      this._triggerAll(this._state.resolvedValue);
     }
     return this;
   }
