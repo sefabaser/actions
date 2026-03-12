@@ -5,7 +5,8 @@ import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';
-import { Notifier, NotifierCallbackFunction } from '../_notifier/notifier';
+import { Notifier } from '../_notifier/notifier';
+import { NotifierCallbackFunction } from '../_notifier/notifier-base';
 
 export interface VariableOptions {
   readonly clone: boolean;
@@ -13,21 +14,23 @@ export interface VariableOptions {
 }
 
 class VariableNotifier<T> extends Notifier<T> {
-  protected _currentValue!: T;
+  protected _state = {
+    currentValue: undefined as T
+  };
 
   get notifier(): Notifier<T> {
     if (!this._notifier) {
       let notifier = new VariableNotifier<T>();
       notifier._listenersMapVar = this._listenersMap;
       notifier._nextAvailableSubscriptionID = this._nextAvailableSubscriptionID;
-      notifier.subscribe = this.subscribe.bind(this);
+      notifier._state = this._state;
       this._notifier = notifier;
     }
     return this._notifier;
   }
 
   subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
-    CallbackHelper._triggerCallback(this._currentValue, callback);
+    CallbackHelper._triggerCallback(this._state.currentValue, callback);
     return super.subscribe(callback);
   }
 
@@ -47,14 +50,14 @@ class VariableNotifier<T> extends Notifier<T> {
 
   /** @internal */
   _subscribeSingle(callback: (data: T) => void): IAttachment {
-    CallbackHelper._triggerCallback(this._currentValue, callback);
+    CallbackHelper._triggerCallback(this._state.currentValue, callback);
     return Attachable.getDestroyed();
   }
 }
 
 export class Variable<T> extends VariableNotifier<T> {
   get value(): T {
-    return this._currentValue;
+    return this._state.currentValue;
   }
   set value(value: T) {
     this.set(value);
@@ -62,7 +65,7 @@ export class Variable<T> extends VariableNotifier<T> {
 
   constructor(value: T, partialOptions?: Partial<VariableOptions>) {
     super();
-    this._currentValue = value;
+    this._state.currentValue = value;
     let options = {
       notifyOnChange: ActionLibDefaults.variable.notifyOnChange,
       clone: ActionLibDefaults.variable.cloneBeforeNotification,
@@ -82,20 +85,20 @@ export class Variable<T> extends VariableNotifier<T> {
   }
 
   private _notifyAlwaysNoCloneSet(data: T): this {
-    this._currentValue = data;
+    this._state.currentValue = data;
     this._triggerAll(data);
     return this;
   }
 
   private _notifyAlwaysCloneSet(data: T): this {
-    this._currentValue = JsonHelper.deepCopy(data);
+    this._state.currentValue = JsonHelper.deepCopy(data);
     this._triggerAll(data);
     return this;
   }
 
   private _notifyOnChangeNoCloneSet(data: T): this {
-    let previousData = this._currentValue;
-    this._currentValue = data;
+    let previousData = this._state.currentValue;
+    this._state.currentValue = data;
 
     if (!Comparator.isEqual(previousData, data)) {
       this._triggerAll(data);
@@ -105,8 +108,8 @@ export class Variable<T> extends VariableNotifier<T> {
   }
 
   private _notifyOnChangeCloneSet(data: T): this {
-    let previousData = this._currentValue;
-    this._currentValue = JsonHelper.deepCopy(data);
+    let previousData = this._state.currentValue;
+    this._state.currentValue = JsonHelper.deepCopy(data);
 
     if (!Comparator.isEqual(previousData, data)) {
       this._triggerAll(data);

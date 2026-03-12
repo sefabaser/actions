@@ -4,7 +4,7 @@ import { Attachable, IAttachment } from '../attachable/attachable';
 import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
 import { ClassID } from '../attachable/helpers/class-id';
 import { AsyncOperation } from '../common';
-import { Notifier } from '../observables/_notifier/notifier';
+import { NotifierBase } from '../observables/_notifier/notifier-base';
 import { Reducer } from '../observables/reducer/reducer';
 import { Sequence } from '../stream/sequence/sequence';
 import { SingleEvent } from '../stream/single-event/single-event';
@@ -13,7 +13,7 @@ type ExtractStreamType<T> = T extends Sequence<infer U>
   ? U
   : T extends SingleEvent<infer U>
     ? U
-    : T extends Notifier<infer U>
+    : T extends NotifierBase<infer U>
       ? U
       : never;
 
@@ -141,7 +141,7 @@ export class ActionLib {
     if (streamsSet.size !== streams.length) {
       for (let i = 0; i < streams.length; i++) {
         let stream = streams[i];
-        if (!(stream instanceof Notifier)) {
+        if (!(stream instanceof NotifierBase)) {
           stream._executor._attachIsCalled = true;
         }
       }
@@ -154,7 +154,7 @@ export class ActionLib {
   private static _waitUntilAllSequencesDestroyed<S>(streams: Set<AsyncOperation<S>>, callback: () => void): void {
     let notifierFound: boolean | undefined;
     for (let stream of streams) {
-      if (stream instanceof Notifier) {
+      if (stream instanceof NotifierBase) {
         notifierFound = true;
       }
     }
