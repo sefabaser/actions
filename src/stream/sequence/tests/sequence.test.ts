@@ -2013,7 +2013,7 @@ describe('Sequence', () => {
   });
 
   describe('Edge Cases', () => {
-    test('Each sequence can be linkable once', () => {
+    test('each sequence can be linkable once', () => {
       expect(() => {
         let sequence = Sequence.create<string>(resolve => resolve('a'));
         sequence.tap(() => {}).attachToRoot();
@@ -2021,7 +2021,7 @@ describe('Sequence', () => {
       }).toThrow('A sequence can only be linked once.');
     });
 
-    test(`Race condition, sequences destroying another sequences' parent`, () => {
+    test(`race condition, sequences destroying another sequences' parent`, () => {
       let action = new Action();
 
       class Foo extends Attachable {
@@ -2078,6 +2078,61 @@ describe('Sequence', () => {
 
         await UnitTestHelper.waitForAllOperations();
       }).rejects.toThrow('Sequence: After attaching, you cannot add another operation.');
+    });
+
+    test('triggering a sequence during pipeline execution 1', () => {
+      let heap: unknown[] = [];
+      let operation = new Action<number>();
+
+      operation
+        .toSequence()
+        .tap(data => {
+          heap.push(data);
+          if (data < 3) {
+            operation.trigger(data + 1);
+          }
+          heap.push('end' + data);
+        })
+        .attachToRoot();
+
+      operation.trigger(1);
+
+      expect(heap).toEqual([1, 'end1', 2, 'end2', 3, 'end3']);
+    });
+
+    test('triggering a sequence during pipeline execution 2', () => {
+      let heap: unknown[] = [];
+      let action = new Action<number>();
+      let sequence = action.toSequence().destroyIfNotAttached();
+
+      action.trigger(1);
+
+      sequence
+        .tap(data => {
+          heap.push(data);
+          if (data < 3) {
+            action.trigger(data + 1);
+          }
+          heap.push('end' + data);
+        })
+        .attachToRoot();
+
+      expect(heap).toEqual([1, 'end1', 2, 'end2', 3, 'end3']);
+    });
+
+    test('triggering a sequence during pipeline execution 3', () => {
+      let heap: unknown[] = [];
+      let action = new Action<number>();
+      let sequence = action.toSequence().destroyIfNotAttached();
+
+      action.trigger(1);
+
+      sequence.tap(data => heap.push(data)).attachToRoot();
+
+      action.trigger(2);
+      action.trigger(3);
+
+      expect(heap).toEqual([1, 2, 3]);
     });
   });
 });
