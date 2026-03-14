@@ -1,9 +1,9 @@
 import { Comparator } from 'helpers-lib';
 
-import { Attachable, IAttachment } from '../attachable/attachable';
+import { Attachable, type IAttachment } from '../attachable/attachable';
 import { AttachmentTargetStore } from '../attachable/helpers/attachment-target.store';
 import { ClassID } from '../attachable/helpers/class-id';
-import { AsyncOperation } from '../common';
+import { type AsyncOperation } from '../common';
 import { NotifierBase } from '../observables/_notifier/notifier-base';
 import { Reducer } from '../observables/reducer/reducer';
 import { Sequence } from '../stream/sequence/sequence';

@@ -1,10 +1,10 @@
 import { Queue } from 'helpers-lib';
 
-import { Attachable, IAttachment } from '../../attachable/attachable';
-import { AsyncOperation } from '../../common';
+import { Attachable, type IAttachment } from '../../attachable/attachable';
+import { type AsyncOperation } from '../../common';
 import { SingleEvent } from '../single-event/single-event';
 import { SingleEventExecutor } from '../single-event/single-event-executor';
-import { ISequenceCreatorContext, ISequenceLinkContext, SequenceExecutor } from './sequence-executor';
+import { type ISequenceCreatorContext, type ISequenceLinkContext, SequenceExecutor } from './sequence-executor';
 
 type ExecutionOrderQueuer = {
   _callback?: () => void;

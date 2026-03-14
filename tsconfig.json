@@ -19,6 +19,8 @@
     "allowSyntheticDefaultImports": true,
     "useDefineForClassFields": false,
     "declaration": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
   }
 }
