@@ -139,15 +139,26 @@ export class SequenceExecutor extends Attachable {
 
   _trigger(data: unknown): void {
     if (!this._finalized) {
+      this._ongoingPackageCount++;
+
       if (this.attachIsCalled) {
-        this._ongoingPackageCount++;
-        this._iteratePackage(new SequencePackage(this, data));
+        if (this._pendingValues) {
+          this._pendingValues.push(data);
+        } else {
+          this._pendingValues = [];
+          this._iteratePackage(new SequencePackage(this, data));
+
+          while (this._pendingValues && this._pendingValues.length > 0) {
+            let nextData = this._pendingValues.shift()!;
+            this._iteratePackage(new SequencePackage(this, nextData));
+          }
+          this._pendingValues = undefined;
+        }
       } else {
         if (!this._pendingValues) {
           this._pendingValues = [];
         }
         this._pendingValues.push(data);
-        this._ongoingPackageCount++;
       }
     }
   }
@@ -201,13 +212,16 @@ export class SequenceExecutor extends Attachable {
 
   private _onAttach(): void {
     if (this._pendingValues) {
-      let pendingValues = this._pendingValues;
-      this._pendingValues = undefined;
       let startedAsFinalized = this._finalized;
 
-      for (let i = 0; i < pendingValues.length; i++) {
-        if (startedAsFinalized === this._finalized) {
-          this._iteratePackage(new SequencePackage(this, pendingValues[i]));
+      while (this._pendingValues) {
+        let pendingValues = this._pendingValues;
+        this._pendingValues = undefined;
+
+        for (let i = 0; i < pendingValues.length; i++) {
+          if (startedAsFinalized === this._finalized) {
+            this._iteratePackage(new SequencePackage(this, pendingValues[i]));
+          }
         }
       }
     }

@@ -2080,7 +2080,27 @@ describe('Sequence', () => {
       }).rejects.toThrow('Sequence: After attaching, you cannot add another operation.');
     });
 
-    test('triggering a sequence during pipeline execution 1', () => {
+    test('triggering a sequence during pipeline execution, triggered before pipeline', () => {
+      let heap: unknown[] = [];
+      let action = new Action<number>();
+      let sequence = action.toSequence();
+
+      action.trigger(1);
+
+      sequence
+        .tap(data => {
+          heap.push(data);
+          if (data < 3) {
+            action.trigger(data + 1);
+          }
+          heap.push('end' + data);
+        })
+        .attachToRoot();
+
+      expect(heap).toEqual([1, 'end1', 2, 'end2', 3, 'end3']);
+    });
+
+    test('triggering a sequence during pipeline execution triggered after pipeline', () => {
       let heap: unknown[] = [];
       let operation = new Action<number>();
 
@@ -2098,41 +2118,6 @@ describe('Sequence', () => {
       operation.trigger(1);
 
       expect(heap).toEqual([1, 'end1', 2, 'end2', 3, 'end3']);
-    });
-
-    test('triggering a sequence during pipeline execution 2', () => {
-      let heap: unknown[] = [];
-      let action = new Action<number>();
-      let sequence = action.toSequence().destroyIfNotAttached();
-
-      action.trigger(1);
-
-      sequence
-        .tap(data => {
-          heap.push(data);
-          if (data < 3) {
-            action.trigger(data + 1);
-          }
-          heap.push('end' + data);
-        })
-        .attachToRoot();
-
-      expect(heap).toEqual([1, 'end1', 2, 'end2', 3, 'end3']);
-    });
-
-    test('triggering a sequence during pipeline execution 3', () => {
-      let heap: unknown[] = [];
-      let action = new Action<number>();
-      let sequence = action.toSequence().destroyIfNotAttached();
-
-      action.trigger(1);
-
-      sequence.tap(data => heap.push(data)).attachToRoot();
-
-      action.trigger(2);
-      action.trigger(3);
-
-      expect(heap).toEqual([1, 2, 3]);
     });
   });
 });
