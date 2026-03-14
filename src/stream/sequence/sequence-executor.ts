@@ -1,5 +1,5 @@
 import { Attachable } from '../../attachable/attachable';
-import { SingleEventExecutor } from '../single-event/single-event-executor';
+import type { SingleEventExecutor } from '../single-event/single-event-executor';
 
 type SequencePipelineDestructor = (finalContext?: ISequenceLinkContext) => void;
 type SequencePipelineIterator<A = any, B = any> = (
