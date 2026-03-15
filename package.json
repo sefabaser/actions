@@ -47,9 +47,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
+    "@types/node": "25.5.0",
     "@memlab/core": "1.1.43",
     "tsup": "8.5.1",
-    "typescript": "5.3.3",
+    "typescript": "5.9.3",
     "vitest": "4.1.0"
   }
 }
