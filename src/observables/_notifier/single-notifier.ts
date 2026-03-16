@@ -1,6 +1,6 @@
-import { AsyncOperation } from '../../common';
+import { type AsyncOperation } from '../../common';
 import { SingleEvent } from '../../stream/single-event/single-event';
-import { ISingleEventContext } from '../../stream/single-event/single-event-executor';
+import { type ISingleEventContext } from '../../stream/single-event/single-event-executor';
 import { NotifierBase } from './notifier-base';
 
 export class SingleNotifier<T = void> extends NotifierBase<T> {

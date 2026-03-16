@@ -1,6 +1,6 @@
-import { Attachable, IAttachment } from '../../attachable/attachable';
-import { AsyncOperation } from '../../common';
-import { ISingleEventContext, SingleEventExecutor } from './single-event-executor';
+import { Attachable, type IAttachment } from '../../attachable/attachable';
+import { type AsyncOperation } from '../../common';
+import { type ISingleEventContext, SingleEventExecutor } from './single-event-executor';
 
 export class SingleEvent<T = void> implements IAttachment {
   static create<S = void>(

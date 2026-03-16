@@ -1,4 +1,4 @@
-import { Attachable, IAttachment } from '../../attachable/attachable';
+import { Attachable, type IAttachment } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';

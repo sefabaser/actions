@@ -1,8 +1,8 @@
 import { Comparator, JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachment } from '../../attachable/attachable';
+import { Attachable, type IAttachment } from '../../attachable/attachable';
 import { AttachmentTargetStore } from '../../attachable/helpers/attachment-target.store';
-import { NotifierCallbackFunction } from '../_notifier/notifier-base';
+import { type NotifierCallbackFunction } from '../_notifier/notifier-base';
 import { Variable } from '../variable/variable';
 
 export interface ObjectReferenceOptions<T extends number | object> {

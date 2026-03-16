@@ -1,4 +1,4 @@
-import { IDAttachable } from '../id-attachable';
+import type { IDAttachable } from '../id-attachable';
 
 /** @internal */
 export class AttachmentTargetStore {

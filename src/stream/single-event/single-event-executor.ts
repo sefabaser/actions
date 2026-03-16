@@ -1,5 +1,5 @@
 import { Attachable } from '../../attachable/attachable';
-import { SequenceExecutor } from '../sequence/sequence-executor';
+import type { SequenceExecutor } from '../sequence/sequence-executor';
 
 type SingleEventPipelineIterator<A = any, B = any> = (
   _data: A,

@@ -7,14 +7,7 @@ export default defineConfig(({ mode }) => ({
     fakeTimers: {
       toFake: ['setTimeout', 'setInterval', 'queueMicrotask'],
     },
-    env: {
-      QUICK: mode === 'quick' ? '1' : undefined
-    },
-    pool: 'forks', // only needed to introduce --expoce-gc
-    poolOptions: {
-      forks: {
-        execArgv: ['--expose-gc']
-      }
-    }
+    env: mode === 'quick' ? { QUICK: '1' } : {},
+    execArgv: ['--expose-gc']
   },
 }));

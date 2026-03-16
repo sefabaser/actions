@@ -1,6 +1,6 @@
-import { AsyncOperation } from '../../common';
+import { type AsyncOperation } from '../../common';
 import { Sequence } from '../../stream/sequence/sequence';
-import { ISequenceLinkContext } from '../../stream/sequence/sequence-executor';
+import { type ISequenceLinkContext } from '../../stream/sequence/sequence-executor';
 import { NotifierBase } from './notifier-base';
 
 export class Notifier<T = void> extends NotifierBase<T> {

@@ -1,11 +1,11 @@
 import { JsonHelper } from 'helpers-lib';
 
-import { Attachable, IAttachment } from '../../attachable/attachable';
+import { Attachable, type IAttachment } from '../../attachable/attachable';
 import { ActionLibDefaults } from '../../config';
 import { CallbackHelper } from '../../helpers/callback.helper';
 import { Sequence } from '../../stream/sequence/sequence';
 import { SingleEvent } from '../../stream/single-event/single-event';
-import { NotifierCallbackFunction } from '../_notifier/notifier-base';
+import { type NotifierCallbackFunction } from '../_notifier/notifier-base';
 import { SingleNotifier } from '../_notifier/single-notifier';
 
 export interface SingleActionOptions {

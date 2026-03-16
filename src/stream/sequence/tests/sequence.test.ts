@@ -7,7 +7,7 @@ import { Action } from '../../../observables/action/action';
 import { Variable } from '../../../observables/variable/variable';
 import { ActionLib } from '../../../utilities/action-lib';
 import { Sequence } from '../sequence';
-import { ISequenceCreatorContext } from '../sequence-executor';
+import type { ISequenceCreatorContext } from '../sequence-executor';
 
 describe('Sequence', () => {
   beforeEach(() => {
