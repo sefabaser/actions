@@ -49,7 +49,7 @@ class VariableNotifier<T> extends Notifier<T> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): IAttachment {
+  _subscribeSingle(callback: (data: T) => void): Attachable {
     CallbackHelper._triggerCallback(this._state.currentValue, callback);
     return Attachable.getDestroyed();
   }

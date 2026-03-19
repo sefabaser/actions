@@ -13,7 +13,7 @@ export class Attachable implements IAttachment {
   /**
    * @returns Attachable that is already destroyed
    */
-  static getDestroyed(): IAttachment {
+  static getDestroyed(): Attachable {
     let destroyedSubscription = new Attachable();
     destroyedSubscription._destroyed = true;
     return destroyedSubscription;

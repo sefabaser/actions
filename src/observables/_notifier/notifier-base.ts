@@ -120,7 +120,7 @@ export class NotifierBase<T = void> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): IAttachment {
+  _subscribeSingle(callback: (data: T) => void): Attachable {
     let subscriptionID = this._nextAvailableSubscriptionID.v++;
 
     let subscription = new ActionSubscription(() => {

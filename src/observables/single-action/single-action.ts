@@ -54,7 +54,7 @@ class SingleActionNotifier<T = void> extends SingleNotifier<T> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): IAttachment {
+  _subscribeSingle(callback: (data: T) => void): Attachable {
     if (this._state.resolved) {
       CallbackHelper._triggerCallback(this._state.resolvedValue!, callback);
       return Attachable.getDestroyed();
