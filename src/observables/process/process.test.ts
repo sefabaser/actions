@@ -38,12 +38,41 @@ describe('Process', () => {
 
       expect(resolved).toBeTruthy();
     });
+
+    test('"running" property should be true when a process is ongoing', () => {
+      let resolve!: (value: number) => void;
+      process
+        .register(() =>
+          SingleEvent.create<number>(r => {
+            resolve = r;
+          })
+        )
+        .attachToRoot();
+
+      let resolved = false;
+      let resolvedWith: number | undefined;
+      process
+        .start(1)
+        .tap(value => {
+          resolved = true;
+          resolvedWith = value;
+        })
+        .attachToRoot();
+
+      expect(process.running).toBeTruthy();
+      expect(resolved).toBeFalsy();
+      expect(resolvedWith).toBeUndefined();
+
+      resolve(1);
+      expect(resolved).toBeTruthy();
+      expect(resolvedWith).toBe(1);
+      expect(process.running).toBeFalsy();
+    });
   });
 
   describe('basic behavior', () => {
     test('single registerer', () => {
       let resolve!: (value: number) => void;
-
       process
         .register(() =>
           SingleEvent.create<number>(r => {
@@ -176,6 +205,28 @@ describe('Process', () => {
       resolve2(4);
       expect(resolved).toBeTruthy();
       expect(result).toBe(7);
+    });
+
+    test('all registerers receive broadcasted value during starting the process', () => {
+      let receivedValues: number[] = [];
+
+      process
+        .register(data => {
+          receivedValues.push(data);
+          return SingleEvent.instant(data);
+        })
+        .attachToRoot();
+
+      process
+        .register(data => {
+          receivedValues.push(data);
+          return SingleEvent.instant(data);
+        })
+        .attachToRoot();
+
+      process.start(5).attachToRoot();
+
+      expect(receivedValues).toEqual([5, 5]);
     });
   });
 
@@ -485,6 +536,269 @@ describe('Process', () => {
       expect(() => process.start(1).attachToRoot()).toThrow(
         'Process: cannot start a new process while an ongoing process is still ongoing.'
       );
+    });
+  });
+
+  describe('createAll', () => {
+    test('not finish before all registerers have resolved', () => {
+      let allProcess = Process.createAll<number>();
+      let resolve1!: () => void;
+
+      allProcess
+        .register(() =>
+          SingleEvent.create<void>(r => {
+            resolve1 = r;
+          })
+        )
+        .attachToRoot();
+
+      allProcess.register(() => SingleEvent.create<void>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      allProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+
+      resolve1();
+      expect(resolved).toBeFalsy();
+    });
+
+    test('not finish if one registerer is destroyed', () => {
+      let allProcess = Process.createAll<number>();
+
+      allProcess.register(() => SingleEvent.create<void>(_ => {})).attachToRoot();
+
+      let registerer2 = allProcess.register(() => SingleEvent.create<void>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      allProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      registerer2.destroy();
+      expect(resolved).toBeFalsy();
+    });
+
+    test('not finish if the process is destroyed', () => {
+      let allProcess = Process.createAll<number>();
+
+      allProcess.register(() => SingleEvent.create<void>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      let processOperation = allProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      processOperation.destroy();
+      expect(resolved).toBeFalsy();
+    });
+
+    test('finish when all registerers have resolved', () => {
+      let allProcess = Process.createAll<number>();
+      let resolve1!: () => void;
+      let resolve2!: () => void;
+
+      allProcess
+        .register(() =>
+          SingleEvent.create<void>(r => {
+            resolve1 = r;
+          })
+        )
+        .attachToRoot();
+
+      allProcess
+        .register(() =>
+          SingleEvent.create<void>(r => {
+            resolve2 = r;
+          })
+        )
+        .attachToRoot();
+
+      let resolved = false;
+      allProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      resolve1();
+      expect(resolved).toBeFalsy();
+
+      resolve2();
+      expect(resolved).toBeTruthy();
+    });
+  });
+
+  describe('createAny', () => {
+    test('not resolve if none of the registerers have resolved', () => {
+      let anyProcess = Process.createAny<number, number>();
+
+      anyProcess.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+      anyProcess.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      anyProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+    });
+
+    test('not resolve if one registerer is destroyed', () => {
+      let anyProcess = Process.createAny<number, number>();
+
+      anyProcess.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+      let registerer2 = anyProcess.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      anyProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      registerer2.destroy();
+      expect(resolved).toBeFalsy();
+    });
+
+    test('not resolve if the process is destroyed', () => {
+      let anyProcess = Process.createAny<number, number>();
+
+      anyProcess.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      let processOperation = anyProcess
+        .start(1)
+        .tap(() => {
+          resolved = true;
+        })
+        .attachToRoot();
+
+      processOperation.destroy();
+      expect(resolved).toBeFalsy();
+    });
+
+    test('resolve when the first registerer resolves', () => {
+      let anyProcess = Process.createAny<number, number>();
+      let resolve1!: (value: number) => void;
+
+      anyProcess
+        .register(() =>
+          SingleEvent.create<number>(r => {
+            resolve1 = r;
+          })
+        )
+        .attachToRoot();
+
+      anyProcess.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+
+      let resolved = false;
+      let result: number | undefined;
+      anyProcess
+        .start(1)
+        .tap(value => {
+          resolved = true;
+          result = value;
+        })
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+
+      resolve1(42);
+
+      expect(resolved).toBeTruthy();
+      expect(result).toBe(42);
+    });
+
+    test('once one registerer resolves, the process and other remaining registerers are destroyed', () => {
+      let anyProcess = Process.createAny<number, number>();
+      let resolve1!: (value: number) => void;
+      let singleEvent1!: SingleEvent<number>;
+      let singleEvent2!: SingleEvent<number>;
+
+      anyProcess
+        .register(() => {
+          singleEvent1 = SingleEvent.create<number>(r => {
+            resolve1 = r;
+          });
+          return singleEvent1;
+        })
+        .attachToRoot();
+
+      anyProcess
+        .register(() => {
+          singleEvent2 = SingleEvent.create<number>(_ => {});
+          return singleEvent2;
+        })
+        .attachToRoot();
+
+      let processOperation = anyProcess.start(1).attachToRoot();
+
+      expect(singleEvent1.destroyed).toBeFalsy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+      expect(processOperation.destroyed).toBeFalsy();
+
+      resolve1(42);
+
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeTruthy();
+      expect(processOperation.destroyed).toBeTruthy();
+    });
+  });
+
+  describe('createSum', () => {
+    test('return the sum of all resolved registerers', () => {
+      let sumProcess = Process.createSum<number>();
+      let resolve1!: (value: number) => void;
+      let resolve2!: (value: number) => void;
+
+      sumProcess
+        .register(() =>
+          SingleEvent.create<number>(r => {
+            resolve1 = r;
+          })
+        )
+        .attachToRoot();
+
+      sumProcess
+        .register(() =>
+          SingleEvent.create<number>(r => {
+            resolve2 = r;
+          })
+        )
+        .attachToRoot();
+
+      let resolved = false;
+      let result: number | undefined;
+      sumProcess
+        .start(1)
+        .tap(value => {
+          resolved = true;
+          result = value;
+        })
+        .attachToRoot();
+
+      resolve1(10);
+      resolve2(20);
+
+      expect(resolved).toBeTruthy();
+      expect(result).toBe(30);
     });
   });
 });

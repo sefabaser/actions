@@ -40,6 +40,9 @@ export class Process<InputType, ProcessReturnType, OutputType> {
   }
 
   private _ongoingProcess?: OngoingProcess<OutputType>;
+  get running(): boolean {
+    return this._ongoingProcess !== undefined;
+  }
 
   constructor(
     private _reduceFunction: (acc: OutputType, value: ProcessReturnType, context: IProcessContext<OutputType>) => OutputType,
