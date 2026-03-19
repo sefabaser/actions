@@ -27,9 +27,9 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   private _id: number;
   private _reducer: Reducer<EffectType, ResponseType>;
 
-  private _: EffectType;
+  private _value: EffectType;
   get value(): EffectType {
-    return this._;
+    return this._value;
   }
   set value(value: EffectType) {
     this.update(value);
@@ -47,7 +47,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
       type: 'effect'
     });
 
-    this._ = value;
+    this._value = value;
     this._reducer._broadcast(reducerResponse);
   }
 
@@ -55,12 +55,12 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
     if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
-        previous: this._,
+        previous: this._value,
         current: value,
         type: 'update'
       });
 
-      this._ = value;
+      this._value = value;
       this._reducer._broadcast(reducerResponse);
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
@@ -71,7 +71,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
     if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
-        previous: this._,
+        previous: this._value,
         type: 'destroy'
       });
 

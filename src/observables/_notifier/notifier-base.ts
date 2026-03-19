@@ -64,9 +64,7 @@ export class NotifierBase<T = void> {
     let subscriptionID = this._nextAvailableSubscriptionID.v++;
     this._listenersMap.set(subscriptionID, callback);
 
-    return new ActionSubscription(() => {
-      this._listenersMap.delete(subscriptionID);
-    });
+    return new ActionSubscription(() => this._listenersMap.delete(subscriptionID));
   }
 
   toSequence(): Sequence<T> {
