@@ -190,6 +190,7 @@ describe.skipIf(!process.env.MANUAL)('Performance Tests', () => {
     // 29.101799964904785
     // 29.66980004310608
     // reusing the context: 28.051499843597412
+    // 18.665300000000116
   }, 60000);
 
   test('single read', async () => {
