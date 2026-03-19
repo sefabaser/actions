@@ -3,9 +3,6 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { SingleEvent } from '../../stream/single-event/single-event';
 import { Process } from './process';
 
-// destroying the process should destroy all listener processes
-// destroying the process after one child listener destroyed should destroy the remaining children
-
 describe('Process', () => {
   let process: Process<number, number, number>;
 
@@ -46,19 +43,17 @@ describe('Process', () => {
   describe('basic behavior', () => {
     test('single registerer', () => {
       let resolve!: (value: number) => void;
-      let singleEvent!: SingleEvent<number>;
 
       process
-        .register(() => {
-          singleEvent = SingleEvent.create<number>(r => {
+        .register(() =>
+          SingleEvent.create<number>(r => {
             resolve = r;
-          });
-          return singleEvent;
-        })
+          })
+        )
         .attachToRoot();
 
       let resolved = false;
-      let processOperation = process
+      process
         .start(1)
         .tap(value => {
           resolved = true;
@@ -70,36 +65,30 @@ describe('Process', () => {
 
       resolve(1);
       expect(resolved).toBeTruthy();
-      expect(singleEvent.destroyed).toBeTruthy();
-      expect(processOperation.destroyed).toBeTruthy();
     });
 
     test('multiple registerers', () => {
       let resolve1!: (value: number) => void;
-      let singleEvent1!: SingleEvent<number>;
       let resolve2!: (value: number) => void;
-      let singleEvent2!: SingleEvent<number>;
 
       process
-        .register(() => {
-          singleEvent1 = SingleEvent.create<number>(r => {
+        .register(() =>
+          SingleEvent.create<number>(r => {
             resolve1 = r;
-          });
-          return singleEvent1;
-        })
+          })
+        )
         .attachToRoot();
 
       process
-        .register(() => {
-          singleEvent2 = SingleEvent.create<number>(r => {
+        .register(() =>
+          SingleEvent.create<number>(r => {
             resolve2 = r;
-          });
-          return singleEvent2;
-        })
+          })
+        )
         .attachToRoot();
 
       let resolved = false;
-      let processOperation = process
+      process
         .start(1)
         .tap(value => {
           resolved = true;
@@ -108,44 +97,21 @@ describe('Process', () => {
         .attachToRoot();
 
       expect(resolved).toBeFalsy();
-      expect(singleEvent1.destroyed).toBeFalsy();
-      expect(singleEvent2.destroyed).toBeFalsy();
-      expect(processOperation.destroyed).toBeFalsy();
 
       resolve1(1);
       expect(resolved).toBeFalsy();
-      expect(singleEvent1.destroyed).toBeTruthy();
-      expect(singleEvent2.destroyed).toBeFalsy();
-      expect(processOperation.destroyed).toBeFalsy();
 
       resolve2(2);
 
       expect(resolved).toBeTruthy();
-      expect(singleEvent1.destroyed).toBeTruthy();
-      expect(singleEvent2.destroyed).toBeTruthy();
-      expect(processOperation.destroyed).toBeTruthy();
     });
 
     test('instantly resolving registerers', () => {
-      let singleEvent1!: SingleEvent<number>;
-      let singleEvent2!: SingleEvent<number>;
-
-      process
-        .register(() => {
-          singleEvent1 = SingleEvent.instant(1);
-          return singleEvent1;
-        })
-        .attachToRoot();
-
-      process
-        .register(() => {
-          singleEvent2 = SingleEvent.instant(2);
-          return singleEvent2;
-        })
-        .attachToRoot();
+      process.register(() => SingleEvent.instant(1)).attachToRoot();
+      process.register(() => SingleEvent.instant(2)).attachToRoot();
 
       let resolved = false;
-      let processOperation = process
+      process
         .start(1)
         .tap(value => {
           resolved = true;
@@ -154,15 +120,66 @@ describe('Process', () => {
         .attachToRoot();
 
       expect(resolved).toBeTruthy();
-      expect(singleEvent1.destroyed).toBeTruthy();
-      expect(singleEvent2.destroyed).toBeTruthy();
-      expect(processOperation.destroyed).toBeTruthy();
     });
 
-    // starting a process should throw error if there is an ongoing process
+    test('multiple processes running one after another', () => {
+      let resolve1!: (value: number) => void;
+      let resolve2!: (value: number) => void;
+
+      process
+        .register(() =>
+          SingleEvent.create<number>(r => {
+            resolve1 = r;
+          })
+        )
+        .attachToRoot();
+
+      process
+        .register(() =>
+          SingleEvent.create<number>(r => {
+            resolve2 = r;
+          })
+        )
+        .attachToRoot();
+
+      let resolved = false;
+      let result: number | undefined;
+      process
+        .start(1)
+        .tap(value => {
+          resolved = true;
+          result = value;
+        })
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+      resolve1(1);
+      expect(resolved).toBeFalsy();
+      resolve2(2);
+      expect(resolved).toBeTruthy();
+      expect(result).toBe(3);
+
+      resolved = false;
+      result = undefined;
+
+      process
+        .start(1)
+        .tap(value => {
+          resolved = true;
+          result = value;
+        })
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+      resolve1(3);
+      expect(resolved).toBeFalsy();
+      resolve2(4);
+      expect(resolved).toBeTruthy();
+      expect(result).toBe(7);
+    });
   });
 
-  describe('registerer changes during the process', () => {
+  describe('registerer changes during on process', () => {
     test('unregistering a registerer in the middle of the process', () => {
       let resolve1!: (value: number) => void;
 
@@ -301,6 +318,173 @@ describe('Process', () => {
 
       expect(resolved).toBeTruthy();
       expect(processOperation.destroyed).toBeTruthy();
+    });
+  });
+
+  describe('desctruction', () => {
+    test('when all registerers complete the process should be destroyed', () => {
+      let resolve1!: (value: number) => void;
+      let singleEvent1!: SingleEvent<number>;
+      let resolve2!: (value: number) => void;
+      let singleEvent2!: SingleEvent<number>;
+
+      process
+        .register(() => {
+          singleEvent1 = SingleEvent.create<number>(r => {
+            resolve1 = r;
+          });
+          return singleEvent1;
+        })
+        .attachToRoot();
+
+      process
+        .register(() => {
+          singleEvent2 = SingleEvent.create<number>(r => {
+            resolve2 = r;
+          });
+          return singleEvent2;
+        })
+        .attachToRoot();
+
+      let resolved = false;
+      let processOperation = process
+        .start(1)
+        .tap(_ => (resolved = true))
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+      expect(singleEvent1.destroyed).toBeFalsy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+      expect(processOperation.destroyed).toBeFalsy();
+
+      resolve1(1);
+      expect(resolved).toBeFalsy();
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+      expect(processOperation.destroyed).toBeFalsy();
+
+      resolve2(2);
+
+      expect(resolved).toBeTruthy();
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeTruthy();
+      expect(processOperation.destroyed).toBeTruthy();
+    });
+
+    test('destroying all registerers should complete the process', () => {
+      let singleEvent1!: SingleEvent<number>;
+      let singleEvent2!: SingleEvent<number>;
+
+      process
+        .register(() => {
+          singleEvent1 = SingleEvent.create<number>(_ => {});
+          return singleEvent1;
+        })
+        .attachToRoot();
+
+      process
+        .register(() => {
+          singleEvent2 = SingleEvent.create<number>(_ => {});
+          return singleEvent2;
+        })
+        .attachToRoot();
+
+      let resolved = false;
+      let processOperation = process
+        .start(1)
+        .tap(_ => (resolved = true))
+        .attachToRoot();
+
+      expect(resolved).toBeFalsy();
+      expect(singleEvent1.destroyed).toBeFalsy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+      expect(processOperation.destroyed).toBeFalsy();
+
+      singleEvent1.destroy();
+      expect(resolved).toBeFalsy();
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+      expect(processOperation.destroyed).toBeFalsy();
+
+      singleEvent2.destroy();
+
+      expect(resolved).toBeTruthy();
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeTruthy();
+      expect(processOperation.destroyed).toBeTruthy();
+    });
+
+    test('destroying a process destroys all listener processes', () => {
+      let singleEvent1!: SingleEvent<number>;
+      let singleEvent2!: SingleEvent<number>;
+
+      process
+        .register(() => {
+          singleEvent1 = SingleEvent.create<number>(_ => {});
+          return singleEvent1;
+        })
+        .attachToRoot();
+
+      process
+        .register(() => {
+          singleEvent2 = SingleEvent.create<number>(_ => {});
+          return singleEvent2;
+        })
+        .attachToRoot();
+
+      let processOperation = process.start(1).attachToRoot();
+
+      expect(singleEvent1.destroyed).toBeFalsy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+
+      processOperation.destroy();
+
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeTruthy();
+    });
+
+    test('destroying a process after one child listener destroyed destroys the remaining children', () => {
+      let resolve1!: (value: number) => void;
+      let singleEvent1!: SingleEvent<number>;
+      let singleEvent2!: SingleEvent<number>;
+
+      process
+        .register(() => {
+          singleEvent1 = SingleEvent.create<number>(r => {
+            resolve1 = r;
+          });
+          return singleEvent1;
+        })
+        .attachToRoot();
+
+      process
+        .register(() => {
+          singleEvent2 = SingleEvent.create<number>(_ => {});
+          return singleEvent2;
+        })
+        .attachToRoot();
+
+      let processOperation = process.start(1).attachToRoot();
+
+      resolve1(1);
+      expect(singleEvent1.destroyed).toBeTruthy();
+      expect(singleEvent2.destroyed).toBeFalsy();
+
+      processOperation.destroy();
+
+      expect(singleEvent2.destroyed).toBeTruthy();
+    });
+  });
+
+  describe('error handling', () => {
+    test('starting a process throws error if there is an ongoing process', () => {
+      process.register(() => SingleEvent.create<number>(_ => {})).attachToRoot();
+
+      process.start(1).attachToRoot();
+
+      expect(() => process.start(1).attachToRoot()).toThrow(
+        'Process: cannot start a new process while an ongoing process is still ongoing.'
+      );
     });
   });
 });

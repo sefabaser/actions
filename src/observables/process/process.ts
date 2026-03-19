@@ -47,6 +47,10 @@ export class Process<InputType, ProcessReturnType, OutputType> {
   ) {}
 
   start(data: InputType): SingleEvent<OutputType> {
+    if (this._ongoingProcess !== undefined) {
+      throw new Error('Process: cannot start a new process while an ongoing process is still ongoing.');
+    }
+
     let registererMap = this._listenersMapVar;
     if (registererMap) {
       return SingleEvent.create((resolve, context) => {
