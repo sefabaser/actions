@@ -19,33 +19,6 @@ export class ActionSubscription extends Attachable {
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class NotifierBase<T = void> {
-  static fromSequence<S>(sequence: Sequence<S>): {
-    attach: (parent: Attachable) => NotifierBase<S>;
-    attachByID: (parent: number) => NotifierBase<S>;
-    attachToRoot: () => NotifierBase<S>;
-  } {
-    if (sequence.attachIsCalled) {
-      throw new Error('Attached sequences cannot be converted to notifier!');
-    }
-
-    let notifier = new NotifierBase<S>();
-    sequence._subscribeSingle(data => notifier._triggerAll(data));
-    return {
-      attach: (parent: Attachable) => {
-        sequence.attach(parent);
-        return notifier;
-      },
-      attachByID: (id: number) => {
-        sequence.attachByID(id);
-        return notifier;
-      },
-      attachToRoot: () => {
-        sequence.attachToRoot();
-        return notifier;
-      }
-    };
-  }
-
   protected _listenersMapVar: Map<number, NotifierCallbackFunction<T>> | undefined;
   protected get _listenersMap() {
     if (!this._listenersMapVar) {

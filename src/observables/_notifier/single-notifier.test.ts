@@ -1,31 +1,31 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import { Attachable } from '../../attachable/attachable';
 import { CallbackHelper } from '../../helpers/callback.helper';
-import { Sequence } from '../../stream/sequence/sequence';
-import { Notifier } from './notifier';
+import { SingleEvent } from '../../stream/single-event/single-event';
+import { SingleNotifier } from './single-notifier';
 
 class SampleModel {
   testData = '';
 }
 
-describe('Notifier', () => {
+describe('SingleNotifier', () => {
   describe('Basic', () => {
-    let triggerNotifierWith = <T>(data: T, notifier: Notifier<T>) => {
+    let triggerNotifierWith = <T>(data: T, notifier: SingleNotifier<T>) => {
       notifier['_listenersMap'].forEach(listener => CallbackHelper._triggerCallback(data, listener));
     };
 
     test('returns new notifier with same handler', () => {
-      let notifier = new Notifier<SampleModel>();
+      let notifier = new SingleNotifier<SampleModel>();
       let notifier2 = notifier.notifier;
 
-      expect(notifier2).toBeInstanceOf(Notifier);
+      expect(notifier2).toBeInstanceOf(SingleNotifier);
       expect(notifier2).not.toBe(notifier);
       expect(notifier2['_listenersMap']).toBe(notifier['_listenersMap']);
     });
 
     test('subscriptions are shared between notifiers', () => {
-      let notifier = new Notifier<SampleModel>();
+      let notifier = new SingleNotifier<SampleModel>();
       let notifier2 = notifier.notifier;
 
       let called1 = false;
@@ -52,7 +52,7 @@ describe('Notifier', () => {
     });
 
     test('destroying subscription of one notifier should effect the other notifier', () => {
-      let notifier = new Notifier<SampleModel>();
+      let notifier = new SingleNotifier<SampleModel>();
       let notifier2 = notifier.notifier;
 
       let called = false;
@@ -74,7 +74,7 @@ describe('Notifier', () => {
     });
 
     test('subscribe single to a notifier should not break the previous subscription', () => {
-      let onCloseAction = new Notifier();
+      let onCloseAction = new SingleNotifier();
       let onClose = onCloseAction.notifier;
 
       let onCloseCalled = false;
@@ -92,37 +92,34 @@ describe('Notifier', () => {
     });
   });
 
-  describe('Create From Sqeuence', () => {
+  describe('Create From SingleEvent', () => {
     test('setup', () => {
-      let sequence = Sequence.create<string>(() => {});
-      let notifier = Notifier.fromSequence(sequence).attachToRoot();
+      let singleEvent = SingleEvent.create<string>(() => {});
+      let notifier = SingleNotifier.fromSingleEvent(singleEvent).attachToRoot();
       expect(notifier.listenerCount).toEqual(0);
     });
 
     test('converting event after attaching should throw error', () => {
-      vi.useFakeTimers();
       expect(() => {
-        let sequence = Sequence.create<string>(() => {}).attachToRoot();
-        Notifier.fromSequence(sequence);
-
-        vi.runAllTimers();
+        let singleEvent = SingleEvent.create<string>(() => {}).attachToRoot();
+        SingleNotifier.fromSingleEvent(singleEvent);
       }).toThrow('Attached sequences cannot be converted to notifier!');
     });
 
     test('converted notifier can be subscribed by many', () => {
-      let sequence = Sequence.create<string>(resolve => resolve('a'));
-      let notifier = Notifier.fromSequence(sequence).attachToRoot();
+      let singleEvent = SingleEvent.create<string>(resolve => resolve('a'));
+      let notifier = SingleNotifier.fromSingleEvent(singleEvent).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
       expect(notifier.listenerCount).toEqual(2);
     });
 
-    test('destroyed attached parent of the sequence, should destroy subscriptions', () => {
-      let externalNotifier = new Notifier<string>();
+    test('destroyed attached parent of the single event, should destroy subscriptions', () => {
+      let externalNotifier = new SingleNotifier<string>();
 
       let parent = new Attachable().attachToRoot();
-      let sequence = Sequence.create(resolve => resolve()).asyncMapOrdered(() => externalNotifier);
-      Notifier.fromSequence(sequence).attach(parent);
+      let singleEvent = SingleEvent.create(resolve => resolve()).asyncMap(() => externalNotifier);
+      SingleNotifier.fromSingleEvent(singleEvent).attach(parent);
 
       expect(externalNotifier.listenerCount).toEqual(1);
       parent.destroy();

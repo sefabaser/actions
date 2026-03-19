@@ -1,9 +1,37 @@
+import type { Attachable } from '../../attachable/attachable';
 import { type AsyncOperation } from '../../common';
 import { Sequence } from '../../stream/sequence/sequence';
 import { type ISequenceLinkContext } from '../../stream/sequence/sequence-executor';
 import { NotifierBase } from './notifier-base';
 
 export class Notifier<T = void> extends NotifierBase<T> {
+  static fromSequence<S>(sequence: Sequence<S>): {
+    attach: (parent: Attachable) => Notifier<S>;
+    attachByID: (parent: number) => Notifier<S>;
+    attachToRoot: () => Notifier<S>;
+  } {
+    if (sequence.attachIsCalled) {
+      throw new Error('Attached sequences cannot be converted to notifier!');
+    }
+
+    let notifier = new Notifier<S>();
+    sequence._subscribeSingle(data => notifier._triggerAll(data));
+    return {
+      attach: (parent: Attachable) => {
+        sequence.attach(parent);
+        return notifier;
+      },
+      attachByID: (id: number) => {
+        sequence.attachByID(id);
+        return notifier;
+      },
+      attachToRoot: () => {
+        sequence.attachToRoot();
+        return notifier;
+      }
+    };
+  }
+
   protected _notifier: Notifier<T> | undefined;
   get notifier(): Notifier<T> {
     if (!this._notifier) {
