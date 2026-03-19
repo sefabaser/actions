@@ -10,6 +10,7 @@ export { Notifier } from './observables/_notifier/notifier';
 export { ActionSubscription, NotifierBase, type NotifierCallbackFunction } from './observables/_notifier/notifier-base';
 export { SingleNotifier } from './observables/_notifier/single-notifier';
 export { Action, type ActionOptions } from './observables/action/action';
+export { type IProcessContext, Process, type ProcessCallbackFunction } from './observables/process/process';
 export {
   Reducer,
   ReducerEffectChannel,

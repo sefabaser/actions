@@ -26,6 +26,10 @@ export class Process<InputType, ProcessReturnType, OutputType> {
     return new Process<SInputType, void, void>((acc, _) => acc, undefined);
   }
 
+  static createSum<SInputType>(): Process<SInputType, number, number> {
+    return new Process<SInputType, number, number>((acc, value) => acc + value, 0);
+  }
+
   protected _nextAvailableSubscriptionID = { v: 1 };
   protected _listenersMapVar: Map<number, ProcessCallbackFunction<InputType, ProcessReturnType>> | undefined;
   protected get _registererMap() {
@@ -59,9 +63,7 @@ export class Process<InputType, ProcessReturnType, OutputType> {
           let listener = registererMap.get(id);
           if (listener !== undefined) {
             try {
-              let response = listener(data);
-
-              let subscription = response
+              let subscription = listener(data)
                 ._subscribeSingle(resolvedValue => {
                   if (this._ongoingProcess === undefined) {
                     throw new Error('Process: ongoing process is undefined when resolving a registerer.');
@@ -81,16 +83,18 @@ export class Process<InputType, ProcessReturnType, OutputType> {
           }
         }
 
-        reducer.subscribe(blockerExists => {
-          if (!blockerExists) {
-            if (this._ongoingProcess === undefined) {
-              throw new Error('Process: ongoing process is undefined when all blockers are destroyed.');
-            }
+        reducer
+          .subscribe(blockerExists => {
+            if (!blockerExists) {
+              if (this._ongoingProcess === undefined) {
+                throw new Error('Process: ongoing process is undefined when all blockers are destroyed.');
+              }
 
-            resolve(this._ongoingProcess.currentValue);
-            this._ongoingProcess = undefined;
-          }
-        });
+              resolve(this._ongoingProcess.currentValue);
+              this._ongoingProcess = undefined;
+            }
+          })
+          .attach(context.attachable);
       });
     } else {
       return SingleEvent.instant(this._defaultValue);
