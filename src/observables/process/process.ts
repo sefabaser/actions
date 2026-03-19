@@ -1,50 +1,109 @@
-import { Attachable, type IAttachment } from '../../attachable/attachable';
-import type { AsyncOperation } from '../../common';
-import { NotifierBase } from '../_notifier/notifier-base';
-import { Reducer } from '../reducer/reducer';
+import { type IAttachment } from '../../attachable/attachable';
+import { SingleEvent } from '../../stream/single-event/single-event';
+import { ActionSubscription } from '../_notifier/notifier-base';
+import { Reducer, ReducerEffectChannel } from '../reducer/reducer';
+
+export type ProcessCallbackFunction<InputType, ProcessReturnType> = (data: InputType) => SingleEvent<ProcessReturnType>;
+
+interface OngoingProcess<OutputType> {
+  idToBlocker: Map<number, ReducerEffectChannel<void, boolean>>;
+  currentValue: OutputType;
+}
+
+export interface IProcessContext<OutputType> {
+  readonly resolveProcessWith: (value: OutputType) => void;
+}
 
 export class Process<InputType, ProcessReturnType, OutputType> {
-  static createAll<SInputType>(): Process<SInputType, void, boolean> {
-    let notifier = new NotifierBase<SInputType>();
-    let reducer = Reducer.createExistenceChecker();
-    return new Process(notifier, reducer, undefined);
+  static createAny<SInputType, SOutputType>(): Process<SInputType, SOutputType, SOutputType | undefined> {
+    return new Process<SInputType, SOutputType, SOutputType | undefined>((acc, value, context) => {
+      context.resolveProcessWith(value);
+      return value;
+    }, undefined);
   }
 
+  static createAll<SInputType>(): Process<SInputType, void, void> {
+    return new Process<SInputType, void, void>((acc, _) => acc, undefined);
+  }
+
+  protected _nextAvailableSubscriptionID = { v: 1 };
+  protected _listenersMapVar: Map<number, ProcessCallbackFunction<InputType, ProcessReturnType>> | undefined;
+  protected get _registererMap() {
+    if (!this._listenersMapVar) {
+      this._listenersMapVar = new Map<number, ProcessCallbackFunction<InputType, ProcessReturnType>>();
+    }
+    return this._listenersMapVar;
+  }
+
+  private _ongoingProcess?: OngoingProcess<OutputType>;
+
   constructor(
-    private notifier: NotifierBase<InputType>,
-    private reducer: Reducer<ProcessReturnType, OutputType>,
-    private defaultEffectValue: ProcessReturnType
+    private _reduceFunction: (acc: OutputType, value: ProcessReturnType, context: IProcessContext<OutputType>) => OutputType,
+    private _defaultValue: OutputType
   ) {}
 
-  start(...args: void extends InputType ? (InputType extends void ? [] : [InputType]) : [InputType]): SingleEvent<OutputType> {}
+  start(data: InputType): SingleEvent<OutputType> {
+    let registererMap = this._listenersMapVar;
+    if (registererMap) {
+      return SingleEvent.create((resolve, context) => {
+        this._ongoingProcess = {
+          idToBlocker: new Map<number, ReducerEffectChannel<void, boolean>>(),
+          currentValue: this._defaultValue
+        };
 
-  register(callback: (data: InputType) => AsyncOperation<ProcessReturnType> | ProcessReturnType): IAttachment {
-    let attachable = new Attachable();
+        let reducer = Reducer.createExistenceChecker();
+        let listenerIDs = [...registererMap.keys()];
 
-    this.notifier
-      .subscribe(broadcast => {
-        let effect = this.reducer.effect(this.defaultEffectValue).attach(attachable);
+        for (let i = 0; i < listenerIDs.length; i++) {
+          let id = listenerIDs[i];
+          let listener = registererMap.get(id);
+          if (listener !== undefined) {
+            try {
+              let response = listener(data);
 
-        let response: any;
-        try {
-          response = callback(broadcast);
-        } catch (e) {
-          console.error('Process registerer function error: ', e);
-          return;
+              let subscription = response
+                ._subscribeSingle(resolvedValue => {
+                  if (this._ongoingProcess === undefined) {
+                    throw new Error('Process: ongoing process is undefined when resolving a registerer.');
+                  }
+                  this._ongoingProcess.currentValue = this._reduceFunction(this._ongoingProcess.currentValue, resolvedValue, {
+                    resolveProcessWith: (value: OutputType) => resolve(value)
+                  });
+                })
+                .attach(context.attachable);
+
+              let blocker = reducer.effect().attach(subscription);
+              this._ongoingProcess.idToBlocker.set(id, blocker);
+            } catch (e) {
+              console.error('Process registerer function error: ', e);
+              return;
+            }
+          }
         }
 
-        if (response?._subscribeSingle) {
-          (response as AsyncOperation<ProcessReturnType>)
-            ._subscribeSingle(() => {
-              effect.update(response);
-            })
-            .attach(attachable);
-        } else {
-          effect.update(response as ProcessReturnType);
-        }
-      })
-      .attach(attachable);
+        reducer.subscribe(blockerExists => {
+          if (!blockerExists) {
+            if (this._ongoingProcess === undefined) {
+              throw new Error('Process: ongoing process is undefined when all blockers are destroyed.');
+            }
 
-    return attachable;
+            resolve(this._ongoingProcess.currentValue);
+            this._ongoingProcess = undefined;
+          }
+        });
+      });
+    } else {
+      return SingleEvent.instant(this._defaultValue);
+    }
+  }
+
+  register(callback: ProcessCallbackFunction<InputType, ProcessReturnType>): IAttachment {
+    let subscriptionID = this._nextAvailableSubscriptionID.v++;
+    this._registererMap.set(subscriptionID, callback);
+
+    return new ActionSubscription(() => {
+      this._registererMap.delete(subscriptionID);
+      this._ongoingProcess?.idToBlocker.get(subscriptionID)?.destroy();
+    });
   }
 }
