@@ -50,6 +50,10 @@ export class SingleNotifier<T = void> extends NotifierBase<T> {
     return this.toSingleEvent().wait(duration);
   }
 
+  asyncTap(callback: (data: T, context: ISingleEventContext) => AsyncOperation<unknown> | void): SingleEvent<T> {
+    return this.toSingleEvent().asyncTap(callback);
+  }
+
   /**
    * **Execution**: The incoming package **executes directly** and **directly resolves** after async operation responds.
    *

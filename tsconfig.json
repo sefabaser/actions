@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
+    "noImplicitOverride": true,
     "strict": true,
     "sourceMap": true,
     "baseUrl": ".",

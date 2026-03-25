@@ -92,25 +92,25 @@ export class Reference<T extends number | object = number> extends Attachable {
     return this._variable.subscribe(callback);
   }
 
-  attach(parent: Attachable): this {
+  override attach(parent: Attachable): this {
     super.attach(parent);
     this._destroySubscription?.attach(this.attachedParent!);
     return this;
   }
 
-  attachByID(id: number): this {
+  override attachByID(id: number): this {
     super.attachByID(id);
     this._destroySubscription?.attach(this.attachedParent!);
     return this;
   }
 
-  attachToRoot(): this {
+  override attachToRoot(): this {
     super.attachToRoot();
     this._destroySubscription?.attachToRoot();
     return this;
   }
 
-  destroy(): void {
+  override destroy(): void {
     this._destroySubscription?.destroy();
     this._destroySubscription = undefined;
     this._variable = undefined as any;

@@ -57,7 +57,7 @@ export class SingleEventExecutor extends Attachable {
   private _creatorContext?: SingleEventContext;
   private _ongoingContext?: SingleEventContext;
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       super.destroy();
 
@@ -109,7 +109,7 @@ export class SingleEventExecutor extends Attachable {
     }
   }
 
-  attach(parent: Attachable): this {
+  override attach(parent: Attachable): this {
     if (this._resolved) {
       this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
@@ -123,7 +123,7 @@ export class SingleEventExecutor extends Attachable {
     return this;
   }
 
-  attachByID(id: number): this {
+  override attachByID(id: number): this {
     if (this._resolved) {
       this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
@@ -137,7 +137,7 @@ export class SingleEventExecutor extends Attachable {
     return this;
   }
 
-  attachToRoot(): this {
+  override attachToRoot(): this {
     if (this._resolved) {
       this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);

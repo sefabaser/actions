@@ -67,7 +67,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
     }
   }
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
@@ -253,7 +253,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     return effect;
   }
 
-  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
+  override subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
     if (!options?.listenOnlyNewChanges) {
       CallbackHelper._triggerCallback(this._previousBroadcast, callback);
     }
@@ -273,7 +273,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: ResponseType) => void): Attachable {
+  override _subscribeSingle(callback: (data: ResponseType) => void): Attachable {
     CallbackHelper._triggerCallback(this._previousBroadcast, callback);
     return Attachable.getDestroyed();
   }

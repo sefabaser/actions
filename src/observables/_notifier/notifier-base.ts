@@ -8,7 +8,7 @@ export class ActionSubscription extends Attachable {
     super();
   }
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       this._destroyCallback();
       super.destroy();

@@ -69,6 +69,10 @@ export class Notifier<T = void> extends NotifierBase<T> {
     return this.toSequence().debounce(duration);
   }
 
+  asyncTap(callback: (data: T, context: ISequenceLinkContext) => AsyncOperation<unknown> | void): Sequence<T> {
+    return this.toSequence().asyncTap(callback);
+  }
+
   /**
    * **Execution**: Each incoming package **executes directly** and **resolves directly** without waiting. Which can break package order.
    *

@@ -18,7 +18,7 @@ class VariableNotifier<T> extends Notifier<T> {
     currentValue: undefined as T
   };
 
-  get notifier(): Notifier<T> {
+  override get notifier(): Notifier<T> {
     if (!this._notifier) {
       let notifier = new VariableNotifier<T>();
       notifier._listenersMapVar = this._listenersMap;
@@ -29,19 +29,19 @@ class VariableNotifier<T> extends Notifier<T> {
     return this._notifier;
   }
 
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
+  override subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
     CallbackHelper._triggerCallback(this._state.currentValue, callback);
     return super.subscribe(callback);
   }
 
-  toSequence(): Sequence<T> {
+  override toSequence(): Sequence<T> {
     return Sequence.create<T>(resolve => {
       let subscription = this.subscribe(resolve).attachToRoot();
       return () => subscription.destroy();
     });
   }
 
-  toSingleEvent(): SingleEvent<T> {
+  override toSingleEvent(): SingleEvent<T> {
     return SingleEvent.create<T>(resolve => {
       let subscription = this.subscribe(resolve).attachToRoot();
       return () => subscription.destroy();
@@ -49,7 +49,7 @@ class VariableNotifier<T> extends Notifier<T> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): Attachable {
+  override _subscribeSingle(callback: (data: T) => void): Attachable {
     CallbackHelper._triggerCallback(this._state.currentValue, callback);
     return Attachable.getDestroyed();
   }

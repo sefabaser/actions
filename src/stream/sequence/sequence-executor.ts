@@ -120,7 +120,7 @@ export class SequenceExecutor extends Attachable {
   _finalized?: boolean;
   private _creatorContext?: SeqeunceCreatorContext;
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       super.destroy();
 
@@ -186,17 +186,17 @@ export class SequenceExecutor extends Attachable {
     }
   }
 
-  attach(parent: Attachable): this {
+  override attach(parent: Attachable): this {
     this._onAttach();
     return super.attach(parent);
   }
 
-  attachByID(id: number): this {
+  override attachByID(id: number): this {
     this._onAttach();
     return super.attachByID(id);
   }
 
-  attachToRoot(): this {
+  override attachToRoot(): this {
     this._onAttach();
     return super.attachToRoot();
   }

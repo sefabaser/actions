@@ -18,8 +18,8 @@ class SingleActionNotifier<T = void> extends SingleNotifier<T> {
     resolvedValue: undefined as T | undefined
   };
 
-  protected _notifier: SingleNotifier<T> | undefined;
-  get notifier(): SingleNotifier<T> {
+  protected override _notifier: SingleNotifier<T> | undefined;
+  override get notifier(): SingleNotifier<T> {
     if (!this._notifier) {
       let notifier = new SingleActionNotifier<T>();
       notifier._listenersMapVar = this._listenersMap;
@@ -30,7 +30,7 @@ class SingleActionNotifier<T = void> extends SingleNotifier<T> {
     return this._notifier;
   }
 
-  subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
+  override subscribe(callback: NotifierCallbackFunction<T>): IAttachment {
     if (this._state.resolved) {
       CallbackHelper._triggerCallback(this._state.resolvedValue!, callback);
       return Attachable.getDestroyed();
@@ -39,14 +39,14 @@ class SingleActionNotifier<T = void> extends SingleNotifier<T> {
     }
   }
 
-  toSequence(): Sequence<T> {
+  override toSequence(): Sequence<T> {
     return Sequence.create<T>(resolve => {
       let subscription = this.subscribe(resolve).attachToRoot();
       return () => subscription.destroy();
     });
   }
 
-  toSingleEvent(): SingleEvent<T> {
+  override toSingleEvent(): SingleEvent<T> {
     return SingleEvent.create<T>(resolve => {
       let subscription = this.subscribe(resolve).attachToRoot();
       return () => subscription.destroy();
@@ -54,7 +54,7 @@ class SingleActionNotifier<T = void> extends SingleNotifier<T> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): Attachable {
+  override _subscribeSingle(callback: (data: T) => void): Attachable {
     if (this._state.resolved) {
       CallbackHelper._triggerCallback(this._state.resolvedValue!, callback);
       return Attachable.getDestroyed();
