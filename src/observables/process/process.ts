@@ -39,7 +39,7 @@ export class Process<InputType, ProcessReturnType, OutputType> {
     return this._listenersMapVar;
   }
 
-  private _ongoingProcess?: OngoingProcess<OutputType>;
+  private _ongoingProcess: OngoingProcess<OutputType> | undefined;
   get running(): boolean {
     return this._ongoingProcess !== undefined;
   }

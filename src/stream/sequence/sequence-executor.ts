@@ -62,7 +62,7 @@ class SeqeunceCreatorContext implements ISequenceCreatorContext {
 }
 
 class SequenceLinkContext implements ISequenceLinkContext {
-  private _attachableVar?: Attachable;
+  private _attachableVar: Attachable | undefined;
   get attachable(): Attachable {
     if (!this._attachableVar) {
       this._attachableVar = new Attachable().attach(this._executor);
@@ -111,13 +111,13 @@ export class SequenceExecutor extends Attachable {
   _onDestroyListener?: () => void;
   _onFinalListener?: () => void;
 
-  _pipeline: { iterator: SequencePipelineIterator; destructor?: SequencePipelineDestructor }[] = [];
-  _asyncPipelineIndices?: Set<number>;
+  _pipeline: { iterator: SequencePipelineIterator; destructor: SequencePipelineDestructor | undefined }[] = [];
+  _asyncPipelineIndices: Set<number> | undefined;
   _ongoingPackageCount = 0;
-  _chainedTo?: SequenceExecutor | SingleEventExecutor;
-  _destroyAfterFirstPackage?: boolean;
-  _pendingValues?: unknown[];
-  _finalized?: boolean;
+  _chainedTo: SequenceExecutor | SingleEventExecutor | undefined;
+  _destroyAfterFirstPackage: true | undefined;
+  _pendingValues: unknown[] | undefined;
+  _finalized: true | undefined;
   private _creatorContext?: SeqeunceCreatorContext;
 
   override destroy(): void {

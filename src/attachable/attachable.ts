@@ -40,7 +40,7 @@ export class Attachable implements IAttachment {
   }
 
   /** @internal */
-  protected _destroyIfNotAttached?: true;
+  protected _destroyIfNotAttached: true | undefined;
 
   constructor() {
     // NOTE: this can be removed in release mode, only if "destroy if not attached" can be done differently
