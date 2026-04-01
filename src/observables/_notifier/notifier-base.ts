@@ -8,7 +8,7 @@ export class ActionSubscription extends Attachable {
     super();
   }
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       this._destroyCallback();
       super.destroy();
@@ -19,33 +19,6 @@ export class ActionSubscription extends Attachable {
 export type NotifierCallbackFunction<T> = (data: T) => void;
 
 export class NotifierBase<T = void> {
-  static fromSequence<S>(sequence: Sequence<S>): {
-    attach: (parent: Attachable) => NotifierBase<S>;
-    attachByID: (parent: number) => NotifierBase<S>;
-    attachToRoot: () => NotifierBase<S>;
-  } {
-    if (sequence.attachIsCalled) {
-      throw new Error('Attached sequences cannot be converted to notifier!');
-    }
-
-    let notifier = new NotifierBase<S>();
-    sequence._subscribeSingle(data => notifier._triggerAll(data));
-    return {
-      attach: (parent: Attachable) => {
-        sequence.attach(parent);
-        return notifier;
-      },
-      attachByID: (id: number) => {
-        sequence.attachByID(id);
-        return notifier;
-      },
-      attachToRoot: () => {
-        sequence.attachToRoot();
-        return notifier;
-      }
-    };
-  }
-
   protected _listenersMapVar: Map<number, NotifierCallbackFunction<T>> | undefined;
   protected get _listenersMap() {
     if (!this._listenersMapVar) {
@@ -64,9 +37,7 @@ export class NotifierBase<T = void> {
     let subscriptionID = this._nextAvailableSubscriptionID.v++;
     this._listenersMap.set(subscriptionID, callback);
 
-    return new ActionSubscription(() => {
-      this._listenersMap.delete(subscriptionID);
-    });
+    return new ActionSubscription(() => this._listenersMap.delete(subscriptionID));
   }
 
   toSequence(): Sequence<T> {
@@ -122,7 +93,7 @@ export class NotifierBase<T = void> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): IAttachment {
+  _subscribeSingle(callback: (data: T) => void): Attachable {
     let subscriptionID = this._nextAvailableSubscriptionID.v++;
 
     let subscription = new ActionSubscription(() => {

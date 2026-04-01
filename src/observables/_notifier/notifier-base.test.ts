@@ -286,44 +286,6 @@ describe('NotifierBase', () => {
     });
   });
 
-  describe('Create From Sqeuence', () => {
-    test('setup', () => {
-      let sequence = Sequence.create<string>(() => {});
-      let notifier = NotifierBase.fromSequence(sequence).attachToRoot();
-      expect(notifier.listenerCount).toEqual(0);
-    });
-
-    test('converting notifier before attaching should throw error', () => {
-      vi.useFakeTimers();
-      expect(() => {
-        let sequence = Sequence.create<string>(() => {}).attachToRoot();
-        NotifierBase.fromSequence(sequence);
-
-        vi.runAllTimers();
-      }).toThrow('Attached sequences cannot be converted to notifier!');
-    });
-
-    test('converted notifier can be subscribed by many', () => {
-      let sequence = Sequence.create<string>(resolve => resolve('a'));
-      let notifier = NotifierBase.fromSequence(sequence).attachToRoot();
-      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
-      notifier.subscribe(data => expect(data).toEqual('a')).attachToRoot();
-      expect(notifier.listenerCount).toEqual(2);
-    });
-
-    test('destroyed attached parent of the sequence, should destroy subscriptions', () => {
-      let externalNotifier = new NotifierBase<string>();
-
-      let parent = new Attachable().attachToRoot();
-      let sequence = Sequence.create(resolve => resolve()).asyncMapOrdered(() => externalNotifier);
-      NotifierBase.fromSequence(sequence).attach(parent);
-
-      expect(externalNotifier.listenerCount).toEqual(1);
-      parent.destroy();
-      expect(externalNotifier.listenerCount).toEqual(0);
-    });
-  });
-
   describe('Edge Cases', () => {
     test(`Race condition, sequences destroying another sequences' parent`, () => {
       let notifier = new NotifierBase();
@@ -331,7 +293,7 @@ describe('NotifierBase', () => {
       class Foo extends Attachable {
         foo = { x: 1 };
 
-        destroy(): void {
+        override destroy(): void {
           super.destroy();
           this.foo = undefined as any;
         }

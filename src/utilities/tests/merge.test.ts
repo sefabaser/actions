@@ -177,6 +177,26 @@ describe('Merge as Sequence', () => {
       sequence2.destroy();
       expect(merged.destroyed).toBeTruthy();
     });
+
+    test('one child being destroyed during process', () => {
+      let heap: string[] = [];
+
+      let resolve1!: (data: string) => void;
+      let sequence1 = Sequence.create<string>(resolve => {
+        resolve1 = resolve;
+      });
+      let sequence2 = Sequence.create<string>(_ => {});
+
+      ActionLib.merge(sequence1, sequence2)
+        .tap(data => heap.push(data))
+        .attachToRoot();
+
+      sequence2.destroy();
+      expect(heap).toEqual([]);
+
+      resolve1('a');
+      expect(heap).toEqual(['a']);
+    });
   });
 
   describe('Edge Cases', () => {

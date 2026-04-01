@@ -14,7 +14,7 @@ describe('All', () => {
 
   describe('Behavior', () => {
     describe('Object Input', () => {
-      test('simple combine', () => {
+      test('simple all', () => {
         let sequence1 = Sequence.create<string>(resolve => resolve('a'));
         let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
@@ -26,7 +26,7 @@ describe('All', () => {
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
       });
 
-      test('empty combine', () => {
+      test('empty all', () => {
         let heap: unknown[] = [];
         ActionLib.all({})
           .tap(data => heap.push(data))
@@ -67,13 +67,13 @@ describe('All', () => {
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
       });
 
-      test('combine instantly getting resolved sequences', async () => {
+      test('all instantly getting resolved sequences', async () => {
         let heap: unknown[] = [];
 
         let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
-        let combined = ActionLib.all({ a: s1, b: s2 })
+        let all = ActionLib.all({ a: s1, b: s2 })
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -82,10 +82,10 @@ describe('All', () => {
         expect(heap).toEqual([{ a: 'a', b: 1 }]);
         expect(s1.destroyed).toBeTruthy();
         expect(s2.destroyed).toBeTruthy();
-        expect(combined.destroyed).toBeTruthy();
+        expect(all.destroyed).toBeTruthy();
       });
 
-      test('combine with delayed sequences', async () => {
+      test('all with delayed sequences', async () => {
         let heap: unknown[] = [];
         ActionLib.all({
           a: Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
@@ -130,7 +130,7 @@ describe('All', () => {
     });
 
     describe('Array Input', () => {
-      test('simple combine', () => {
+      test('simple all', () => {
         let sequence1 = Sequence.create<string>(resolve => resolve('a'));
         let sequence2 = Sequence.create<number>(resolve => resolve(1));
 
@@ -142,7 +142,7 @@ describe('All', () => {
         expect(heap).toEqual([['a', 1]]);
       });
 
-      test('empty combine', () => {
+      test('empty all', () => {
         let heap: unknown[] = [];
         ActionLib.all([])
           .tap(data => heap.push(data))
@@ -183,13 +183,13 @@ describe('All', () => {
         expect(heap).toEqual([['a', 1]]);
       });
 
-      test('combine instantly getting destroyed sequences', async () => {
+      test('all instantly getting destroyed sequences', async () => {
         let heap: unknown[] = [];
 
         let s1 = Sequence.create<string>(resolve => resolve('a')).take(1);
         let s2 = Sequence.create<number>(resolve => resolve(1)).take(1);
 
-        let combined = ActionLib.all([s1, s2])
+        let all = ActionLib.all([s1, s2])
           .tap(data => heap.push(data))
           .attachToRoot();
 
@@ -198,10 +198,10 @@ describe('All', () => {
         expect(heap).toEqual([['a', 1]]);
         expect(s1.destroyed).toBeTruthy();
         expect(s2.destroyed).toBeTruthy();
-        expect(combined.destroyed).toBeTruthy();
+        expect(all.destroyed).toBeTruthy();
       });
 
-      test('combine with delayed sequences', async () => {
+      test('all with delayed sequences', async () => {
         let heap: unknown[] = [];
         ActionLib.all([
           Sequence.create<string>(resolve => UnitTestHelper.callEachDelayed(['a', 'b'], resolve)),
@@ -240,11 +240,11 @@ describe('All', () => {
     test('merge destroy -> children destroy', async () => {
       let sequence1 = Sequence.create<string>(() => {});
       let sequence = Sequence.create<string>(() => {});
-      let combined = ActionLib.all({ a: sequence1, b: sequence }).attachToRoot();
+      let all = ActionLib.all({ a: sequence1, b: sequence }).attachToRoot();
 
       expect(sequence1.destroyed).toBeFalsy();
       expect(sequence.destroyed).toBeFalsy();
-      combined.destroy();
+      all.destroy();
       expect(sequence1.destroyed).toBeTruthy();
       expect(sequence.destroyed).toBeTruthy();
     });
@@ -252,18 +252,32 @@ describe('All', () => {
     test('children destroy -> merge destroy', async () => {
       let sequence1 = Sequence.create<string>(() => {});
       let sequence = Sequence.create<string>(() => {});
-      let combined = ActionLib.all({ a: sequence1, b: sequence }).attachToRoot();
+      let all = ActionLib.all({ a: sequence1, b: sequence }).attachToRoot();
 
-      expect(combined.destroyed).toBeFalsy();
+      expect(all.destroyed).toBeFalsy();
       sequence1.destroy();
-      expect(combined.destroyed).toBeFalsy();
+      expect(all.destroyed).toBeFalsy();
       sequence.destroy();
-      expect(combined.destroyed).toBeTruthy();
+      expect(all.destroyed).toBeTruthy();
+    });
+
+    test('one child being destroyed during process', () => {
+      let sequence1 = Sequence.create<string>(resolve => resolve('a'));
+      let sequence2 = Sequence.create<number>(_ => {});
+
+      let heap: unknown[] = [];
+      ActionLib.all({ a: sequence1, b: sequence2 })
+        .tap(data => heap.push(data))
+        .attachToRoot();
+
+      sequence2.destroy();
+
+      expect(heap).toEqual([]);
     });
   });
 
   describe('Edge Cases', () => {
-    test('combined sequences should not need to be attached manually', () => {
+    test('all sequences should not need to be attached manually', () => {
       vi.useFakeTimers();
       expect(() => {
         let sequence1 = Sequence.create<string>(() => {});

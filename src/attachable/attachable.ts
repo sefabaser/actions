@@ -13,7 +13,7 @@ export class Attachable implements IAttachment {
   /**
    * @returns Attachable that is already destroyed
    */
-  static getDestroyed(): IAttachment {
+  static getDestroyed(): Attachable {
     let destroyedSubscription = new Attachable();
     destroyedSubscription._destroyed = true;
     return destroyedSubscription;
@@ -40,7 +40,7 @@ export class Attachable implements IAttachment {
   }
 
   /** @internal */
-  protected _destroyIfNotAttached?: true;
+  protected _destroyIfNotAttached: true | undefined;
 
   constructor() {
     // NOTE: this can be removed in release mode, only if "destroy if not attached" can be done differently

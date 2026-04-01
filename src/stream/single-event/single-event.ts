@@ -182,7 +182,7 @@ export class SingleEvent<T = void> implements IAttachment {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): SingleEvent<T> {
+  _subscribeSingle(callback: (data: T) => void): Attachable {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, _, resolve) => {
@@ -197,7 +197,7 @@ export class SingleEvent<T = void> implements IAttachment {
       resolve(data);
     });
 
-    return new SingleEvent<T>(this._executor);
+    return this._executor;
   }
 
   /** @internal */

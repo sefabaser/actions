@@ -27,9 +27,9 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
   private _id: number;
   private _reducer: Reducer<EffectType, ResponseType>;
 
-  private _: EffectType;
+  private _value: EffectType;
   get value(): EffectType {
-    return this._;
+    return this._value;
   }
   set value(value: EffectType) {
     this.update(value);
@@ -47,7 +47,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
       type: 'effect'
     });
 
-    this._ = value;
+    this._value = value;
     this._reducer._broadcast(reducerResponse);
   }
 
@@ -55,23 +55,23 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
     if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
-        previous: this._,
+        previous: this._value,
         current: value,
         type: 'update'
       });
 
-      this._ = value;
+      this._value = value;
       this._reducer._broadcast(reducerResponse);
     } else {
       throw new Error(`ReducerEffectChannel: This effect is destroyed cannot be updated!`);
     }
   }
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       let reducerResponse = this._reducer._reduceFunction({
         id: this._id,
-        previous: this._,
+        previous: this._value,
         type: 'destroy'
       });
 
@@ -253,7 +253,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     return effect;
   }
 
-  subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
+  override subscribe(callback: NotifierCallbackFunction<ResponseType>, options?: ReducerSubscriptionOptions): IAttachment {
     if (!options?.listenOnlyNewChanges) {
       CallbackHelper._triggerCallback(this._previousBroadcast, callback);
     }
@@ -273,7 +273,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: ResponseType) => void): IAttachment {
+  override _subscribeSingle(callback: (data: ResponseType) => void): Attachable {
     CallbackHelper._triggerCallback(this._previousBroadcast, callback);
     return Attachable.getDestroyed();
   }

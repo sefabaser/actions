@@ -4,7 +4,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   protected map: Map<KeyType, ValueType>;
 
   /** @internal */
-  protected _untilAddedListenersVar?: Map<KeyType, Set<(data: ValueType) => void>>;
+  protected _untilAddedListenersVar: Map<KeyType, Set<(data: ValueType) => void>> | undefined;
   private get _UntilAddedListeners(): Map<KeyType, Set<(data: ValueType) => void>> {
     if (!this._untilAddedListenersVar) {
       this._untilAddedListenersVar = new Map();
@@ -13,7 +13,7 @@ export class ObservableMapNotifier<KeyType extends number | string, ValueType> {
   }
 
   /** @internal */
-  protected _untilRemovedListenersVar?: Map<KeyType, Set<() => void>>;
+  protected _untilRemovedListenersVar: Map<KeyType, Set<() => void>> | undefined;
   private get _untilRemovedListeners(): Map<KeyType, Set<() => void>> {
     if (!this._untilRemovedListenersVar) {
       this._untilRemovedListenersVar = new Map();

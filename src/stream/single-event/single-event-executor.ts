@@ -13,7 +13,7 @@ export interface ISingleEventContext {
 }
 
 class SingleEventContext implements ISingleEventContext {
-  private _attachable?: Attachable;
+  private _attachable: Attachable | undefined;
   get attachable(): Attachable {
     if (!this._attachable) {
       this._attachable = new Attachable();
@@ -50,14 +50,14 @@ export class SingleEventExecutor extends Attachable {
   _resolved?: boolean;
   _finalized?: boolean;
   _currentData: unknown;
-  _chainedTo?: SingleEventExecutor;
-  _entangledFrom?: SequenceExecutor;
+  _chainedTo: SingleEventExecutor | undefined;
+  _entangledFrom: SequenceExecutor | undefined;
   private _pipeline: SingleEventPipelineIterator[] = [];
   private _pipelineIndex = 0;
   private _creatorContext?: SingleEventContext;
   private _ongoingContext?: SingleEventContext;
 
-  destroy(): void {
+  override destroy(): void {
     if (!this._destroyed) {
       super.destroy();
 
@@ -109,7 +109,7 @@ export class SingleEventExecutor extends Attachable {
     }
   }
 
-  attach(parent: Attachable): this {
+  override attach(parent: Attachable): this {
     if (this._resolved) {
       this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
@@ -123,7 +123,7 @@ export class SingleEventExecutor extends Attachable {
     return this;
   }
 
-  attachByID(id: number): this {
+  override attachByID(id: number): this {
     if (this._resolved) {
       this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);
@@ -137,7 +137,7 @@ export class SingleEventExecutor extends Attachable {
     return this;
   }
 
-  attachToRoot(): this {
+  override attachToRoot(): this {
     if (this._resolved) {
       this._ongoingContext = new SingleEventContext(this);
       this._iteratePackage(this._currentData);

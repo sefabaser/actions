@@ -13,7 +13,7 @@ describe('Any', () => {
   });
 
   describe('Behavior', () => {
-    test('single event merge', async () => {
+    test('single event any', async () => {
       let heap: string[] = [];
 
       ActionLib.any(
@@ -27,7 +27,7 @@ describe('Any', () => {
       expect(heap).toEqual(['a']);
     });
 
-    test('empty merge', () => {
+    test('empty any', () => {
       let heap: unknown[] = [];
       ActionLib.any()
         .tap(data => heap.push(data))
@@ -36,7 +36,7 @@ describe('Any', () => {
       expect(heap).toEqual([]);
     });
 
-    test('action merge', () => {
+    test('action any', () => {
       let action1 = new Action<string>();
       let action2 = new Action<string>();
 
@@ -56,17 +56,17 @@ describe('Any', () => {
       let s1 = SingleEvent.instant('a');
       let s2 = SingleEvent.instant('b');
 
-      let merged = ActionLib.any(s1, s2);
-      let read = merged.tap(data => heap.push(data)).attachToRoot();
+      let any = ActionLib.any(s1, s2);
+      let read = any.tap(data => heap.push(data)).attachToRoot();
 
       expect(heap).toEqual(['a']);
       expect(s1.destroyed).toBeTruthy();
       expect(s2.destroyed).toBeTruthy();
-      expect(merged.destroyed).toBeTruthy();
+      expect(any.destroyed).toBeTruthy();
       expect(read.destroyed).toBeTruthy();
     });
 
-    test('merge with delayed singleEvents', async () => {
+    test('any with delayed singleEvents', async () => {
       let heap: string[] = [];
       ActionLib.any(
         SingleEvent.create<string>(resolve => UnitTestHelper.callEachDelayed(['1', '2'], resolve)),
@@ -102,35 +102,54 @@ describe('Any', () => {
   });
 
   describe('Destruction', () => {
-    test('merge destroy -> children destroy', async () => {
+    test('any destroy -> children destroy', async () => {
       let singleEvent1 = SingleEvent.create(() => {});
       let singleEvent2 = SingleEvent.create(() => {});
-      let merged = ActionLib.any(singleEvent1, singleEvent2).attachToRoot();
+      let any = ActionLib.any(singleEvent1, singleEvent2).attachToRoot();
 
       expect(singleEvent1.destroyed).toBeFalsy();
       expect(singleEvent2.destroyed).toBeFalsy();
       expect(singleEvent1['_executor']['_onDestroyListener']).toBeDefined();
       expect(singleEvent2['_executor']['_onDestroyListener']).toBeDefined();
-      merged.destroy();
+      any.destroy();
       expect(singleEvent1.destroyed).toBeTruthy();
       expect(singleEvent2.destroyed).toBeTruthy();
     });
 
-    test('children destroy -> merge destroy', async () => {
+    test('children destroy -> any destroy', async () => {
       let singleEvent1 = SingleEvent.create(() => {});
       let singleEvent2 = SingleEvent.create(() => {});
-      let merged = ActionLib.any(singleEvent1, singleEvent2).attachToRoot();
+      let any = ActionLib.any(singleEvent1, singleEvent2).attachToRoot();
 
-      expect(merged.destroyed).toBeFalsy();
+      expect(any.destroyed).toBeFalsy();
       singleEvent1.destroy();
-      expect(merged.destroyed).toBeFalsy();
+      expect(any.destroyed).toBeFalsy();
       singleEvent2.destroy();
-      expect(merged.destroyed).toBeTruthy();
+      expect(any.destroyed).toBeTruthy();
+    });
+
+    test('one child being destroyed during process', () => {
+      let resolve1!: (data: string) => void;
+      let sequence1 = Sequence.create<string>(resolve => {
+        resolve1 = resolve;
+      });
+      let sequence2 = Sequence.create<string>(_ => {});
+
+      let heap: unknown[] = [];
+      ActionLib.any(sequence1, sequence2)
+        .tap(data => heap.push(data))
+        .attachToRoot();
+
+      sequence2.destroy();
+      expect(heap).toEqual([]);
+
+      resolve1('a');
+      expect(heap).toEqual(['a']);
     });
   });
 
   describe('Edge Cases', () => {
-    test('merged singleEvents should not need to be attached manually', () => {
+    test('any singleEvents should not need to be attached manually', () => {
       vi.useFakeTimers();
       expect(() => {
         let singleEvent1 = SingleEvent.create(() => {});

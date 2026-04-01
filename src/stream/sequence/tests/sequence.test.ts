@@ -2027,7 +2027,7 @@ describe('Sequence', () => {
       class Foo extends Attachable {
         foo = { x: 1 };
 
-        destroy(): void {
+        override destroy(): void {
           super.destroy();
           this.foo = undefined as any;
         }

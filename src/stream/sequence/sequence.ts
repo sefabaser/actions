@@ -617,7 +617,7 @@ export class Sequence<T = void> implements IAttachment {
   }
 
   /** @internal */
-  _subscribeSingle(callback: (data: T) => void): Sequence<T> {
+  _subscribeSingle(callback: (data: T) => void): Attachable {
     this._validateBeforeLinking();
 
     this._executor._enterPipeline<T, T>((data, _, resolve) => {
@@ -632,7 +632,7 @@ export class Sequence<T = void> implements IAttachment {
       resolve(data);
     });
 
-    return new Sequence<T>(this._executor);
+    return this._executor;
   }
 
   /** @internal */

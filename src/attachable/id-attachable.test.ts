@@ -55,7 +55,7 @@ describe('IDAttachable', () => {
       let destroyCalled = false;
 
       class Sample extends IDAttachable {
-        destroy(): void {
+        override destroy(): void {
           super.destroy();
           destroyCalled = true;
         }
@@ -84,7 +84,7 @@ describe('IDAttachable', () => {
           super();
         }
 
-        destroy(): void {
+        override destroy(): void {
           super.destroy();
           this._destroyCallback();
         }
@@ -303,7 +303,7 @@ describe('IDAttachable', () => {
       class Foo extends IDAttachable {
         foo = { x: 1 };
 
-        destroy(): void {
+        override destroy(): void {
           super.destroy();
           this.foo = undefined as any;
         }

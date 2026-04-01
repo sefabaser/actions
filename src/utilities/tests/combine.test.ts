@@ -283,6 +283,20 @@ describe('Combine as Sequence', () => {
       sequence.destroy();
       expect(combined.destroyed).toBeTruthy();
     });
+
+    test('one child being destroyed during process', () => {
+      let sequence1 = Sequence.create<string>(resolve => resolve('a'));
+      let sequence2 = Sequence.create<number>(_ => {});
+
+      let heap: unknown[] = [];
+      ActionLib.combine({ a: sequence1, b: sequence2 })
+        .tap(data => heap.push(data))
+        .attachToRoot();
+
+      sequence2.destroy();
+
+      expect(heap).toEqual([]);
+    });
   });
 
   describe('Edge Cases', () => {
