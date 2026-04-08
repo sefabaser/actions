@@ -83,6 +83,23 @@ describe(`Reducer`, () => {
         reducer.effect().attachToRoot();
       }));
 
+    test('should notify new listeners with the current value', () => {
+      let calledWith: unknown;
+      let triggered = false;
+
+      reducer.effect().attachToRoot();
+
+      reducer
+        .subscribe(response => {
+          calledWith = response;
+          triggered = true;
+        })
+        .attachToRoot();
+
+      expect(triggered).toEqual(true);
+      expect(calledWith).toEqual(true);
+    });
+
     test('should not notify destroyed listeners', () =>
       new Promise<void>(done => {
         let triggered: boolean;

@@ -21,11 +21,11 @@ export type ReducerReduceFunction<EffectType, ResponseType> = (change: {
   readonly type: 'initial' | 'effect' | 'update' | 'destroy';
 }) => ResponseType;
 
-export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
+export class ReducerEffectChannel<EffectType> extends Attachable {
   private static _nextAvailableID = 1;
 
   private _id: number;
-  private _reducer: Reducer<EffectType, ResponseType>;
+  private _reducer: Reducer<EffectType, unknown>;
 
   private _value: EffectType;
   get value(): EffectType {
@@ -35,7 +35,7 @@ export class ReducerEffectChannel<EffectType, ResponseType> extends Attachable {
     this.update(value);
   }
 
-  constructor(reducer: Reducer<EffectType, ResponseType>, value: EffectType) {
+  constructor(reducer: Reducer<EffectType, unknown>, value: EffectType) {
     super();
 
     this._id = ReducerEffectChannel._nextAvailableID++;
@@ -223,7 +223,7 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
   private _options: ReducerOptions;
 
   /** @internal */
-  _effects: Set<ReducerEffectChannel<EffectType, ResponseType>> = new Set();
+  _effects: Set<ReducerEffectChannel<EffectType>> = new Set();
   /** @internal */
   _reduceFunction: ReducerReduceFunction<EffectType, ResponseType>;
 
@@ -247,8 +247,8 @@ export class Reducer<EffectType, ResponseType> extends Notifier<ResponseType> {
     this._previousBroadcast = reducerResponse;
   }
 
-  effect(value: EffectType): ReducerEffectChannel<EffectType, ResponseType> {
-    let effect = new ReducerEffectChannel<EffectType, ResponseType>(<any>this, value);
+  effect(value: EffectType): ReducerEffectChannel<EffectType> {
+    let effect = new ReducerEffectChannel<EffectType>(<any>this, value);
     this._effects.add(effect);
     return effect;
   }

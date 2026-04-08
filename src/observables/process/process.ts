@@ -6,7 +6,7 @@ import { Reducer, ReducerEffectChannel } from '../reducer/reducer';
 export type ProcessCallbackFunction<InputType, ProcessReturnType> = (data: InputType) => SingleEvent<ProcessReturnType>;
 
 interface OngoingProcess<OutputType> {
-  idToBlocker: Map<number, ReducerEffectChannel<void, boolean>>;
+  idToBlocker: Map<number, ReducerEffectChannel<void>>;
   currentValue: OutputType;
 }
 
@@ -58,7 +58,7 @@ export class Process<InputType, ProcessReturnType, OutputType> {
     if (registererMap) {
       return SingleEvent.create((resolve, context) => {
         this._ongoingProcess = {
-          idToBlocker: new Map<number, ReducerEffectChannel<void, boolean>>(),
+          idToBlocker: new Map<number, ReducerEffectChannel<void>>(),
           currentValue: this._defaultValue
         };
 
