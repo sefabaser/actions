@@ -1,6 +1,6 @@
 {
   "name": "actions-lib",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Typescript Helpers Library",
   "main": "src/index.ts",
   "publishConfig": {
